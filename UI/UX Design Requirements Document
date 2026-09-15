@@ -1,0 +1,2818 @@
+## UI/UX Design Requirements Document
+
+**Project:** Quantum Care
+**Document Type:** UI/UX Design Requirements Document
+**Current Scope:** Web Application
+**Future Scope:** Hospital Kiosk
+**Design Direction:** Minimalist Healthcare + Glassmorphism + Soft Material Design + Controlled Motion
+**Primary UX Principle:** Simple enough for a first-time patient, polished enough for a professional clinical environment.
+
+---
+
+# 1. Design Vision
+
+Quantum Care should feel like a **modern healthcare platform rather than a traditional hospital portal**.
+
+The interface must combine:
+
+* Minimalism
+* Glassmorphism
+* Soft blur effects
+* Material Design principles
+* Clear typography
+* Large and accessible controls
+* Gentle animations
+* Strong visual hierarchy
+* Calm healthcare aesthetics
+* Consistent spacing
+* Responsive layouts
+
+The design must never sacrifice usability for visual effects.
+
+The visual rule is:
+
+> **The interface should look sophisticated without making the patient think.**
+
+The patient should always understand:
+
+1. Where they are.
+2. What the system is asking.
+3. What they should do next.
+4. How to go back.
+5. Whether their information was saved.
+
+---
+
+# 2. Core UX Principles
+
+## 2.1 Simple
+
+Each screen should have one primary objective.
+
+Bad:
+
+```text
+Profile
+Appointments
+Reports
+AI Summary
+Documents
+Hospital search
+Settings
+Upload
+Share
+```
+
+all competing for attention.
+
+Better:
+
+```text
+What would you like to do?
+
+[ Complete Health Profile ]
+
+[ Tell Us About Your Problem ]
+
+[ Book Appointment ]
+
+[ View Medical Records ]
+```
+
+---
+
+# 3. One Primary Action Per Screen
+
+Every major patient workflow screen should have:
+
+* One primary CTA
+* Optional secondary action
+* Back/navigation control
+
+Example:
+
+```text
+What problem are you experiencing?
+
+[ Speak ]
+[ Select from options ]
+
+                    [ Continue ]
+```
+
+The **Continue** button is the primary action.
+
+---
+
+# 4. Progressive Disclosure
+
+Do not show the entire medical questionnaire at once.
+
+Instead:
+
+```text
+Question
+   ↓
+Answer
+   ↓
+Next relevant question
+   ↓
+Next relevant question
+```
+
+The patient should never see:
+
+```text
+100-field medical form
+```
+
+The AI interview should feel like a conversation.
+
+---
+
+# 5. Design System
+
+Quantum Care needs a centralized design system.
+
+Create:
+
+```text
+src/design-system/
+```
+
+Containing:
+
+```text
+tokens.js
+colors.js
+typography.js
+spacing.js
+shadows.js
+radii.js
+motion.js
+```
+
+Every major component must consume design tokens rather than independently choosing colors or spacing.
+
+---
+
+# 6. Color System
+
+The application has two visual themes.
+
+## Light Mode
+
+Primary palette:
+
+* Light Pink
+* Light Orange
+* Light Blue
+* White
+
+Supporting colors:
+
+* Soft lavender
+* Very light peach
+* Cool grey
+* Dark charcoal for text
+
+### Suggested palette
+
+```text
+Background:
+#FFF9FB
+
+Surface:
+#FFFFFF
+
+Soft Pink:
+#F9DDE8
+
+Pink Accent:
+#EFA7C0
+
+Soft Orange:
+#FFE4C7
+
+Orange Accent:
+#F5B27A
+
+Soft Blue:
+#DDEEFF
+
+Blue Accent:
+#9CCAF2
+
+Lavender:
+#E9E1F7
+
+Primary Text:
+#25232A
+
+Secondary Text:
+#706B76
+
+Border:
+#E9E5EA
+```
+
+These values are the design baseline and can be refined visually during implementation.
+
+---
+
+# 7. Dark Mode
+
+Primary palette:
+
+* Dark Grey
+* Black
+* Light Purple
+* Dark Purple
+
+Supporting colors:
+
+* Soft violet
+* Muted blue-purple
+* Grey lavender
+* Light text
+
+### Suggested palette
+
+```text
+Background:
+#0E0D12
+
+Surface:
+#17151D
+
+Elevated Surface:
+#211D29
+
+Dark Purple:
+#39264D
+
+Purple:
+#7656A8
+
+Light Purple:
+#CBB8F2
+
+Soft Accent:
+#A992D8
+
+Text:
+#F7F4FA
+
+Secondary Text:
+#AAA4B4
+
+Border:
+#302B37
+```
+
+---
+
+# 8. Accent Usage
+
+The palette must not become a rainbow.
+
+Use:
+
+```text
+Primary action → Blue/Purple
+Success → Soft Green
+Warning → Orange
+Critical → Red
+Informational → Blue
+Decorative → Pink/Lavender
+```
+
+Pink and orange are primarily used for visual warmth.
+
+Blue is used for trust and action.
+
+Purple is used for AI/advanced intelligence.
+
+---
+
+# 9. Gradients
+
+Use subtle gradients.
+
+### Light mode example
+
+```text
+linear-gradient(
+  135deg,
+  #F9DDE8,
+  #DDEEFF,
+  #FFE4C7
+)
+```
+
+### Dark mode example
+
+```text
+linear-gradient(
+  135deg,
+  #17151D,
+  #39264D,
+  #0E0D12
+)
+```
+
+Gradients should appear mainly in:
+
+* hero sections,
+* backgrounds,
+* cards,
+* AI sections,
+* profile headers.
+
+Never use gradients behind dense clinical text.
+
+---
+
+# 10. Glassmorphism
+
+Glass effects should be used selectively.
+
+Example:
+
+```css
+background: rgba(255, 255, 255, 0.55);
+backdrop-filter: blur(20px);
+border: 1px solid rgba(255, 255, 255, 0.35);
+```
+
+Dark mode:
+
+```css
+background: rgba(30, 27, 38, 0.65);
+backdrop-filter: blur(20px);
+border: 1px solid rgba(255, 255, 255, 0.08);
+```
+
+Use glassmorphism for:
+
+* navigation
+* floating cards
+* profile headers
+* appointment cards
+* AI interaction panels
+* modal overlays
+
+Do not use heavy glass effects on every element.
+
+---
+
+# 11. Material Design Influence
+
+Use Material Design principles for:
+
+* spacing
+* touch targets
+* elevation
+* form controls
+* dialogs
+* snackbars
+* navigation
+* accessibility
+
+But don't make Quantum Care look like an unmodified Material UI template.
+
+The target aesthetic is:
+
+```text
+Material usability
++
+Apple-like simplicity
++
+Glassmorphism
++
+Modern AI interface
+```
+
+---
+
+# 12. Typography
+
+Recommended font:
+
+**Inter**
+
+Fallback:
+
+```text
+Inter,
+system-ui,
+-apple-system,
+BlinkMacSystemFont,
+"Segoe UI",
+sans-serif
+```
+
+### Hierarchy
+
+```text
+Hero:
+48–64 px
+
+Page heading:
+32–40 px
+
+Section heading:
+22–28 px
+
+Card heading:
+18–20 px
+
+Body:
+15–17 px
+
+Secondary:
+13–14 px
+
+Metadata:
+12–13 px
+```
+
+Patient-facing interfaces should generally use larger text.
+
+---
+
+# 13. Border Radius
+
+Use soft rounded geometry.
+
+```text
+Small:
+10px
+
+Standard:
+14px
+
+Cards:
+18px
+
+Large:
+24px
+
+Hero:
+28–32px
+
+Pill:
+999px
+```
+
+Avoid excessive pill-shaped everything. Humanity has survived without making every button look like a vitamin.
+
+---
+
+# 14. Shadows
+
+Use extremely soft shadows.
+
+Light:
+
+```text
+0 10px 40px rgba(40, 30, 60, 0.08)
+```
+
+Dark:
+
+```text
+0 12px 40px rgba(0, 0, 0, 0.35)
+```
+
+Cards should feel elevated, not floating in another dimension.
+
+---
+
+# 15. Motion Design
+
+Animation should communicate:
+
+* transition,
+* hierarchy,
+* system feedback,
+* loading,
+* completion.
+
+It must not distract.
+
+Animation duration:
+
+```text
+Micro:
+120–180ms
+
+Normal:
+200–300ms
+
+Large transition:
+350–500ms
+```
+
+Use:
+
+* opacity
+* transform
+* scale
+* blur
+* height
+* slide
+* spring motion
+
+Avoid excessive continuous animations.
+
+---
+
+# 16. Animation Libraries
+
+The UI may use:
+
+### React Bits
+
+For:
+
+* animated cards,
+* backgrounds,
+* interactive UI,
+* visual effects.
+
+### Aceternity UI
+
+For:
+
+* advanced hero sections,
+* spotlight effects,
+* animated backgrounds,
+* sophisticated transitions.
+
+### Magic UI
+
+For:
+
+* animated buttons,
+* text effects,
+* cards,
+* subtle motion.
+
+### Animate / Framer Motion
+
+Use for:
+
+* page transitions,
+* modal transitions,
+* question transitions,
+* expandable cards,
+* progress animation.
+
+### Hover.dev
+
+Use selectively for:
+
+* hover interactions,
+* product-style cards,
+* subtle pointer interactions.
+
+Important:
+
+**Do not use all libraries indiscriminately.**
+
+The project should have a single coherent motion language.
+
+---
+
+# 17. Animation Rules
+
+### Patient flows
+
+Animation should be:
+
+```text
+slow
+soft
+predictable
+```
+
+### Doctor dashboard
+
+Animation should be:
+
+```text
+fast
+minimal
+functional
+```
+
+### Admin
+
+Minimal animation.
+
+The goal is productivity.
+
+---
+
+# 18. Page Transition
+
+When moving between major patient screens:
+
+```text
+Current screen
+    ↓
+fade + slight upward motion
+    ↓
+next screen
+```
+
+Example:
+
+```css
+opacity: 0 → 1
+transform: translateY(8px) → 0
+```
+
+Duration:
+
+**220ms**
+
+---
+
+# 19. Loading States
+
+Never freeze the page.
+
+Use:
+
+* skeleton loaders
+* progress indicators
+* inline spinners
+* upload progress
+* AI thinking state
+
+Example:
+
+```text
+Analyzing your response...
+
+● ● ○
+```
+
+The dots should animate subtly.
+
+---
+
+# 20. No Blocking Spinners
+
+Avoid:
+
+```text
+████████████████
+Please wait...
+```
+
+with the entire interface disabled.
+
+Instead:
+
+```text
+Clinical report
+─────────────────
+
+Generating your report...
+
+[progress animation]
+
+You can continue when it is ready.
+```
+
+Where possible, background processing should leave other safe UI accessible.
+
+---
+
+# 21. Landing Page
+
+The landing page should communicate:
+
+```text
+Quantum Care
+
+Your health history.
+Organized. Accessible. Ready when you need it.
+
+[ Create Health Profile ]
+[ Login ]
+
+Patient-first healthcare intelligence
+```
+
+Hero visual:
+
+* blurred gradient background
+* soft glass card
+* abstract medical/data visualization
+* subtle floating particles
+* no giant doctor stock photo
+
+---
+
+# 22. Landing Page Sections
+
+Recommended sections:
+
+1. Hero
+2. How it works
+3. Patient benefits
+4. Doctor benefits
+5. Medical records section
+6. AI history-taking
+7. Appointment workflow
+8. Privacy/security
+9. CTA
+10. Footer
+
+---
+
+# 23. Hero
+
+Light:
+
+```text
+soft pink → blue → white gradient
+```
+
+Dark:
+
+```text
+black → dark purple → violet
+```
+
+Central glass card:
+
+```text
+"Tell us what's troubling you."
+
+[ Speak ]
+[ Start Health Profile ]
+```
+
+---
+
+# 24. Registration UX
+
+The registration flow must feel extremely simple.
+
+### Step 1
+
+```text
+Create your Quantum Care profile
+
+Let's start with the basics.
+
+Full Name
+[________________]
+
+[ Continue ]
+```
+
+### Step 2
+
+```text
+Tell us about yourself
+
+Date of Birth
+[ DD / MM / YYYY ]
+
+Gender
+
+[ Female ]
+[ Male ]
+[ Other ]
+[ Prefer not to say ]
+```
+
+### Step 3
+
+```text
+Preferred language
+
+[ English ]
+[ हिन्दी ]
+[ Other ]
+```
+
+### Step 4
+
+```text
+Create your login
+
+Email / Username
+Password
+
+[ Create Profile ]
+```
+
+---
+
+# 25. Registration UX Principle
+
+Do not request every medical detail during account creation.
+
+Registration should establish identity.
+
+Clinical intake happens afterward.
+
+Separate:
+
+```text
+Profile Setup
+```
+
+from:
+
+```text
+Health Assessment
+```
+
+This makes the process feel much shorter.
+
+---
+
+# 26. Patient Dashboard
+
+Main design:
+
+```text
+Hello, Rahul
+
+How can we help today?
+
+┌─────────────────────────────┐
+│ Tell us what you're feeling │
+│                             │
+│ [ Speak ]                   │
+│                             │
+│ [ Start Health Check ]      │
+└─────────────────────────────┘
+
+Upcoming Appointment
+─────────────────────
+
+Dr. Sharma
+General Medicine
+Today • 10:30 AM
+
+[ View Appointment ]
+
+Recent Records
+─────────────────────
+
+Lab Report
+Prescription
+Discharge Summary
+```
+
+---
+
+# 27. Primary Patient Dashboard CTA
+
+The most prominent action should be:
+
+**Tell us about your current problem**
+
+because that begins the product's central workflow.
+
+---
+
+# 28. Clinical Intake Interface
+
+This is the most important patient UI.
+
+The screen should feel like a calm conversation, not a hospital form.
+
+```text
+How are you feeling today?
+
+You can speak naturally.
+
+        [ Microphone ]
+
+or choose an option:
+
+[ Fever ]
+[ Pain ]
+[ Cough ]
+[ Headache ]
+[ Other ]
+
+                         1 of 8
+──────────────────────────────
+```
+
+---
+
+# 29. Voice Interaction Design
+
+Large microphone button:
+
+```text
+      ◉
+   Speak now
+```
+
+When listening:
+
+```text
+      ◉
+   Listening...
+```
+
+Animated:
+
+```text
+small waveform
+```
+
+After speech:
+
+```text
+I heard:
+
+"I have had stomach pain for three days."
+
+[ Correct ]
+[ Continue ]
+```
+
+This prevents silent transcription errors.
+
+---
+
+# 30. Touch Interaction
+
+Question:
+
+> Where are you experiencing pain?
+
+Display:
+
+```text
+           HEAD
+            ○
+
+    LEFT ARM     RIGHT ARM
+        \           /
+          CHEST
+           │
+        ABDOMEN
+           │
+          LEG
+```
+
+The patient can tap.
+
+---
+
+# 31. Question Progress
+
+Show progress without making the patient feel trapped.
+
+Use:
+
+```text
+Symptoms
+●───────○──────○
+```
+
+or:
+
+```text
+Part 2 of your health check
+```
+
+Do not show:
+
+```text
+Question 17 of 47
+```
+
+which is motivationally equivalent to discovering the exam has another three pages.
+
+---
+
+# 32. Question Transition
+
+When answering:
+
+```text
+Question A
+   ↓
+small fade/slide
+   ↓
+Question B
+```
+
+The answer should remain visible briefly so users understand their input was accepted.
+
+---
+
+# 33. AI Thinking State
+
+Use a subtle glass card:
+
+```text
+Quantum Care is thinking...
+
+soft animated gradient
+```
+
+Avoid implying human-like consciousness.
+
+---
+
+# 34. Clinical Report UI
+
+After intake:
+
+```text
+Your Health Summary
+
+Main Concern
+Chest pain × 2 days
+
+Symptoms
+• Pressure
+• Breathlessness
+• Worse on walking
+
+Medical History
+Diabetes
+Hypertension
+
+Medications
+Metformin
+```
+
+Buttons:
+
+```text
+[ Edit ]
+[ Looks Correct ]
+```
+
+---
+
+# 35. AI Transparency
+
+Always show:
+
+```text
+AI-generated summary
+Based on the information you provided.
+```
+
+Never display:
+
+```text
+Diagnosis:
+Heart Attack
+```
+
+unless this information came from an actual physician/document source.
+
+---
+
+# 36. Document Upload UI
+
+Minimal design:
+
+```text
+Add a medical document
+
+Drop your file here
+
+          OR
+
+[ Upload Document ]
+
+Supported:
+PDF, JPG, PNG
+
+Examples:
+Prescription
+Blood report
+Discharge summary
+Scan
+```
+
+---
+
+# 37. Camera/Photo Upload
+
+For mobile:
+
+```text
+[ Take Photo ]
+[ Choose File ]
+```
+
+The camera option should use the browser camera API.
+
+---
+
+# 38. Upload Progress
+
+```text
+Prescription.jpg
+
+Uploading...
+██████████████░░ 78%
+
+Processing document...
+```
+
+Then:
+
+```text
+✓ Document added
+✓ Information extracted
+```
+
+---
+
+# 39. OCR Review UI
+
+Display two panes on desktop:
+
+```text
+Original Document       Extracted Information
+──────────────────      ─────────────────────
+
+[ Report Image ]        Diagnosis
+                        Diabetes
+
+                        HbA1c
+                        7.8%
+
+                        Medicine
+                        Metformin
+```
+
+On mobile:
+
+```text
+Original
+   ↓
+Extracted Information
+```
+
+---
+
+# 40. Medical Timeline UI
+
+Design as a vertical timeline.
+
+```text
+2026
+ │
+ ● Sep 2026
+ │  Lab Report
+ │  HbA1c: 7.8%
+ │
+ ● Aug 2026
+ │  Prescription
+ │
+ ● Jun 2026
+    Hospital Visit
+```
+
+Timeline cards use soft glass surfaces.
+
+---
+
+# 41. Appointment Experience
+
+The appointment workflow should be a simple stepper:
+
+```text
+Hospital
+   ↓
+Department
+   ↓
+Doctor
+   ↓
+Time
+   ↓
+Confirm
+```
+
+Progress:
+
+```text
+1 Hospital → 2 Department → 3 Doctor → 4 Time → 5 Confirm
+```
+
+---
+
+# 42. Hospital Recommendation UI
+
+Hospital cards:
+
+```text
+┌───────────────────────────────┐
+│ XYZ Hospital                  │
+│                               │
+│ General Medicine              │
+│ 2.4 km                        │
+│ Earliest: 10:30 AM            │
+│                               │
+│ [ View ] [ Select ]           │
+└───────────────────────────────┘
+```
+
+Use a map beside the cards on desktop.
+
+On mobile:
+
+```text
+Hospital cards
+      ↓
+Map
+```
+
+---
+
+# 43. Appointment Confirmation
+
+Use a clean confirmation screen:
+
+```text
+Appointment Confirmed
+
+Dr. Sharma
+General Medicine
+
+20 September
+10:30 AM
+
+XYZ Hospital
+
+       [ QR ]
+
+Appointment ID
+MED-10452
+
+[ Add to Calendar ]
+[ View Appointment ]
+```
+
+The QR should be visually prominent.
+
+---
+
+# 44. Doctor Dashboard
+
+Doctor interface must be significantly denser than the patient UI.
+
+```text
+┌─────────────────────────────────────────────────┐
+│ Quantum Care                    Dr. Sharma       │
+├─────────────┬───────────────────────────────────┤
+│ Queue       │ Patient Overview                  │
+│             │                                   │
+│ A124 Rahul  │ Rahul Sharma                      │
+│ A125 Anita  │ 54 • Male                         │
+│ A126 Mohan  │                                   │
+│             │ [Priority Alert]                  │
+│             │                                   │
+│             │ Clinical Summary                  │
+│             │ HPI ...                           │
+└─────────────┴───────────────────────────────────┘
+```
+
+---
+
+# 45. Doctor Visual Hierarchy
+
+The doctor should immediately see:
+
+1. Identity
+2. Priority/red flags
+3. Current complaint
+4. AI summary
+5. Allergies/medications
+6. Relevant history
+7. Timeline
+8. Documents
+9. Consultation controls
+
+---
+
+# 46. Doctor Patient Card
+
+```text
+Rahul Sharma
+54 • Male
+
+Chest pain × 2 days
+
+[ Priority ]
+
+Diabetes
+Hypertension
+
+10:30 AM
+```
+
+Use red only for actual priority indicators.
+
+Do not make the entire dashboard red because apparently everything in healthcare is not an emergency.
+
+---
+
+# 47. Red-Flag UI
+
+Priority alert:
+
+```text
+┌────────────────────────────────────┐
+│ ! PRIORITY                         │
+│                                    │
+│ Chest pain + breathlessness        │
+│                                    │
+│ Patient requires triage attention  │
+└────────────────────────────────────┘
+```
+
+Animation:
+
+* subtle pulse,
+* one-time appearance animation.
+
+Do not continuously flash red.
+
+---
+
+# 48. Doctor Clinical Report
+
+Use grouped cards:
+
+```text
+Chief Complaint
+────────────────────
+Chest pain × 2 days
+
+History of Present Illness
+──────────────────────────
+...
+
+Past History
+──────────────────────────
+Diabetes
+Hypertension
+
+Medications
+──────────────────────────
+Metformin
+
+Allergies
+──────────────────────────
+Penicillin
+```
+
+---
+
+# 49. Doctor Document Viewer
+
+Desktop:
+
+```text
+┌─────────────────────┬───────────────────────┐
+│ Original Document   │ Extracted Information │
+│                     │                       │
+│    REPORT IMAGE     │ HbA1c: 7.8%           │
+│                     │ Metformin 500 mg       │
+│                     │                       │
+└─────────────────────┴───────────────────────┘
+```
+
+Add:
+
+```text
+Zoom
+Rotate
+Download
+View source
+```
+
+---
+
+# 50. Doctor Verification
+
+For every AI-generated item:
+
+```text
+AI-generated
+
+[ Edit ]
+[ Confirm ]
+```
+
+When confirmed:
+
+```text
+✓ Doctor verified
+```
+
+Visual distinction:
+
+```text
+AI-generated → Purple badge
+Document source → Blue badge
+Doctor verified → Green badge
+Patient reported → Pink badge
+```
+
+---
+
+# 51. Patient Data Provenance UI
+
+When hovering/clicking a fact:
+
+```text
+HbA1c: 7.8%
+
+Source:
+Uploaded lab report
+
+Status:
+Doctor verified
+```
+
+This makes AI provenance transparent.
+
+---
+
+# 52. Admin Dashboard
+
+Admin design should use:
+
+* tables,
+* filters,
+* KPIs,
+* simple charts,
+* status badges.
+
+Avoid huge decorative hero sections.
+
+Example:
+
+```text
+Patients Today      Appointments      Check-ins
+     426                 392              351
+```
+
+---
+
+# 53. Empty States
+
+Empty state example:
+
+```text
+No medical reports yet
+
+Upload your first report to start
+building your medical timeline.
+
+[ Upload Report ]
+```
+
+Never show a blank page.
+
+---
+
+# 54. Error States
+
+Friendly:
+
+```text
+We couldn't process this document.
+
+The original file is safe.
+
+[ Try Again ]
+[ View Document ]
+```
+
+Avoid:
+
+```text
+ERROR 500
+```
+
+as the only message.
+
+---
+
+# 55. Network Failure
+
+If connection is lost:
+
+```text
+You're offline.
+
+Your current information hasn't been lost.
+
+[ Retry ]
+```
+
+Do not pretend the submission succeeded.
+
+---
+
+# 56. AI Failure
+
+If AI unavailable:
+
+```text
+AI assistance is temporarily unavailable.
+
+You can continue manually.
+
+[ Continue Manually ]
+```
+
+This is critical.
+
+---
+
+# 57. Form Validation
+
+Inline validation.
+
+Example:
+
+```text
+Phone Number
+[ 98765_____ ]
+
+Please enter a valid phone number.
+```
+
+Do not wait until form submission to show every error.
+
+---
+
+# 58. Accessibility
+
+Patient-facing UI must support:
+
+* keyboard navigation,
+* large buttons,
+* high contrast,
+* readable font sizes,
+* visible focus states,
+* screen reader labels,
+* audio support,
+* reduced motion preference,
+* voice alternative,
+* touch alternative.
+
+Respect:
+
+```text
+prefers-reduced-motion
+```
+
+When enabled:
+
+```text
+Disable:
+- background animation
+- decorative motion
+- long transitions
+```
+
+---
+
+# 59. Mobile UX
+
+Patient web application should work like a mobile app.
+
+Bottom navigation:
+
+```text
+Home
+Appointments
+Records
+Profile
+```
+
+The main intake CTA can remain a floating/central action.
+
+---
+
+# 60. Desktop Patient UX
+
+Desktop:
+
+```text
+Left Sidebar
+        |
+        +-- Dashboard
+        +-- Health History
+        +-- Documents
+        +-- Timeline
+        +-- Appointments
+        +-- Sharing
+        +-- Profile
+```
+
+---
+
+# 61. Doctor Mobile UX
+
+Doctor dashboard does not need to optimize for phones initially.
+
+Minimum support:
+
+```text
+Desktop
+Tablet
+```
+
+---
+
+# 62. Glassmorphism Rules
+
+Glass effects require:
+
+* sufficient contrast,
+* solid fallback,
+* no reliance on blur alone,
+* readable content over backgrounds.
+
+If `backdrop-filter` is unavailable:
+
+```text
+glass → solid surface
+```
+
+No functional information should disappear.
+
+---
+
+# 63. Blur Morphism Rules
+
+Blur should be used primarily for:
+
+* background decoration,
+* modal overlays,
+* floating panels,
+* hero sections.
+
+Never blur:
+
+* important patient information,
+* medication details,
+* diagnosis,
+* red flags.
+
+---
+
+# 64. Background Design
+
+Use subtle blurred gradient blobs.
+
+Light:
+
+```text
+pink blob
++
+blue blob
++
+orange blob
+```
+
+Dark:
+
+```text
+purple blob
++
+violet blob
++
+dark grey
+```
+
+Opacity:
+
+```text
+0.08–0.20
+```
+
+The background must not reduce text contrast.
+
+---
+
+# 65. AI Visual Language
+
+AI-generated areas use subtle purple/lavender accents.
+
+Example:
+
+```text
+AI Summary
+┌───────────────────────────┐
+│ ✦ AI-assisted summary     │
+│                           │
+│ ...                       │
+└───────────────────────────┘
+```
+
+AI should visually communicate **assistance**, not authority.
+
+---
+
+# 66. Success States
+
+Use subtle celebration only where appropriate.
+
+Example:
+
+```text
+✓ Appointment confirmed
+```
+
+Avoid confetti after medical document upload. We are not rewarding someone for discovering their HbA1c.
+
+---
+
+# 67. Microinteractions
+
+Use:
+
+* button press scale
+* hover elevation
+* icon rotation
+* progress transitions
+* checkmark animation
+* upload progress
+* input focus glow
+* tab transitions
+
+Keep them under approximately 300ms for normal controls.
+
+---
+
+# 68. Hover Effects
+
+Use Hover.dev-style interactions sparingly.
+
+Suitable:
+
+* hospital cards
+* doctor cards
+* feature cards
+* dashboard KPI cards
+
+Not suitable:
+
+* clinical fields
+* red flags
+* medication tables
+* text-heavy medical history
+
+---
+
+# 69. Component Library
+
+Build reusable:
+
+```text
+QCButton
+QCInput
+QCSelect
+QCCard
+QCGlassCard
+QCModal
+QCToast
+QCBadge
+QCProgress
+QCStepper
+QCVoiceButton
+QCQuestionCard
+QCDocumentCard
+QCTimeline
+QCAppointmentCard
+QCClinicalSection
+QCPatientHeader
+QCStatusBadge
+```
+
+Prefixing components with `QC` makes the design system immediately identifiable in the codebase.
+
+---
+
+# 70. Clinical Components
+
+Special components:
+
+```text
+VoiceRecorder
+VoiceAnswerConfirmation
+SymptomSelector
+BodyMap
+PainScale
+ClinicalQuestion
+ClinicalProgress
+ClinicalSummary
+RedFlagAlert
+MedicalTimeline
+DocumentExtraction
+DoctorVerification
+```
+
+These should be reusable between the future website and kiosk.
+
+---
+
+# 71. Responsive Clinical Question
+
+Desktop:
+
+```text
+┌──────────────────────────────────┐
+│ What are you experiencing?       │
+│                                  │
+│ [ 🎙 Speak ]                    │
+│                                  │
+│ [ Fever ] [ Pain ] [ Cough ]     │
+│ [ Headache ] [ Other ]           │
+└──────────────────────────────────┘
+```
+
+Mobile:
+
+```text
+What are you experiencing?
+
+[ Speak ]
+
+[ Fever ]
+[ Pain ]
+[ Cough ]
+[ Headache ]
+[ Other ]
+```
+
+---
+
+# 72. Voice Button Design
+
+Idle:
+
+```text
+○
+Speak
+```
+
+Listening:
+
+```text
+◉
+Listening...
+```
+
+Processing:
+
+```text
+◌
+Understanding...
+```
+
+Error:
+
+```text
+!
+Couldn't understand
+Try again
+```
+
+---
+
+# 73. Appointment QR Design
+
+QR card:
+
+```text
+┌────────────────────────────┐
+│ Appointment Confirmed ✓    │
+│                            │
+│       [ QR CODE ]          │
+│                            │
+│ MED-10452                  │
+│ 20 Sep • 10:30 AM          │
+└────────────────────────────┘
+```
+
+---
+
+# 74. Navigation
+
+Patient:
+
+```text
+Home
+Health
+Appointments
+Records
+Profile
+```
+
+Doctor:
+
+```text
+Dashboard
+Queue
+Patients
+Alerts
+Consultations
+```
+
+Admin:
+
+```text
+Dashboard
+Users
+Hospitals
+Doctors
+Appointments
+Analytics
+Audit
+```
+
+---
+
+# 75. Dark Mode Behavior
+
+Dark mode should not simply invert the light theme.
+
+Use a dedicated palette.
+
+Light:
+
+```text
+white surfaces
+pink
+orange
+blue
+```
+
+Dark:
+
+```text
+black
+dark grey
+dark purple
+light purple
+```
+
+Cards should use elevation through:
+
+* border,
+* subtle glow,
+* contrast,
+
+rather than strong shadows.
+
+---
+
+# 76. Theme Switching
+
+Use:
+
+```text
+System
+Light
+Dark
+```
+
+Default:
+
+```text
+System preference
+```
+
+Persist choice in local storage.
+
+---
+
+# 77. Design Token Example
+
+```javascript id="f4cn7m"
+export const colors = {
+  light: {
+    background: "#FFF9FB",
+    surface: "#FFFFFF",
+    pink: "#F9DDE8",
+    orange: "#FFE4C7",
+    blue: "#DDEEFF",
+    primaryText: "#25232A",
+    secondaryText: "#706B76"
+  },
+
+  dark: {
+    background: "#0E0D12",
+    surface: "#17151D",
+    purple: "#39264D",
+    lightPurple: "#CBB8F2",
+    primaryText: "#F7F4FA",
+    secondaryText: "#AAA4B4"
+  }
+};
+```
+
+---
+
+# 78. Animation Token Example
+
+```javascript id="lwxtm7"
+export const motion = {
+  fast: "150ms",
+  normal: "250ms",
+  slow: "400ms",
+
+  easing: {
+    standard: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+    smooth: "cubic-bezier(0.16, 1, 0.3, 1)"
+  }
+};
+```
+
+---
+
+# 79. No-Glitch UX Requirement
+
+The application must avoid visible UI instability.
+
+Required behavior:
+
+* preserve form values while requests execute,
+* disable only the relevant action during submission,
+* prevent double-submit,
+* display optimistic updates only where reversible,
+* show skeleton states,
+* avoid layout shifts,
+* preserve scroll position,
+* preserve intake progress,
+* recover from API failures,
+* show clear retry actions.
+
+---
+
+# 80. Prevent Double Actions
+
+Example:
+
+```text
+[ Book Appointment ]
+```
+
+after click:
+
+```text
+[ Booking... ]
+```
+
+The button becomes temporarily disabled.
+
+Backend must also protect against duplicate requests.
+
+---
+
+# 81. Draft Persistence
+
+During clinical intake:
+
+```text
+Question 1
+Question 2
+Question 3
+```
+
+answers should be temporarily preserved.
+
+If the browser refreshes, restore the active session from the backend.
+
+Do not make the patient restart everything because a browser tab sneezed.
+
+---
+
+# 82. Appointment State Persistence
+
+Once booking begins, store progress server-side where necessary.
+
+The browser must not be the only source of truth.
+
+---
+
+# 83. Error Recovery
+
+Every asynchronous operation must provide:
+
+```text
+Loading
+Success
+Error
+Retry
+```
+
+No operation should silently fail.
+
+---
+
+# 84. Accessibility + Animation Conflict
+
+If:
+
+```text
+prefers-reduced-motion: reduce
+```
+
+then:
+
+```text
+No:
+parallax
+large transitions
+continuous pulses
+background movement
+```
+
+Keep:
+
+* instant state changes,
+* simple opacity transitions if acceptable,
+* clear visual feedback.
+
+---
+
+# 85. Performance
+
+Target:
+
+```text
+First meaningful content:
+< 2 seconds on normal broadband
+
+Route transition:
+< 300ms excluding API
+
+Clinical question transition:
+< 250ms
+
+Button interaction feedback:
+< 100ms
+```
+
+AI processing is an external dependency and may take longer.
+
+The UI must distinguish:
+
+```text
+UI waiting
+```
+
+from:
+
+```text
+AI processing
+```
+
+---
+
+# 86. Image Optimization
+
+Uploaded medical files should not be unnecessarily loaded into the dashboard.
+
+Use:
+
+* thumbnails,
+* lazy loading,
+* progressive loading,
+* original document on demand.
+
+Doctor dashboard should initially load metadata and thumbnails.
+
+---
+
+# 87. Dashboard Performance
+
+Do not load:
+
+```text
+all patients
++
+all documents
++
+all medical history
+```
+
+at startup.
+
+Use:
+
+```text
+pagination
+lazy loading
+query caching
+on-demand document fetching
+```
+
+---
+
+# 88. Patient Privacy in UI
+
+Do not display sensitive information:
+
+* in URL query parameters,
+* in browser titles,
+* in notifications visible on lock screens,
+* in public QR payloads.
+
+---
+
+# 89. QR Privacy
+
+The QR must contain only an opaque identifier/token.
+
+If scanned by another person:
+
+```text
+No medical information should be exposed.
+```
+
+---
+
+# 90. Confirmation Dialogs
+
+Use confirmation dialogs for:
+
+* deleting documents,
+* cancelling appointments,
+* revoking sharing,
+* rejecting AI report,
+* deleting profile data.
+
+Do not use confirmation dialogs for:
+
+* navigating backward,
+* selecting options,
+* harmless UI actions.
+
+---
+
+# 91. Delete / Undo
+
+For reversible actions:
+
+```text
+Document removed
+
+[ Undo ]
+```
+
+For permanent deletion:
+
+```text
+Delete permanently?
+
+This action cannot be undone.
+
+[ Cancel ] [ Delete ]
+```
+
+---
+
+# 92. Onboarding
+
+After registration:
+
+```text
+Welcome to Quantum Care
+
+We'll help you:
+✓ Build your health profile
+✓ Tell us what you're feeling
+✓ Organize your reports
+✓ Book healthcare appointments
+
+[ Start ]
+```
+
+Keep onboarding to one or two screens.
+
+---
+
+# 93. Profile Completion
+
+Use:
+
+```text
+Health Profile
+72% complete
+```
+
+But do not block urgent appointment workflows because the profile isn't 100% complete.
+
+Allow:
+
+```text
+Complete later
+```
+
+---
+
+# 94. Medical History UX
+
+Show sections:
+
+```text
+Conditions
+Surgeries
+Medications
+Allergies
+Family History
+Personal History
+```
+
+Each section:
+
+```text
+[ + Add ]
+```
+
+---
+
+# 95. Medication UI
+
+```text
+Metformin
+500 mg
+Twice daily
+
+Source:
+Previous prescription
+
+[ View Document ]
+```
+
+Avoid presenting extracted medication as currently active unless the source supports that.
+
+---
+
+# 96. Allergies UI
+
+Allergies should be highly visible.
+
+```text
+ALLERGIES
+
+Penicillin
+Reaction: Rash
+```
+
+Use a red/pink highlight but not an alarm animation.
+
+---
+
+# 97. Doctor Timeline UX
+
+The doctor can filter:
+
+```text
+All
+Consultations
+Labs
+Prescriptions
+Imaging
+Hospitalizations
+```
+
+---
+
+# 98. Document Viewer UX
+
+Controls:
+
+```text
+Zoom In
+Zoom Out
+Rotate
+Fit
+Download
+```
+
+Extracted text panel:
+
+```text
+Entity
+Value
+Confidence
+Source
+```
+
+---
+
+# 99. Clinical Summary Editing UX
+
+Use inline editing.
+
+Example:
+
+```text
+Chief Complaint
+
+Chest pain × 2 days
+
+[ Edit ]
+```
+
+Click:
+
+```text
+[ textarea ]
+[ Save ]
+[ Cancel ]
+```
+
+Do not force the doctor to navigate away to edit one sentence.
+
+---
+
+# 100. Admin Analytics UX
+
+Use minimal charts:
+
+* patient volume,
+* appointment volume,
+* check-ins,
+* no-shows,
+* documents processed.
+
+Prefer useful charts over decorative dashboards.
+
+---
+
+# 101. Color Semantics
+
+The application must use consistent semantics.
+
+```text
+Blue      = primary/information
+Purple    = AI
+Green     = confirmed/success
+Orange    = warning
+Red       = urgent/critical
+Grey      = neutral
+Pink      = patient/health accent
+```
+
+Do not change semantic colors between pages.
+
+---
+
+# 102. Component States
+
+Every interactive component should define:
+
+```text
+Default
+Hover
+Focus
+Pressed
+Disabled
+Loading
+Error
+Success
+```
+
+Required especially for:
+
+* buttons,
+* inputs,
+* cards,
+* upload controls,
+* voice controls.
+
+---
+
+# 103. Focus States
+
+Never remove focus outlines without replacing them with an equally visible custom state.
+
+Example:
+
+```text
+focus-visible:
+2px soft blue/purple outline
+```
+
+---
+
+# 104. Form Error Design
+
+Errors should appear:
+
+* close to the field,
+* in readable text,
+* with icon where useful,
+* with accessible `aria-describedby`.
+
+Avoid using only red borders.
+
+---
+
+# 105. Patient-Friendly Language
+
+Use:
+
+```text
+"What are you suffering from?"
+```
+
+rather than:
+
+```text
+"Enter presenting complaint."
+```
+
+Use:
+
+```text
+"Do you take any medicines regularly?"
+```
+
+rather than:
+
+```text
+"Current pharmacotherapy."
+```
+
+---
+
+# 106. Doctor-Facing Language
+
+Doctor dashboard can use medical terminology:
+
+```text
+Chief Complaint
+HPI
+PMH
+PSH
+Drug History
+Allergies
+ROS
+```
+
+The doctor is the clinical professional.
+
+The patient is not expected to be.
+
+---
+
+# 107. Admin Language
+
+Admin UI uses operational terms:
+
+```text
+Appointments
+Capacity
+Utilization
+Check-ins
+Users
+Departments
+```
+
+---
+
+# 108. Design for Future Kiosk
+
+Every patient web component that may later become a kiosk component should avoid dependencies on:
+
+* hover,
+* keyboard shortcuts,
+* tiny controls,
+* precise mouse pointers.
+
+Use:
+
+```text
+large touch targets
+clear spacing
+voice alternatives
+```
+
+This allows reuse.
+
+---
+
+# 109. Kiosk Future Design Direction
+
+Later kiosk interface:
+
+```text
+Dark/light theme
+Large typography
+Large cards
+Huge voice button
+Large touch targets
+Minimal navigation
+Audio instructions
+```
+
+But the kiosk design should be created as a separate document once the web application is stable.
+
+---
+
+# 110. UI Component Rule
+
+Before adding a new component, check:
+
+```text
+Does an existing QC component already do this?
+```
+
+If yes:
+
+**reuse it.**
+
+Avoid:
+
+```text
+ButtonA
+ButtonB
+ButtonPrimary2
+NewFancyButton
+FinalButton
+FinalButtonNew
+```
+
+That is how design systems become archaeological sites.
+
+---
+
+# 111. UX Quality Checklist
+
+Every major screen must pass:
+
+### Clarity
+
+Can a first-time user understand the page within 3 seconds?
+
+### Action
+
+Is the primary action obvious?
+
+### Accessibility
+
+Can the patient use it without relying entirely on vision or typing?
+
+### Feedback
+
+Does every action produce visible feedback?
+
+### Recovery
+
+Can the user recover from failure?
+
+### Responsiveness
+
+Does it work on mobile and desktop?
+
+### Motion
+
+Does animation improve understanding rather than distract?
+
+---
+
+# 112. Final Visual Identity
+
+Quantum Care should feel:
+
+```text
+Modern
+Calm
+Trustworthy
+Minimal
+Human-centered
+AI-assisted
+Medical
+Accessible
+Premium
+```
+
+It should avoid feeling:
+
+```text
+Corporate
+Overly clinical
+Cold
+Crowded
+Over-animated
+Cyberpunk
+Gaming-like
+Government-portal-like
+```
+
+---
+
+# 113. Final Design Formula
+
+The overall visual formula is:
+
+```text
+Quantum Care
+=
+Minimalism
++
+Soft Material Design
++
+Controlled Glassmorphism
++
+Blurred gradients
++
+Accessible healthcare UX
++
+Subtle AI motion
++
+Strong information hierarchy
+```
+
+Light theme:
+
+```text
+White
++
+Light Pink
++
+Light Orange
++
+Light Blue
++
+Occasional Lavender
+```
+
+Dark theme:
+
+```text
+Black
++
+Dark Grey
++
+Dark Purple
++
+Light Purple
++
+Occasional Blue/Violet
+```
+
+---
+
+# 114. Final User Experience
+
+The patient experience should feel like:
+
+```text
+Open Quantum Care
+       ↓
+Create Profile
+       ↓
+Tell us what you're feeling
+       ↓
+Speak or tap
+       ↓
+AI asks only relevant questions
+       ↓
+Review your health summary
+       ↓
+Upload medical records
+       ↓
+Find hospital
+       ↓
+Book appointment
+       ↓
+Receive QR
+       ↓
+Arrive at hospital
+       ↓
+Check in later through kiosk
+       ↓
+Doctor receives structured history
+```
+
+The UI should make this journey feel like **one continuous experience**, rather than a collection of unrelated forms.
+
+The visual layer is there to reduce cognitive load, not to win a CSS competition. The original problem specifically requires the system to remain usable for elderly, low-literacy and varied-language users, so the aesthetic system must always remain subordinate to comprehension and accessibility.
