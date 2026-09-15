@@ -1,0 +1,2023 @@
+# MediKiosk – Product Requirements Document
+
+## 1. Product Overview
+
+**Product Name:** 
+**Product Type:** AI-powered digital health profile, patient intake, appointment, medical-record digitization, and doctor-assistance platform.
+
+MediKiosk is designed to reduce the amount of time doctors spend collecting repetitive patient history and searching through fragmented medical documents. The platform allows a patient to create and maintain a persistent digital health profile, describe their current health problem using voice or touchscreen interaction, upload or scan previous medical documents, book appointments, check in at a hospital kiosk, and generate a structured digital clinical report for the doctor.
+
+The platform combines:
+
+* Patient web application
+* Hospital self-service kiosk
+* Doctor web dashboard
+* Hospital/admin dashboard
+* AI conversational history engine
+* Voice and multilingual audio interaction
+* Touch and visual input
+* Medical document OCR and extraction
+* Medical timeline
+* Appointment management
+* Hospital/department recommendation
+* QR-based appointment check-in
+* Red-flag detection
+* Clinical summary generation
+* Consent and access management
+* Patient-controlled medical information sharing
+* Hospital/HIS integration
+* Future ABDM/FHIR integration
+
+The supplied problem statement identifies the core need as a patient-facing system that captures structured clinical history and digitizes prior documents before the consultation, then provides a physician-ready summary.
+
+---
+
+# 2. Problem Statement
+
+Indian hospital OPDs often operate under severe time constraints. Doctors are expected to collect a detailed history, review previous medical records, examine the patient, diagnose, counsel, and prescribe within a very short consultation window. This creates incomplete histories, repeated questioning, missed information, and inefficient use of physician time.
+
+Patients also carry fragmented physical medical records such as prescriptions, laboratory reports, discharge summaries, and imaging reports. These documents can be handwritten, printed, multilingual, chronologically disordered, and difficult to review quickly.
+
+Existing registration systems generally capture demographic and appointment information but do not capture deep clinical history or intelligently process medical documents. Generic scanners digitize documents without turning them into structured clinical information.
+
+MediKiosk addresses this first-mile problem by moving much of the information-gathering process before the physician consultation.
+
+---
+
+# 3. Product Vision
+
+Create a portable and patient-controlled digital health profile that follows the patient's medical journey across participating healthcare providers.
+
+The long-term product concept is:
+
+> **Create your health profile once, continuously build your medical history, and securely provide relevant information to an authorized doctor whenever you need healthcare.**
+
+The patient may begin their healthcare journey:
+
+* from home through the website,
+* from a mobile browser,
+* directly from a hospital kiosk,
+* or through hospital staff.
+
+The doctor receives a structured, verified representation of the patient's relevant history instead of beginning every consultation with a blank page.
+
+---
+
+# 4. Product Goals
+
+## Primary goals
+
+1. Reduce repetitive history-taking time for doctors.
+2. Improve completeness and structure of patient history.
+3. Digitize and organize fragmented physical medical documents.
+4. Provide patients with a persistent digital medical history.
+5. Enable appointment creation from home or hospital.
+6. Allow patients to check in digitally at the hospital.
+7. Provide doctors with a physician-ready digital clinical report.
+8. Detect specified clinical red flags and alert appropriate staff.
+9. Support low-literacy, elderly, multilingual, and voice-first users.
+10. Maintain physician control over AI-generated information.
+11. Enable consent-based sharing of relevant records with authorized providers.
+
+The original specification explicitly emphasizes accessibility, adaptive history-taking, document intelligence, clinical summarization, red-flag detection, privacy, and hospital/ABDM integration.
+
+---
+
+# 5. Non-Goals
+
+MediKiosk is not intended to:
+
+* replace doctors,
+* independently diagnose patients,
+* autonomously prescribe medication,
+* make final clinical decisions,
+* guarantee that an AI interpretation is medically correct,
+* expose a patient's complete medical history to every hospital automatically,
+* replace emergency medical services,
+* become only a generic appointment-booking application.
+
+AI-generated clinical information must remain a support layer that can be reviewed, corrected, accepted, or rejected by an authorized physician. The source explicitly specifies this physician-controlled model.
+
+---
+
+# 6. User Types
+
+## 6.1 Patient
+
+The primary end user.
+
+The patient can:
+
+* create an account,
+* log in,
+* create/manage their health profile,
+* provide their current complaint,
+* answer AI-generated questions,
+* speak or tap answers,
+* change language,
+* listen to audio prompts,
+* upload medical records,
+* scan physical documents,
+* view their medical history,
+* view their medical timeline,
+* request/book appointments,
+* receive hospital/department suggestions,
+* receive an appointment QR,
+* check in at the kiosk,
+* update information,
+* grant/revoke information-sharing consent.
+
+---
+
+## 6.2 Doctor
+
+The doctor can:
+
+* log in,
+* view their patient queue,
+* see checked-in patients,
+* receive priority/red-flag alerts,
+* open patient profiles,
+* read current complaints,
+* review AI-generated history,
+* review previous medical history,
+* inspect extracted documents,
+* view original uploaded documents,
+* view chronological timelines,
+* edit AI-generated information,
+* confirm or reject generated summaries,
+* add consultation notes,
+* add diagnosis,
+* add prescriptions,
+* update the patient's medical record.
+
+---
+
+## 6.3 Hospital Staff
+
+Hospital staff can:
+
+* register patients,
+* help patients with kiosk usage,
+* manage appointment queues,
+* see priority alerts,
+* manage check-in,
+* assist with identity verification,
+* manage patient routing,
+* manage kiosks.
+
+---
+
+## 6.4 Hospital Administrator
+
+The administrator can:
+
+* create doctors/staff accounts,
+* manage departments,
+* manage hospital configuration,
+* manage kiosk devices,
+* view operational analytics,
+* manage appointment configuration,
+* manage user roles and permissions.
+
+---
+
+# 7. Platform Architecture
+
+```text
+                         MEDIKIOSK
+                             |
+          +------------------+------------------+
+          |                  |                  |
+          v                  v                  v
+      PATIENT WEB         KIOSK            DOCTOR WEB
+          |                  |                  |
+          +------------------+------------------+
+                             |
+                             v
+                       BACKEND / API
+                             |
+       +----------+----------+----------+----------+
+       |          |                     |          |
+       v          v                     v          v
+ Authentication  Patient DB       AI Services   Appointment
+                                   / OCR
+       |          |                     |
+       +----------+----------+----------+
+                             |
+                             v
+                     Clinical Data Layer
+                             |
+              +--------------+--------------+
+              |              |              |
+              v              v              v
+          Documents      Timeline      Clinical Summary
+                             |
+                             v
+                       Doctor Dashboard
+                             |
+                             v
+                       HIS / EMR / ABDM
+```
+
+---
+
+# 8. Patient Website
+
+The patient website is the patient's remote access point to MediKiosk.
+
+It is primarily used **before arriving at the hospital**.
+
+## 8.1 Landing Page
+
+The landing page provides:
+
+* Login
+* Create profile
+* Language selection
+* Accessibility controls
+* Audio assistance
+
+---
+
+# 9. Patient Registration
+
+The patient can create their profile from home.
+
+Supported concepts:
+
+* ABHA-linked identity where available
+* Mobile-based verification
+* Hospital ID where available
+* New patient registration
+
+For an MVP, mobile OTP/hospital ID can be implemented while the system is architected for ABHA integration.
+
+### Registration data
+
+* Full name
+* Date of birth
+* Gender
+* Mobile number
+* Preferred language
+* Optional identity linkage
+
+Patient identity and medical information must be separated logically from individual visit sessions.
+
+---
+
+# 10. Patient Login
+
+The patient can log in using the supported identity mechanism.
+
+After successful authentication:
+
+```text
+Patient
+     |
+     v
+Health Dashboard
+```
+
+The patient dashboard displays:
+
+* Current health profile
+* Upcoming appointments
+* Recent visits
+* Documents
+* Medical timeline
+* Current medicines
+* Allergies
+* Previous reports
+* Consent/sharing controls
+
+---
+
+# 11. Current Health Problem Intake
+
+Immediately after login, the system asks:
+
+> **“What problem are you currently experiencing?”**
+
+This is the beginning of the pre-consultation clinical intake.
+
+The patient can:
+
+### Option A: Speak
+
+The patient naturally describes the issue.
+
+Example:
+
+> “Mujhe teen din se pet mein dard hai.”
+
+The speech system converts the patient's response into structured information.
+
+### Option B: Select from options
+
+The system presents large visual choices:
+
+* Fever
+* Pain
+* Cough
+* Headache
+* Stomach pain
+* Chest pain
+* Weakness
+* Injury
+* Follow-up
+* Other
+
+### Option C: Combined voice and touch
+
+The patient can switch between voice and touch at any point.
+
+The original problem requires both natural spoken interaction and guided touchscreen interaction.
+
+---
+
+# 12. Adaptive AI Questioning
+
+After identifying the chief complaint, the system asks relevant follow-up questions.
+
+Example:
+
+```text
+Chief Complaint:
+Chest Pain
+
+AI asks:
+- When did it start?
+- Where is it located?
+- How severe is it?
+- What does it feel like?
+- Does it radiate?
+- What makes it worse?
+- What makes it better?
+- Is there breathlessness?
+- Is there dizziness?
+- Is there sweating?
+```
+
+Questions branch based on patient responses.
+
+The system should not ask every question to every patient.
+
+The source specifically requires adaptive questioning based on the patient's chief complaint.
+
+---
+
+# 13. Clinical History Categories
+
+The AI intake should structure information into:
+
+* Chief complaint
+* History of present illness
+* Past medical history
+* Past surgical history
+* Medication history
+* Drug allergies
+* Family history
+* Personal history
+* Review of systems
+* Previous investigations
+
+The source specifically defines this structured history model.
+
+---
+
+# 14. Voice System
+
+The voice subsystem includes:
+
+## Speech Recognition
+
+Converts patient speech into text/structured information.
+
+## Language Support
+
+Supports Hindi, English, Hinglish, and additional regional languages depending on the deployed language models.
+
+## Text-to-Speech
+
+Reads questions and instructions aloud.
+
+## Accent Handling
+
+Designed for different Indian accents and speech patterns.
+
+## Error Recovery
+
+If the system is uncertain:
+
+```text
+“I heard: chest pain.
+Is that correct?”
+
+[ Yes ]
+[ No ]
+```
+
+The source explicitly identifies multilingual and multi-accent voice capture as a challenge the solution must overcome.
+
+---
+
+# 15. Touch and Visual Interaction
+
+Every relevant question should provide a visual alternative.
+
+Examples:
+
+### Pain location
+
+* Body diagram
+* Tap body area
+
+### Pain severity
+
+* 0–10 slider
+
+### Symptoms
+
+* Icon-based selections
+
+### Duration
+
+* Today
+* 1–3 days
+* 1 week
+* Longer
+* Unknown
+
+This provides an accessible alternative to speech.
+
+---
+
+# 16. Accessibility
+
+The system should support:
+
+* Large text
+* High contrast mode
+* Large controls
+* Audio instructions
+* Simple vocabulary
+* Icon-based interaction
+* Multilingual UI
+* Voice interaction
+* Touch interaction
+* Audio confirmation
+
+The source explicitly identifies these accessibility requirements.
+
+---
+
+# 17. Initial Digital Clinical Report
+
+After the first interview, the system generates an initial report.
+
+Example:
+
+```text
+CURRENT COMPLAINT
+Chest pain for 2 days
+
+SYMPTOMS
+Pressure
+Radiates to left arm
+Worse on walking
+Breathlessness
+
+PAST HISTORY
+Diabetes
+Hypertension
+
+MEDICATIONS
+Metformin
+
+ALLERGY
+Penicillin
+```
+
+This is a structured report of patient-provided information, not a diagnosis.
+
+---
+
+# 18. Hospital and Department Recommendation
+
+Based on the current complaint and configured hospital services, the application may recommend:
+
+* appropriate department,
+* relevant speciality,
+* available hospitals,
+* available appointment slots.
+
+Example:
+
+```text
+Suggested Department:
+General Medicine
+
+Hospitals:
+
+Hospital A
+2.4 km
+10:30 AM
+
+Hospital B
+4.1 km
+11:00 AM
+```
+
+This feature is an application extension, not explicitly specified as a requirement in the original document.
+
+The system must clearly distinguish:
+
+**“Recommended department”**
+
+from:
+
+**“Medical diagnosis.”**
+
+---
+
+# 19. Appointment Booking
+
+The patient can:
+
+* select hospital,
+* select department,
+* select doctor,
+* select date,
+* select available time slot,
+* choose appointment type,
+* pay when required.
+
+Appointment status:
+
+```text
+REQUESTED
+     |
+     v
+CONFIRMED
+     |
+     v
+CHECKED IN
+     |
+     v
+IN CONSULTATION
+     |
+     v
+COMPLETED
+```
+
+Other possible states:
+
+* Cancelled
+* Rescheduled
+* No-show
+
+---
+
+# 20. Payment
+
+For participating paid hospitals:
+
+```text
+Select slot
+   |
+   v
+Payment gateway
+   |
+   v
+Backend verifies payment
+   |
+   v
+Appointment confirmed
+```
+
+The payment gateway must never be trusted solely because the frontend reports success. Payment confirmation should be validated by the backend/provider mechanism.
+
+The platform should also support:
+
+* Free appointments
+* Government/public hospital appointments
+* Token-based visits
+
+---
+
+# 21. Appointment QR
+
+After booking, the system generates a unique appointment QR.
+
+Example:
+
+```text
+Appointment ID: MED-10452
+
+Hospital:
+XYZ Hospital
+
+Department:
+General Medicine
+
+Doctor:
+Dr. Sharma
+
+Date:
+20 Sep 2026
+Time:
+10:30 AM
+
+[ QR CODE ]
+```
+
+The QR identifies the appointment but should not be treated as the only identity factor.
+
+---
+
+# 22. Patient Medical Record Upload
+
+The patient can upload:
+
+* Prescription photographs
+* PDFs
+* Lab reports
+* Discharge summaries
+* Imaging reports
+* Medical scans/photos
+* Other clinical documents
+
+The original problem specifically calls for digitization of prescriptions, laboratory reports and discharge summaries.
+
+---
+
+# 23. Document OCR
+
+Processing pipeline:
+
+```text
+Document
+   |
+   v
+Image/PDF processing
+   |
+   v
+OCR
+   |
+   v
+Raw text
+   |
+   v
+Clinical entity extraction
+   |
+   v
+Structured data
+```
+
+The system should support printed and handwritten medical documents where technically feasible.
+
+---
+
+# 24. Medical Information Extraction
+
+The document engine extracts:
+
+* Diagnoses
+* Medicines
+* Dosage
+* Frequency
+* Lab results
+* Units
+* Reference ranges
+* Procedures
+* Surgery history
+* Dates
+* Hospital/doctor information when available
+
+The original specification explicitly requires these extraction capabilities.
+
+---
+
+# 25. Original Document Preservation
+
+For every extracted document, the system stores:
+
+```text
+Original document
++
+OCR text
++
+Structured extraction
++
+Source/date
++
+Verification status
+```
+
+The original image/PDF must remain accessible to an authorized doctor.
+
+This allows doctors to verify AI/OCR output.
+
+---
+
+# 26. Medical Timeline
+
+Every relevant medical event is organized chronologically.
+
+Example:
+
+```text
+2025
+ |
+ +-- Prescription
+ |
+ +-- Blood test
+ |
+ +-- Hospital admission
+ |
+ +-- Discharge summary
+
+2026
+ |
+ +-- Lab report
+ |
+ +-- Current appointment
+```
+
+The original problem specifically requires chronological organization.
+
+---
+
+# 27. Patient Health Profile
+
+The patient's permanent profile contains:
+
+## Personal Profile
+
+* Name
+* Date of birth
+* Gender
+* Contact
+* Preferred language
+* Identity references
+
+## Medical History
+
+* Conditions
+* Allergies
+* Surgeries
+* Medicines
+* Family history
+* Personal history
+
+## Documents
+
+* Prescriptions
+* Lab reports
+* Imaging
+* Discharge summaries
+* Other uploaded records
+
+## Visits
+
+Every consultation becomes a separate visit.
+
+---
+
+# 28. Patient and Visit Separation
+
+A patient is persistent.
+
+A visit is an event.
+
+Example:
+
+```text
+PATIENT: Rahul Sharma
+
+VISIT 1
+Hospital A
+2025
+
+VISIT 2
+Hospital B
+2026
+
+VISIT 3
+Hospital C
+2026
+```
+
+This allows the system to preserve a longitudinal history.
+
+---
+
+# 29. Hospital Kiosk
+
+The kiosk is the hospital-side patient interface.
+
+The kiosk must not assume that every user already has an appointment.
+
+It must support:
+
+1. Existing patient login
+2. New patient registration
+3. Appointment check-in
+4. Direct appointment booking
+5. Health-history update
+6. Medical-document scanning
+7. Clinical intake
+8. Red-flag detection
+9. Doctor routing
+
+---
+
+# 30. Kiosk Home Screen
+
+Example:
+
+```text
+Welcome to MediKiosk
+
+[ Scan / Enter Patient ID ]
+
+OR
+
+[ New Patient ]
+
+[ Scan Appointment QR ]
+
+Language:
+Hindi | English | Other
+
+[ Audio Help ]
+```
+
+---
+
+# 31. Existing Patient at Kiosk
+
+The patient enters or scans their identity.
+
+The system retrieves the profile.
+
+```text
+Rahul Sharma
+
+What would you like to do?
+
+[ Book Appointment ]
+[ Check In ]
+[ Update Health Information ]
+[ Scan Medical Report ]
+[ View Health Record ]
+```
+
+---
+
+# 32. New Patient at Kiosk
+
+New patients can register directly.
+
+The kiosk collects the minimum required data and verifies identity through the supported mechanism.
+
+Then:
+
+```text
+Profile Created
+      |
+      v
+Book appointment / continue
+      |
+      v
+Clinical intake
+```
+
+The problem statement explicitly includes new-patient registration in the journey.
+
+---
+
+# 33. Direct Appointment Booking at Kiosk
+
+If the patient has no appointment:
+
+```text
+Enter / identify patient
+        |
+        v
+"What are you visiting for?"
+        |
+        v
+Voice or touch
+        |
+        v
+Recommended department
+        |
+        v
+Available doctor/slot
+        |
+        v
+Payment if required
+        |
+        v
+Appointment created
+```
+
+This makes the kiosk useful for walk-ins.
+
+---
+
+# 34. Kiosk Appointment Check-In
+
+If the patient already has an appointment:
+
+```text
+Scan QR
+   |
+   v
+Verify appointment
+   |
+   v
+Verify identity
+   |
+   v
+Confirm patient
+   |
+   v
+CHECKED IN
+```
+
+The system records:
+
+* Appointment ID
+* Patient
+* Hospital
+* Department
+* Check-in time
+* Kiosk ID
+
+---
+
+# 35. Kiosk Clinical Update
+
+The kiosk should not repeat the complete home interview unnecessarily.
+
+It asks:
+
+> “Has anything changed since you completed your health report?”
+
+Options:
+
+```text
+[ No, Continue ]
+
+[ Yes, Update ]
+```
+
+If something changed, the adaptive AI asks additional questions.
+
+---
+
+# 36. Kiosk Document Scanning
+
+The patient can scan paper reports.
+
+The kiosk should:
+
+1. Capture image
+2. Detect document boundaries
+3. Improve image quality
+4. OCR document
+5. Extract clinical entities
+6. Save original image
+7. Add structured information
+8. Add event to timeline
+
+---
+
+# 37. Red-Flag Detection
+
+The system checks current responses for predefined safety signals.
+
+Example:
+
+```text
+Chest pain
++
+Breathlessness
++
+Sweating
+```
+
+Result:
+
+```text
+PRIORITY ALERT
+
+Patient: Rahul Sharma
+Token: A124
+
+Triage staff notified.
+```
+
+The source explicitly requires this behavior.
+
+The system should alert and route, not diagnose or prescribe.
+
+---
+
+# 38. Final Digital Clinical Report
+
+At the end of intake:
+
+```text
+Patient-reported history
+        +
+Previous medical history
+        +
+New documents
+        +
+OCR extraction
+        +
+Current visit information
+        +
+Red-flag status
+        |
+        v
+DIGITAL CLINICAL REPORT
+```
+
+This report is presented to the doctor.
+
+---
+
+# 39. Doctor Web Dashboard
+
+The doctor accesses a dedicated web application.
+
+Main sections:
+
+* Dashboard
+* Patient queue
+* Priority alerts
+* Patients
+* Patient profiles
+* Clinical history
+* Documents
+* Medical timeline
+* AI summaries
+* Consultation
+* Prescriptions
+* Settings
+
+---
+
+# 40. Doctor Dashboard
+
+Example:
+
+```text
+Today's OPD
+
+Total Patients: 42
+Checked In: 28
+Ready: 21
+Priority Alerts: 3
+
+Queue
+
+A124 Rahul     READY
+A125 Anita     READY
+A126 Mohan     PRIORITY
+A127 Priya     INTAKE
+```
+
+---
+
+# 41. Doctor Patient View
+
+The doctor sees:
+
+## Patient Header
+
+* Name
+* Age
+* Gender
+* Appointment
+* Department
+* Check-in time
+
+## Current Complaint
+
+The latest problem reported by the patient.
+
+## Clinical History
+
+* HPI
+* Past history
+* Surgical history
+* Medication history
+* Allergies
+* Family history
+* Personal history
+* ROS
+
+## Previous Medical History
+
+Relevant long-term information.
+
+## Documents
+
+Original and structured medical records.
+
+## Timeline
+
+Chronological record.
+
+## AI Summary
+
+A concise physician-ready report.
+
+---
+
+# 42. Clinical Summary Generator
+
+The AI synthesizes:
+
+```text
+Current interview
++
+Previous patient record
++
+Uploaded documents
++
+Extracted entities
++
+Timeline
+```
+
+into:
+
+```text
+Chief Complaint
+HPI
+Past Medical/Surgical History
+Drug/Allergy History
+Family History
+Personal History
+ROS
+Prior Investigations
+```
+
+This structure is explicitly specified in the source.
+
+---
+
+# 43. Physician Verification
+
+Every AI-generated report includes:
+
+```text
+AI-generated draft
+
+[ Edit ]
+[ Accept ]
+[ Reject ]
+```
+
+The doctor can:
+
+* modify content,
+* remove incorrect information,
+* add information,
+* verify extracted data.
+
+The system records the verification state.
+
+---
+
+# 44. Information Provenance
+
+The system should distinguish:
+
+```text
+Patient reported
+Document extracted
+AI structured
+Doctor verified
+```
+
+For example:
+
+```text
+HbA1c: 7.8%
+
+Source:
+Uploaded laboratory report
+
+OCR:
+7.8%
+
+Doctor verification:
+Confirmed
+```
+
+This prevents AI-derived information from becoming indistinguishable from physician-confirmed information.
+
+---
+
+# 45. Doctor Consultation
+
+After reviewing the digital report, the doctor performs the actual consultation.
+
+Workflow:
+
+```text
+Review history
+      |
+      v
+Review documents
+      |
+      v
+Check alerts
+      |
+      v
+Interact with patient
+      |
+      v
+Physical examination
+      |
+      v
+Clinical reasoning
+      |
+      v
+Diagnosis
+      |
+      v
+Treatment / prescription
+```
+
+MediKiosk supports this process. It does not replace it.
+
+---
+
+# 46. Consultation Completion
+
+Doctor records:
+
+* diagnosis,
+* clinical notes,
+* prescription,
+* investigations,
+* follow-up instructions.
+
+The visit is marked:
+
+```text
+COMPLETED
+```
+
+Relevant verified information becomes part of the patient's ongoing record.
+
+---
+
+# 47. Patient Health History Across Hospitals
+
+A major extension of the concept is longitudinal medical portability.
+
+The patient may have:
+
+```text
+Hospital A
+     |
+     v
+Medical records
+     |
+     v
+Patient's persistent health profile
+     |
+     v
+Hospital B
+     |
+     v
+Authorized doctor retrieves relevant records
+```
+
+The system should not automatically expose everything.
+
+Sharing requires appropriate patient consent.
+
+The original source specifically calls for consent-first handling and ABDM integration.
+
+---
+
+# 48. Consent Management
+
+The system maintains consent for:
+
+* collecting history,
+* processing voice data,
+* processing documents,
+* sharing information with the current hospital,
+* sharing relevant information with a doctor,
+* linking records where supported.
+
+Consent must be:
+
+* clear,
+* understandable,
+* revocable where applicable,
+* audibly explainable for low-literacy users.
+
+The source explicitly requires granular consent and audio explanation.
+
+---
+
+# 49. Appointment No-Show Management
+
+Appointment states:
+
+```text
+REQUESTED
+CONFIRMED
+CHECKED IN
+INTAKE IN PROGRESS
+READY FOR DOCTOR
+IN CONSULTATION
+COMPLETED
+```
+
+Alternative states:
+
+```text
+CANCELLED
+RESCHEDULED
+NO-SHOW
+```
+
+If a patient books but does not arrive:
+
+```text
+CONFIRMED
+    |
+    | no kiosk check-in
+    v
+NO-SHOW
+```
+
+This prevents an appointment from being treated as an arrival merely because payment was completed.
+
+---
+
+# 50. Appointment Reminder System
+
+The platform may issue:
+
+* appointment confirmation,
+* reminder,
+* check-in instructions,
+* cancellation/rescheduling notification,
+* missed appointment notification.
+
+Suggested lifecycle:
+
+```text
+After booking
+     ↓
+24-hour reminder
+     ↓
+same-day reminder
+     ↓
+arrival/check-in reminder
+```
+
+---
+
+# 51. Hospital Recommendation Engine
+
+The system may rank participating hospitals using:
+
+* requested department,
+* available slots,
+* hospital capabilities,
+* distance,
+* waiting time,
+* patient preferences,
+* availability.
+
+This is a convenience layer and must not claim to diagnose the patient.
+
+---
+
+# 52. AYUSH Mode
+
+The platform contains a dedicated AYUSH history workflow.
+
+The AYUSH version captures the Dashavidha Pariksha parameters:
+
+* Prakriti
+* Vikriti
+* Sara
+* Samhanana
+* Pramana
+* Satmya
+* Sattva
+* Ahara Shakti
+* Vyayama Shakti
+* Vaya
+
+It also captures Ahara-Vihara information.
+
+This is explicitly required in the source.
+
+---
+
+# 53. Hospital/Admin Dashboard
+
+Hospital administrators can see:
+
+```text
+Today's patients
+Appointments
+Checked-in patients
+No-shows
+Completed consultations
+Priority cases
+Documents processed
+Kiosk activity
+```
+
+Operational analytics can include:
+
+* patients processed,
+* average intake time,
+* appointments,
+* check-ins,
+* no-shows,
+* red flags,
+* documents processed,
+* department volumes.
+
+Any performance statistics displayed in a demo must be clearly labeled as measured or simulated.
+
+---
+
+# 54. Kiosk Management
+
+Admins can register kiosks.
+
+Each kiosk has:
+
+* Kiosk ID
+* Hospital
+* Department
+* Location
+* Status
+* Version
+* Last active time
+
+Example:
+
+```text
+Kiosk #07
+General OPD
+Status: Online
+Last active: 2 minutes ago
+```
+
+---
+
+# 55. Role-Based Access Control
+
+## Patient
+
+Can access only their own health information.
+
+## Doctor
+
+Can access authorized patient information relevant to their workflow.
+
+## Staff
+
+Can access operational and registration functions required for their role.
+
+## Admin
+
+Can manage users, configuration and operational functions.
+
+The system must prevent unrestricted cross-role access.
+
+---
+
+# 56. Notifications
+
+Patient notifications:
+
+* appointment confirmation,
+* appointment reminders,
+* consent request,
+* document processing status,
+* appointment cancellation,
+* no-show,
+* report availability.
+
+Doctor notifications:
+
+* patient checked in,
+* new patient ready,
+* red-flag alert,
+* document uploaded,
+* patient summary ready.
+
+Staff notifications:
+
+* priority case,
+* kiosk issue,
+* queue changes.
+
+---
+
+# 57. Security Requirements
+
+Sensitive health information must be protected.
+
+The platform should include:
+
+* encrypted communication,
+* secure authentication,
+* role-based authorization,
+* secure document storage,
+* audit logs,
+* session management,
+* consent tracking,
+* controlled record sharing,
+* secure deletion of temporary session data where applicable.
+
+The source specifically requires privacy, consent and security under the Digital Personal Data Protection Act framework and ABDM consent model.
+
+---
+
+# 58. Session Security
+
+A kiosk session should be isolated.
+
+At the end:
+
+```text
+Patient leaves
+     |
+     v
+Session terminates
+     |
+     v
+Temporary kiosk state cleared
+     |
+     v
+Next patient sees clean screen
+```
+
+The source explicitly calls for session termination and clearing temporary session data.
+
+---
+
+# 59. AI Safety Requirements
+
+The AI must:
+
+* never fabricate a patient's history,
+* never invent a medication,
+* never silently convert uncertainty into certainty,
+* distinguish patient-reported information from AI interpretation,
+* preserve document provenance,
+* surface uncertain OCR results,
+* use escalation for defined red flags,
+* avoid presenting a diagnosis as fact,
+* require physician verification before final clinical record acceptance.
+
+---
+
+# 60. AI Document Confidence
+
+Where extraction is uncertain:
+
+```text
+Medicine:
+Metformin 500 mg
+
+Confidence:
+94%
+```
+
+For low-confidence extraction:
+
+```text
+Possible medicine:
+"Metfornin"
+
+Confidence:
+61%
+
+[ Review Original Document ]
+```
+
+The doctor should be able to verify the original.
+
+---
+
+# 61. Patient Data Sharing
+
+A patient should have a section such as:
+
+```text
+My Data Sharing
+
+Current Hospital
+✓ Shared
+
+Doctor A
+✓ Shared
+
+Hospital B
+Not Shared
+
+[ Manage Access ]
+```
+
+The patient can grant/revoke access according to supported consent mechanisms.
+
+---
+
+# 62. Complete Patient Journey
+
+### At home
+
+```text
+Login
+ ↓
+Describe problem
+ ↓
+AI questions
+ ↓
+Initial digital report
+ ↓
+Upload old medical documents
+ ↓
+Medical timeline updated
+ ↓
+Hospital suggestions
+ ↓
+Appointment booking
+ ↓
+Payment if required
+ ↓
+Appointment confirmation
+ ↓
+QR generated
+```
+
+### At hospital
+
+```text
+Arrive
+ ↓
+Scan QR
+ ↓
+Identity verification
+ ↓
+Check-in
+ ↓
+Update symptoms
+ ↓
+Scan new paper records
+ ↓
+OCR + extraction
+ ↓
+Red-flag screening
+ ↓
+Final digital report
+ ↓
+Doctor queue
+```
+
+### Doctor
+
+```text
+Open patient
+ ↓
+Read digital report
+ ↓
+View medical timeline
+ ↓
+Review original documents
+ ↓
+Check red flags
+ ↓
+Edit/verify AI information
+ ↓
+Consult patient
+ ↓
+Diagnose
+ ↓
+Treat
+ ↓
+Save consultation
+```
+
+### After consultation
+
+```text
+New diagnosis
+New prescription
+New documents
+New visit
+      |
+      v
+Patient health record updated
+```
+
+---
+
+# 63. Complete System Workflow
+
+```text
+                         HOME
+                          |
+                  +-------+-------+
+                  |               |
+             CREATE PROFILE     LOGIN
+                  |               |
+                  +-------+-------+
+                          |
+                          v
+                  CURRENT COMPLAINT
+                          |
+                +---------+---------+
+                |                   |
+              VOICE               TOUCH
+                |                   |
+                +---------+---------+
+                          |
+                          v
+                 ADAPTIVE AI QUESTIONS
+                          |
+                          v
+               INITIAL CLINICAL REPORT
+                          |
+                          v
+                 UPLOAD OLD DOCUMENTS
+                          |
+                          v
+                       OCR/AI
+                          |
+                          v
+                  MEDICAL TIMELINE
+                          |
+                          v
+                HOSPITAL SUGGESTIONS
+                          |
+                          v
+                     APPOINTMENT
+                          |
+                    +-----+-----+
+                    |           |
+                PAYMENT       FREE
+                    |           |
+                    +-----+-----+
+                          |
+                          v
+                  CONFIRMED + QR
+                          |
+                          v
+                       HOSPITAL
+                          |
+                          v
+                   SCAN QR AT KIOSK
+                          |
+                          v
+                  VERIFY IDENTITY
+                          |
+                          v
+                      CHECK-IN
+                          |
+                          v
+                   UPDATE SYMPTOMS
+                          |
+                          v
+                 SCAN PHYSICAL REPORTS
+                          |
+                          v
+                   OCR + EXTRACTION
+                          |
+                          v
+                   RED-FLAG CHECK
+                          |
+                          v
+                FINAL CLINICAL REPORT
+                          |
+                          v
+                   DOCTOR DASHBOARD
+                          |
+           +--------------+--------------+
+           |              |              |
+        HISTORY       DOCUMENTS       TIMELINE
+           |              |              |
+           +--------------+--------------+
+                          |
+                          v
+                    AI SUMMARY
+                          |
+                          v
+                  DOCTOR VERIFICATION
+                          |
+                          v
+                     CONSULTATION
+                          |
+                          v
+                 DIAGNOSIS / TREATMENT
+                          |
+                          v
+                 UPDATED HEALTH RECORD
+```
+
+---
+
+# 64. Core Product Modules
+
+The final application should contain these major modules:
+
+### Patient Platform
+
+1. Registration
+2. Login
+3. Health Profile
+4. Current Complaint Intake
+5. AI Conversation
+6. Voice Input
+7. Touch Input
+8. Multilingual Audio
+9. Medical History
+10. Document Upload
+11. Medical Timeline
+12. Appointment Booking
+13. Hospital Recommendation
+14. Payment
+15. Appointment QR
+16. Consent Management
+17. Data Sharing
+18. Notifications
+
+### Kiosk
+
+1. Patient identification
+2. New registration
+3. Appointment check-in
+4. Direct appointment booking
+5. Voice interaction
+6. Touch interaction
+7. Multilingual audio
+8. Clinical interview
+9. Document scanning
+10. OCR
+11. Red-flag detection
+12. Health record retrieval
+13. Health-history update
+14. Digital report generation
+
+### Doctor Platform
+
+1. Login
+2. Patient queue
+3. Priority alerts
+4. Patient profile
+5. Digital clinical report
+6. AI summary
+7. Medical history
+8. Medical timeline
+9. Document viewer
+10. Original document viewer
+11. AI verification
+12. Consultation notes
+13. Diagnosis
+14. Prescription
+15. Follow-up
+
+### Admin Platform
+
+1. User management
+2. Doctor management
+3. Staff management
+4. Patient registration
+5. Department management
+6. Hospital configuration
+7. Kiosk management
+8. Appointment configuration
+9. Operational analytics
+10. Audit logs
+
+---
+
+# 65. MVP Priorities
+
+For implementation, the project should not attempt to build every production feature simultaneously.
+
+## Phase 1: Core demonstration
+
+Build:
+
+* Patient registration/login
+* Patient health profile
+* Voice + text/touch symptom intake
+* AI adaptive questioning
+* Digital clinical report
+* Document upload
+* OCR
+* Medical timeline
+* Appointment booking
+* QR generation
+* Kiosk QR check-in
+* Doctor dashboard
+* Doctor summary
+* Doctor verification
+
+## Phase 2
+
+Add:
+
+* Hospital recommendation
+* Payment gateway
+* Multilingual voice
+* Red-flag detection
+* Staff dashboard
+* Notifications
+* Consent management
+
+## Phase 3
+
+Add:
+
+* Advanced ABDM/FHIR integration
+* More regional languages
+* Advanced handwritten document extraction
+* HIS/EMR integration
+* Advanced analytics
+* Cross-hospital interoperability
+
+---
+
+# 66. Core Success Criteria
+
+The project should demonstrate that:
+
+1. A patient can create a persistent profile.
+2. A patient can describe their current problem by speaking or tapping.
+3. The AI can ask complaint-relevant follow-up questions.
+4. A structured digital clinical report is produced.
+5. A patient can upload/scan a medical document.
+6. OCR extracts relevant medical information.
+7. Information is added to a chronological medical timeline.
+8. A patient can book an appointment.
+9. A patient receives an appointment QR.
+10. The kiosk can identify the patient and confirm arrival.
+11. The patient can update information at the kiosk.
+12. Red-flag cases can be highlighted.
+13. A doctor can view the patient's structured history.
+14. A doctor can view original documents.
+15. A doctor can verify/edit the AI summary.
+16. The doctor remains responsible for diagnosis and treatment.
+17. Patient data is protected by authentication and consent controls.
+
+---
+
+# 67. Final Product Definition
+
+MediKiosk should ultimately be understood as:
+
+> **A patient-centric AI healthcare platform that creates a persistent digital health profile, collects current symptoms through voice and touch, intelligently asks follow-up questions, digitizes medical documents, builds a chronological medical history, helps patients find and book appropriate healthcare appointments, enables QR-based hospital check-in, and prepares a physician-ready clinical report for authorized doctors before consultation.**
+
+The most important outcome is not that the system has “AI.”
+
+The outcome is:
+
+```text
+Patient information
+        ↓
+Collected before consultation
+        ↓
+Structured automatically
+        ↓
+Previous records organized
+        ↓
+Current complaint understood
+        ↓
+Relevant information surfaced
+        ↓
+Doctor receives prepared history
+        ↓
+Doctor verifies it
+        ↓
+Doctor spends more consultation time
+on examination, reasoning and treatment
+```
+
+That is the product's real value. The original problem statement's intended journey already follows the same fundamental sequence: identify and consent, converse, scan records, summarize and route, then allow physician review and consultation.
