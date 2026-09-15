@@ -1,597 +1,516 @@
 ## Technical Requirements Document (TRD)
 
-**Document Type:** Technical Requirements Document
 **Project Name:** Quantum Care
-**Current Development Phase:** Web Application Prototype
-**Future Phase:** Hospital Kiosk Application + Interoperability
-**Primary Architecture:** MERN-style REST architecture
+**Document Type:** Technical Requirements Document
+**Current Phase:** Web Application + Kiosk Interface Prototype
 **Frontend:** React.js + JavaScript + Vite
 **Backend:** Node.js + Express.js
 **Database:** MongoDB
 **AI:** External AI APIs
-**Local Storage:** Local filesystem during prototype
+**OCR:** Tesseract.js
+**Storage:** Local filesystem
+**Authentication:** Aadhaar Number + OTP + Password/PIN
 **Payment Gateway:** Deferred
-**OTP Authentication:** Deferred
 **Cloud Storage:** Deferred
-**Kiosk:** Deferred until web application is complete
+**Kiosk:** Same React application in Kiosk Mode
+**Primary Architecture:** React + Node.js + Express + MongoDB REST architecture
 
 ---
 
 # 1. Purpose
 
-This Technical Requirements Document defines the complete technical architecture, technology choices, development conventions, APIs, data models, security approach, external services, project structure, workflows, and implementation rules for the **Quantum Care** web application.
+This document defines the technical implementation requirements for the Quantum Care platform.
 
-The purpose of this document is to remove technical ambiguity for the development/coding agent.
-
-The coding agent must treat this document as the **technical baseline** and should not independently replace the chosen technologies or introduce unnecessary alternatives.
-
-The original problem statement requires a patient-facing system that can capture structured medical history, digitize existing medical documents, create a physician-ready summary, support multilingual/accessible interaction, detect red flags, and eventually integrate with hospital systems and ABDM.
-
----
-
-# 2. Current Technical Scope
-
-The first implementation is **WEB ONLY**.
-
-The web application will contain:
+The current implementation consists of:
 
 ```text
 Quantum Care
 │
-├── Patient Web Application
-├── Doctor Web Dashboard
-└── Admin Web Dashboard
+├── Patient Website
+└── Hospital Kiosk Interface
 ```
 
-The system must be architected so a future kiosk can use the same backend without requiring a new database or duplicated business logic.
+The kiosk is **not a separate frontend project**.
 
-Future architecture:
-
-```text
-Patient Web
-Doctor Web
-Admin Web
-Hospital Kiosk
-      │
-      ▼
-Quantum Care API
-      │
-      ▼
-MongoDB + Services
-```
-
----
-
-# 3. Explicit Technical Decisions
-
-The following decisions are fixed for the current prototype.
-
-## Use
-
-* JavaScript
-* React.js
-* Vite
-* Node.js
-* Express.js
-* MongoDB
-* Mongoose
-* Tailwind CSS
-* shadcn/ui
-* React Router
-* TanStack Query
-* Zustand
-* React Hook Form
-* Zod
-* OpenAI API
-* Tesseract.js
-* QR code library
-* OpenStreetMap
-* Leaflet
-* JWT/session-based authentication
-* Local filesystem storage
-* Git/GitHub
-* Postman or Bruno
-* Vitest
-* React Testing Library
-* Supertest
-* Playwright
-* ESLint
-* Prettier
-
-## Explicitly NOT used in the first prototype
-
-* TypeScript
-* PostgreSQL
-* Firebase
-* Supabase
-* Next.js
-* Prisma
-* GraphQL
-* Redux
-* Local LLMs
-* Ollama
-* Local Whisper
-* Local Piper
-* Cloud document storage
-* OTP authentication
-* Payment gateway
-* ABHA production authentication
-* ABDM production APIs
-* Kiosk application
-
-The reason for the local AI exclusion is practical: running AI models locally would add significant hardware and setup requirements without benefiting the first prototype.
-
----
-
-# 4. Technology Stack
-
-## 4.1 Frontend
-
-### React.js
-
-Used for:
-
-* Patient interface
-* Doctor dashboard
-* Admin dashboard
-* Clinical intake screens
-* Appointment screens
-* Medical record viewer
-* Document viewer
-
----
-
-## 4.2 Build Tool
-
-### Vite
-
-Responsibilities:
-
-* Development server
-* React bundling
-* Production builds
-* Environment configuration
-* Hot module replacement
-
----
-
-## 4.3 Programming Language
-
-### JavaScript
-
-JavaScript must be used across:
+The same React application will contain:
 
 ```text
-Frontend
+PATIENT MODE
 +
-Backend
-+
-Service layer
-+
-API integration
+KIOSK MODE
 ```
 
-The project will not use TypeScript during the current prototype phase.
+The backend remains common to both.
+
+The system must be designed so that future features such as doctor dashboards, payment gateways, cloud storage, ABDM integration, and physical kiosk hardware can be added without changing the core architecture.
 
 ---
 
-# 5. Frontend Libraries
+# 2. Updated Product Architecture
 
-## 5.1 React Router
+The product now has two primary interfaces.
 
-Responsible for navigation.
+## Patient Website
 
-Patient routes:
+Used by the patient from:
+
+* home,
+* phone,
+* laptop,
+* tablet.
+
+The patient can:
+
+* register,
+* authenticate,
+* create their health profile,
+* describe their current problem,
+* answer AI questions,
+* upload medical records,
+* view their health history,
+* book appointments,
+* receive appointment information,
+* manage their profile.
+
+## Kiosk Interface
+
+The kiosk uses the **same React application** but opens in a dedicated Kiosk Mode.
 
 ```text
-/patient
-/patient/dashboard
-/patient/profile
-/patient/intake
-/patient/documents
-/patient/timeline
-/patient/appointments
-/patient/consent
-/patient/sharing
+Same Application
+       |
+       +----------------------+
+       |                      |
+       ▼                      ▼
+ PATIENT MODE            KIOSK MODE
+       |                      |
+ Website                    Hospital
+       |                   Kiosk Screen
+       +----------+-----------+
+                  |
+                  ▼
+             Same Backend
+                  |
+                  ▼
+               MongoDB
 ```
 
-Doctor routes:
+There is no separate kiosk database.
+
+---
+
+# 3. Technology Decisions
+
+## Required
 
 ```text
-/doctor
-/doctor/dashboard
-/doctor/queue
-/doctor/patients/:id
-/doctor/patients/:id/history
-/doctor/patients/:id/documents
-/doctor/patients/:id/timeline
-/doctor/visits/:id
-```
+Frontend:
+React.js
+JavaScript
+Vite
 
-Admin routes:
+UI:
+Tailwind CSS
+shadcn/ui
+Lucide React
+React Router
+TanStack Query
+Zustand
+React Hook Form
+Zod
 
-```text
-/admin
-/admin/dashboard
-/admin/users
-/admin/doctors
-/admin/hospitals
-/admin/departments
-/admin/analytics
-```
+Backend:
+Node.js
+Express.js
 
----
-
-# 6. UI Stack
-
-## Tailwind CSS
-
-Used for:
-
-* layout
-* responsive design
-* spacing
-* colors
-* typography
-* accessibility states
-
-## shadcn/ui
-
-Used for reusable components:
-
-* Button
-* Input
-* Select
-* Dialog
-* Modal
-* Dropdown
-* Tabs
-* Table
-* Card
-* Alert
-* Toast
-* Form
-* Progress
-* Sheet
-
-## Lucide React
-
-Used for icons.
-
-The interface should avoid using decorative graphics where a clear icon communicates the action better.
-
----
-
-# 7. Frontend State Management
-
-## TanStack Query
-
-Used for **server state**:
-
-* patient data
-* appointments
-* clinical reports
-* documents
-* doctors
-* hospitals
-* timeline
-* dashboard data
-
-## Zustand
-
-Used only for **client/UI state**:
-
-* selected language
-* accessibility settings
-* temporary intake UI state
-* microphone state
-* UI preferences
-* modal state
-
-The medical database must never be duplicated unnecessarily into global frontend state.
-
----
-
-# 8. Form Handling
-
-Use:
-
-**React Hook Form**
-
-with:
-
-**Zod**
-
-for:
-
-* login
-* registration
-* patient profile
-* appointments
-* clinical confirmation
-* consent
-* doctor edits
-* admin forms
-
-Client validation is for user experience.
-
-The backend must independently validate every request.
-
----
-
-# 9. Backend
-
-## Node.js
-
-Node.js is the server runtime.
-
-## Express.js
-
-Express provides:
-
-* REST API
-* routing
-* middleware
-* authentication
-* authorization
-* request validation
-* error handling
-
----
-
-# 10. Backend Architecture
-
-Use layered architecture:
-
-```text
-Request
-  │
-  ▼
-Route
-  │
-  ▼
-Controller
-  │
-  ▼
-Service
-  │
-  ▼
-Repository
-  │
-  ▼
-Mongoose
-  │
-  ▼
+Database:
 MongoDB
-```
+Mongoose
 
-External services use provider adapters:
+AI:
+OpenAI API
 
-```text
-Service
-   │
-   ▼
-Provider Interface
-   │
-   ├── OpenAI
-   ├── Tesseract
-   ├── Local Storage
-   ├── OpenStreetMap
-   └── Future providers
-```
+Speech:
+OpenAI Speech API
+OpenAI TTS
 
-The business logic must not directly depend on a particular vendor.
+OCR:
+Tesseract.js
 
----
+Storage:
+Local filesystem
 
-# 11. Backend Folder Structure
+Authentication:
+Aadhaar Number
+OTP
+Password/PIN
 
-```text
-server/
-│
-├── src/
-│   │
-│   ├── config/
-│   │
-│   ├── controllers/
-│   │
-│   ├── middleware/
-│   │
-│   ├── models/
-│   │
-│   ├── repositories/
-│   │
-│   ├── routes/
-│   │
-│   ├── schemas/
-│   │
-│   ├── services/
-│   │   ├── auth/
-│   │   ├── patients/
-│   │   ├── clinical/
-│   │   ├── documents/
-│   │   ├── appointments/
-│   │   ├── doctors/
-│   │   ├── hospitals/
-│   │   ├── consent/
-│   │   ├── timeline/
-│   │   ├── notifications/
-│   │   └── ai/
-│   │
-│   ├── providers/
-│   │   ├── ai/
-│   │   ├── speech/
-│   │   ├── ocr/
-│   │   ├── storage/
-│   │   └── maps/
-│   │
-│   ├── utils/
-│   ├── jobs/
-│   ├── types/
-│   │
-│   ├── app.js
-│   └── server.js
-│
-├── storage/
-│   ├── documents/
-│   ├── profile-images/
-│   └── temporary/
-│
-└── tests/
+Maps:
+OpenStreetMap
+Leaflet
+
+QR:
+qrcode
+
+Testing:
+Vitest
+React Testing Library
+Supertest
+Playwright
 ```
 
 ---
 
-# 12. Frontend Folder Structure
+# 4. Explicitly Deferred
+
+The following are not implemented in the current prototype:
 
 ```text
-client/
-│
-├── src/
-│   │
-│   ├── assets/
-│   │
-│   ├── components/
-│   │   ├── ui/
-│   │   ├── layout/
-│   │   ├── forms/
-│   │   ├── clinical/
-│   │   ├── documents/
-│   │   ├── appointments/
-│   │   └── accessibility/
-│   │
-│   ├── features/
-│   │   ├── auth/
-│   │   ├── patient/
-│   │   ├── clinical-intake/
-│   │   ├── documents/
-│   │   ├── appointments/
-│   │   ├── timeline/
-│   │   ├── consent/
-│   │   ├── doctor/
-│   │   └── admin/
-│   │
-│   ├── pages/
-│   │   ├── public/
-│   │   ├── patient/
-│   │   ├── doctor/
-│   │   └── admin/
-│   │
-│   ├── hooks/
-│   ├── services/
-│   ├── lib/
-│   ├── store/
-│   ├── i18n/
-│   ├── utils/
-│   ├── schemas/
-│   ├── App.jsx
-│   └── main.jsx
-│
-└── tests/
+Payment Gateway
+Cloud Storage
+ABDM Production Integration
+HIS/EMR Integration
+Physical Kiosk Hardware
+Biometric Aadhaar Authentication
+Doctor Mobile Application
+Production SMS Infrastructure
+Production Hospital Interoperability
 ```
+
+The architecture must remain ready for these later.
 
 ---
 
-# 13. Database
+# 5. Important Aadhaar Authentication Constraint
+
+The application UI will use the **Aadhaar number as the patient's identity identifier** and an OTP-based verification flow.
+
+However, the prototype must not pretend that it can independently verify Aadhaar ownership merely by sending an arbitrary SMS OTP.
+
+Actual Aadhaar authentication/e-KYC requires an authorized UIDAI ecosystem/provider.
+
+Therefore:
+
+### Prototype
 
 Use:
 
-**MongoDB**
-
-For the prototype:
-
 ```text
-Local MongoDB
+Aadhaar Number
+        ↓
+Registered Mobile Number
+        ↓
+OTP
+        ↓
+Verification
+        ↓
+Create/Login Patient
 ```
 
-No cloud database is required.
+The OTP provider may be a development/mock service during the prototype.
 
-Default local connection:
+### Production
 
-```text
-mongodb://127.0.0.1:27017/quantumcare
-```
+The authentication layer must be replaced with an authorized Aadhaar/UIDAI-compatible service.
 
-MongoDB will store:
-
-* users
-* patients
-* doctors
-* hospitals
-* departments
-* appointments
-* visits
-* medical history
-* documents metadata
-* OCR results
-* clinical reports
-* symptom sessions
-* timeline events
-* consent
-* data sharing
-* audit logs
+The rest of the application must not depend directly on the Aadhaar provider.
 
 ---
 
-# 14. MongoDB ODM
+# 6. Patient Registration
+
+Registration flow:
+
+```text
+Patient
+   ↓
+Enter Aadhaar Number
+   ↓
+Enter/verify registered mobile number
+   ↓
+Request OTP
+   ↓
+OTP sent
+   ↓
+Enter OTP
+   ↓
+OTP verified
+   ↓
+Create patient account
+   ↓
+Create password/PIN
+   ↓
+Patient logged in
+```
+
+---
+
+# 7. Registration Screen
+
+The patient sees:
+
+```text
+Create your Quantum Care Profile
+
+Aadhaar Number
+[ XXXX XXXX XXXX ]
+
+Mobile Number
+[ XXXXXXXXXX ]
+
+[ Send OTP ]
+
+OTP
+[ ______ ]
+
+[ Verify & Continue ]
+```
+
+After successful verification:
+
+```text
+Create Login PIN/Password
+
+PIN / Password
+[ __________ ]
+
+Confirm
+[ __________ ]
+
+[ Complete Registration ]
+```
+
+---
+
+# 8. Patient Login
+
+Login uses:
+
+```text
+Aadhaar Number
++
+PIN / Password
+```
+
+Interface:
+
+```text
+Welcome Back
+
+Aadhaar Number
+[ XXXX XXXX XXXX ]
+
+PIN / Password
+[ ******** ]
+
+[ Login ]
+```
+
+Optional future:
+
+```text
+[ Login using OTP ]
+```
+
+but this is not required in the current implementation unless enabled later.
+
+---
+
+# 9. Authentication Architecture
+
+Do not couple the patient authentication logic directly to Aadhaar.
 
 Use:
 
-**Mongoose**
+```text
+Auth Service
+    |
+    +-- AadhaarIdentityProvider
+    |
+    +-- OTPProvider
+    |
+    +-- PasswordService
+```
 
-Mongoose handles:
+The prototype may use:
 
-* schemas
-* indexes
-* validation
-* models
-* queries
-* references
-* middleware
+```text
+MockAadhaarProvider
+MockOTPProvider
+```
+
+or an authorized OTP service where available.
+
+Future:
+
+```text
+Authorized Aadhaar Provider
+```
+
+can replace the mock implementation.
 
 ---
 
-# 15. Database Collections
-
-Required collections:
+# 10. Authentication API
 
 ```text
-users
-patients
-doctors
-hospitals
-departments
-appointments
-visits
-clinical_sessions
-clinical_answers
-clinical_reports
-documents
-document_extractions
-medical_events
-medications
-allergies
-consents
-data_shares
-notifications
-audit_logs
+POST /api/v1/auth/register/request-otp
+POST /api/v1/auth/register/verify-otp
+POST /api/v1/auth/register/complete
+
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+
+GET  /api/v1/auth/me
+
+POST /api/v1/auth/password/change
+POST /api/v1/auth/password/reset
 ```
 
 ---
 
-# 16. User Model
+# 11. Registration OTP Flow
+
+```text
+POST /auth/register/request-otp
+        |
+        ▼
+Validate Aadhaar format
+        |
+        ▼
+Validate mobile number
+        |
+        ▼
+Create temporary registration session
+        |
+        ▼
+Generate OTP
+        |
+        ▼
+Send OTP
+        |
+        ▼
+Patient enters OTP
+        |
+        ▼
+POST /auth/register/verify-otp
+        |
+        ▼
+OTP verified
+        |
+        ▼
+Allow profile creation
+```
+
+Temporary OTP data must not be permanently stored in the patient record.
+
+---
+
+# 12. OTP Development Mode
+
+Because this is a prototype, development mode may use:
+
+```text
+DEV_OTP_MODE=true
+```
+
+In development:
+
+```text
+OTP generated
+    ↓
+shown in terminal/server logs
+```
+
+Example:
+
+```text
+[DEV OTP] Aadhaar registration OTP: 582741
+```
+
+This must never be enabled in production.
+
+---
+
+# 13. Password/PIN Security
+
+The user-selected PIN/password must be hashed.
+
+Use:
+
+**Argon2id**
+
+Fallback:
+
+**bcrypt**
+
+Never store:
+
+```text
+Aadhaar + plaintext password
+```
+
+---
+
+# 14. Aadhaar Data Handling
+
+Aadhaar is highly sensitive identity information.
+
+The system should minimize storing the full Aadhaar number.
+
+Recommended model:
+
+```text
+Aadhaar Number
+      ↓
+Verification
+      ↓
+Store masked Aadhaar
++
+secure provider/reference information
+```
+
+Example display:
+
+```text
+XXXX XXXX 4821
+```
+
+The complete Aadhaar value must not appear in:
+
+* UI after verification,
+* logs,
+* QR codes,
+* URLs,
+* analytics,
+* error messages.
+
+For a prototype that requires storing it locally, access must be tightly restricted and the implementation must clearly be treated as prototype-only.
+
+---
+
+# 15. Updated User Model
 
 ```javascript
 {
   _id,
-  role: "PATIENT" | "DOCTOR" | "STAFF" | "ADMIN",
 
-  email,
+  role:
+    "PATIENT" |
+    "KIOSK_ADMIN" |
+    "ADMIN",
+
+  aadhaarReference,
+  maskedAadhaar,
+
   phone,
 
   passwordHash,
 
-  status: "ACTIVE" | "DISABLED" | "SUSPENDED",
+  status:
+    "ACTIVE" |
+    "DISABLED" |
+    "SUSPENDED",
 
   lastLoginAt,
 
@@ -600,11 +519,11 @@ audit_logs
 }
 ```
 
-No OTP fields are necessary in the first prototype.
+If an actual doctor portal is added later, `DOCTOR` can be added without changing the current architecture.
 
 ---
 
-# 17. Patient Model
+# 16. Patient Model
 
 ```javascript
 {
@@ -618,9 +537,15 @@ No OTP fields are necessary in the first prototype.
   lastName,
 
   dateOfBirth,
-  gender,
+
+  gender:
+    "MALE" |
+    "FEMALE" |
+    "OTHER" |
+    "PREFER_NOT_TO_SAY",
 
   phone,
+
   email,
 
   preferredLanguage,
@@ -633,39 +558,7 @@ No OTP fields are necessary in the first prototype.
     country
   },
 
-  createdAt,
-  updatedAt
-}
-```
-
-Future fields such as ABHA identifiers may be added later.
-
----
-
-# 18. Doctor Model
-
-```javascript
-{
-  _id,
-
-  userId,
-
-  employeeCode,
-  registrationNumber,
-
-  firstName,
-  lastName,
-
-  hospitalId,
-  departmentId,
-
-  specialties,
-
-  consultationFee,
-
-  appointmentDurationMinutes,
-
-  status,
+  medicalProfileStatus,
 
   createdAt,
   updatedAt
@@ -674,534 +567,1074 @@ Future fields such as ABHA identifiers may be added later.
 
 ---
 
-# 19. Hospital Model
+# 17. Patient Profile Completion
 
-```javascript
-{
-  _id,
+After authentication, the patient enters:
 
-  name,
+### Personal information
 
-  address: {
-    line1,
-    city,
-    state,
-    postalCode,
-    country
-  },
+```text
+Full Name
+Date of Birth
+Gender
+Phone
+Email
+Address
+Preferred Language
+```
 
-  location: {
-    latitude,
-    longitude
-  },
+### Medical information
 
-  phone,
+```text
+Blood Group
+Existing Conditions
+Allergies
+Current Medicines
+Previous Surgeries
+Family History
+```
 
-  status,
+Medical information should be optional unless required for a specific workflow.
 
-  bookingEnabled,
+---
 
-  createdAt,
-  updatedAt
-}
+# 18. Patient Website Dashboard
+
+After login:
+
+```text
+Quantum Care
+
+Hello, Rahul
+
+How can we help you today?
+
+[ Tell us what you're suffering from ]
+
+[ Book Appointment ]
+
+[ Upload Medical Report ]
+
+[ View Medical History ]
+
+[ View Appointments ]
 ```
 
 ---
 
-# 20. Department Model
+# 19. Current Health Problem Intake
 
-```javascript
-{
-  _id,
+The main clinical workflow begins here.
 
-  hospitalId,
+The system asks:
 
-  name,
+> What problem are you currently experiencing?
 
-  specialty,
+The patient can:
 
-  description,
-
-  isAyush,
-
-  status
-}
+```text
+Speak
+OR
+Type
+OR
+Select options
 ```
 
 ---
 
-# 21. Appointment Model
+# 20. Voice Input
 
-```javascript
-{
-  _id,
+Architecture:
 
-  appointmentCode,
-
-  patientId,
-  hospitalId,
-  departmentId,
-  doctorId,
-
-  appointmentDate,
-
-  slotStart,
-  slotEnd,
-
-  type: "FREE" | "TOKEN",
-
-  status:
-    "REQUESTED"
-    | "CONFIRMED"
-    | "CHECKED_IN"
-    | "IN_INTAKE"
-    | "READY_FOR_DOCTOR"
-    | "IN_CONSULTATION"
-    | "COMPLETED"
-    | "CANCELLED"
-    | "RESCHEDULED"
-    | "NO_SHOW",
-
-  qrTokenHash,
-
-  checkedInAt,
-
-  createdAt,
-  updatedAt
-}
+```text
+Browser microphone
+        ↓
+Audio
+        ↓
+Node.js API
+        ↓
+OpenAI Speech API
+        ↓
+Transcript
+        ↓
+Clinical AI
 ```
 
-Payment fields must **not** be required in the prototype because payment will be integrated later.
+Audio is not permanently stored by default.
 
 ---
 
-# 22. Visit Model
+# 21. Touch/Input Selection
 
-```javascript
-{
-  _id,
+Every appropriate question should provide selectable alternatives.
 
-  visitCode,
+Example:
 
-  patientId,
-  appointmentId,
+```text
+What are you experiencing?
 
-  hospitalId,
-  departmentId,
-  doctorId,
+[ Fever ]
+[ Pain ]
+[ Cough ]
+[ Headache ]
+[ Weakness ]
+[ Other ]
 
-  visitType,
-
-  status,
-
-  currentComplaint,
-
-  clinicalReportId,
-
-  doctorNotes,
-
-  diagnosis: [],
-
-  createdAt,
-  updatedAt
-}
+[ Speak Answer ]
 ```
 
-A patient can have many visits.
+Voice and touch must coexist.
+
+The original problem explicitly requires both voice conversation and guided touchscreen interaction.
 
 ---
 
-# 23. Medical History Model
+# 22. Adaptive AI Interview
 
-Structured patient history:
+The AI asks follow-up questions based on the current complaint.
 
-```javascript
-{
-  patientId,
+Example:
 
-  chiefComplaint,
+```text
+Patient:
+"I have chest pain."
 
-  historyOfPresentIllness,
+AI:
+When did it begin?
 
-  pastMedicalHistory: [],
+AI:
+Where is the pain?
 
-  pastSurgicalHistory: [],
+AI:
+How severe is it?
 
-  medications: [],
+AI:
+Does it spread anywhere?
 
-  allergies: [],
+AI:
+Does anything make it worse?
 
-  familyHistory: [],
-
-  personalHistory: [],
-
-  reviewOfSystems: {},
-
-  ayushHistory: {},
-
-  lastUpdatedAt
-}
+AI:
+Do you have difficulty breathing?
 ```
+
+The source specifically requires adaptive history-taking based on the patient's answers.
 
 ---
 
-# 24. Clinical Session Model
+# 23. Clinical Sections
 
-Every AI interview must have its own session.
+The interview structures:
 
-```javascript
-{
-  _id,
-
-  patientId,
-  visitId,
-
-  source: "WEB",
-
-  language,
-
-  status:
-    "STARTED"
-    | "IN_PROGRESS"
-    | "COMPLETED"
-    | "ABANDONED",
-
-  chiefComplaint,
-
-  currentSection,
-
-  questionCount,
-
-  redFlags: [],
-
-  startedAt,
-  completedAt
-}
+```text
+Chief Complaint
+HPI
+Past Medical History
+Past Surgical History
+Medication History
+Allergies
+Family History
+Personal History
+Review of Systems
+Previous Investigations
 ```
+
+For future AYUSH mode:
+
+```text
+Prakriti
+Vikriti
+Sara
+Samhanana
+Pramana
+Satmya
+Sattva
+Ahara Shakti
+Vyayama Shakti
+Vaya
+Ahara-Vihara
+```
+
+The AYUSH structure is explicitly identified in the original problem.
 
 ---
 
-# 25. Clinical Answer Model
+# 24. Initial Digital Clinical Report
 
-Each answer:
+The system generates:
 
-```javascript
-{
-  sessionId,
-
-  questionId,
-
-  questionText,
-
-  answerType,
-
-  textAnswer,
-
-  selectedOptions: [],
-
-  audioUsed,
-
-  language,
-
-  source: "VOICE" | "TOUCH" | "TEXT",
-
-  createdAt
-}
+```text
+Current Complaint
+Symptoms
+Duration
+Relevant History
+Medication Information
+Allergies
+Relevant Previous History
 ```
 
-This allows the doctor/system to determine where information originated.
+The report is labelled:
+
+```text
+AI-Assisted Patient-Reported Summary
+```
+
+It is not a diagnosis.
 
 ---
 
-# 26. AI Clinical Report
+# 25. Medical Document Upload
 
-```javascript
-{
-  patientId,
-  visitId,
-  sessionId,
+The patient can upload:
 
-  chiefComplaint,
-
-  hpi,
-
-  pastHistory,
-
-  medications,
-
-  allergies,
-
-  familyHistory,
-
-  personalHistory,
-
-  reviewOfSystems,
-
-  previousInvestigations,
-
-  redFlags,
-
-  generatedBy: "AI",
-
-  verificationStatus:
-    "DRAFT"
-    | "DOCTOR_EDITED"
-    | "DOCTOR_VERIFIED"
-    | "REJECTED",
-
-  verifiedBy,
-  verifiedAt,
-
-  createdAt,
-  updatedAt
-}
+```text
+Prescription
+Lab Report
+Discharge Summary
+Imaging Report
+Medical Scan
+Other
 ```
 
-The source specifically requires a structured physician-ready summary that remains editable and verifiable by the physician.
+The source explicitly requires OCR and extraction from printed and handwritten medical documents.
 
 ---
 
-# 27. Document Model
+# 26. Local Document Storage
 
-```javascript
-{
-  _id,
+Current prototype:
 
-  patientId,
-  visitId,
-
-  documentType,
-
-  originalFile: {
-    fileName,
-    filePath,
-    mimeType,
-    size
-  },
-
-  documentDate,
-
-  ocrStatus:
-    "PENDING"
-    | "PROCESSING"
-    | "COMPLETED"
-    | "FAILED",
-
-  extractionStatus:
-    "PENDING"
-    | "PROCESSING"
-    | "COMPLETED"
-    | "FAILED",
-
-  verificationStatus:
-    "UNVERIFIED"
-    | "PATIENT_CONFIRMED"
-    | "DOCTOR_VERIFIED",
-
-  createdAt,
-  updatedAt
-}
+```text
+server/
+└── storage/
+    └── documents/
+        └── patients/
+            └── PAT-00001/
+                ├── prescriptions/
+                ├── lab-reports/
+                ├── scans/
+                ├── imaging/
+                └── discharge-summaries/
 ```
+
+No cloud storage.
 
 ---
 
-# 28. Local Document Storage
-
-No cloud storage for the current prototype.
+# 27. OCR
 
 Use:
 
+**Tesseract.js**
+
+Flow:
+
 ```text
-server/storage/
-    documents/
-        patients/
-            PAT-000001/
-                prescriptions/
-                lab-reports/
-                discharge-summaries/
-                scans/
-                imaging/
+Uploaded document
+       ↓
+Tesseract.js
+       ↓
+OCR text
+       ↓
+OpenAI extraction
+       ↓
+Structured information
 ```
 
-MongoDB stores the file metadata.
+---
 
-The actual file remains on the local development/server filesystem.
+# 28. Document Information Extraction
+
+Extract:
+
+```text
+Diagnosis
+Medicines
+Dosage
+Frequency
+Lab Values
+Reference Ranges
+Procedures
+Surgery
+Dates
+Doctor
+Hospital
+```
+
+Store original document and extracted information separately.
 
 ---
 
 # 29. Medical Timeline
 
-Use a `medical_events` collection.
+Use:
+
+```text
+medical_events
+```
+
+Example:
+
+```text
+2026
+│
+├── Sep
+│   └── Lab Report
+│
+├── Aug
+│   └── Prescription
+│
+└── Jul
+    └── Hospital Visit
+```
+
+The source requires chronological organization of medical records.
+
+---
+
+# 30. Appointment System
+
+The patient can:
+
+```text
+Select Hospital
+        ↓
+Select Department
+        ↓
+Select Doctor
+        ↓
+Select Date
+        ↓
+Select Available Slot
+        ↓
+Confirm Appointment
+```
+
+Payment is deliberately excluded from this version.
+
+---
+
+# 31. Appointment State
+
+```text
+REQUESTED
+   ↓
+CONFIRMED
+   ↓
+CHECKED_IN
+   ↓
+IN_INTAKE
+   ↓
+READY_FOR_CONSULTATION
+   ↓
+COMPLETED
+```
+
+Alternative:
+
+```text
+CANCELLED
+RESCHEDULED
+NO_SHOW
+```
+
+---
+
+# 32. Appointment QR
+
+After appointment confirmation:
+
+```text
+Appointment ID
+Hospital
+Department
+Doctor
+Date
+Time
+QR
+```
+
+The QR must contain only an opaque appointment identifier/token.
+
+Never include:
+
+```text
+Aadhaar
+Diagnosis
+Medical History
+Medication
+Patient phone
+```
+
+---
+
+# 33. Kiosk Mode
+
+The kiosk is **not a separate frontend**.
+
+It is the same React application running with:
+
+```text
+/kiosk
+```
+
+or:
+
+```text
+/kiosk/login
+```
+
+The kiosk interface is optimized for:
+
+* large touchscreen controls,
+* simple navigation,
+* large typography,
+* microphone,
+* camera,
+* QR scanning later,
+* patient lookup,
+* hospital workflow.
+
+---
+
+# 34. Kiosk User
+
+For the current design, the kiosk is treated as a **hospital-side controlled interface**.
+
+The hospital operator/admin can use it to:
+
+* identify patient,
+* create/register patient if necessary,
+* retrieve patient profile,
+* create appointment,
+* check appointment status,
+* initiate clinical intake,
+* scan documents,
+* update patient information,
+* complete patient intake.
+
+The kiosk should not expose hospital administration settings.
+
+For example:
+
+```text
+Allowed:
+Patient lookup
+Appointment
+Clinical intake
+Document scanning
+
+Not allowed:
+Create admin users
+Delete hospital
+Change hospital settings
+View all system data
+```
+
+---
+
+# 35. Kiosk Route Architecture
+
+```text
+/kiosk
+/kiosk/login
+/kiosk/patient-search
+/kiosk/patient
+/kiosk/appointment
+/kiosk/intake
+/kiosk/documents
+/kiosk/review
+/kiosk/complete
+```
+
+---
+
+# 36. Kiosk Entry Screen
+
+```text
+Quantum Care
+
+Hospital Patient Services
+
+[ Enter Patient ID ]
+
+[ Enter Aadhaar Number ]
+
+[ New Patient ]
+
+[ Existing Appointment ]
+```
+
+If the hospital intends to use appointment QR in the future:
+
+```text
+[ Scan Appointment QR ]
+```
+
+This can be enabled when kiosk hardware/camera integration is implemented.
+
+---
+
+# 37. Kiosk Patient Lookup
+
+The operator enters:
+
+```text
+Aadhaar Number
+```
+
+or the patient's internal:
+
+```text
+Patient Code
+```
+
+Backend searches the patient record.
+
+The UI displays only necessary information.
+
+Example:
+
+```text
+Patient Found
+
+Rahul Sharma
+54 years
+
+[ Continue ]
+```
+
+---
+
+# 38. Kiosk New Patient Flow
+
+```text
+New Patient
+   ↓
+Aadhaar Number
+   ↓
+OTP verification
+   ↓
+Profile creation
+   ↓
+Patient details
+   ↓
+Health information
+   ↓
+Appointment / intake
+```
+
+The same backend registration API is used.
+
+---
+
+# 39. Kiosk Appointment Creation
+
+A patient without an existing appointment can use the kiosk.
+
+```text
+Patient identified
+       ↓
+"What are you visiting for?"
+       ↓
+Voice / touch
+       ↓
+Recommended department
+       ↓
+Doctor
+       ↓
+Available slot
+       ↓
+Appointment created
+```
+
+Payment is skipped in the current version.
+
+---
+
+# 40. Kiosk Appointment Check-In
+
+If the patient has an existing appointment:
+
+```text
+Patient identification
+        ↓
+Appointment retrieved
+        ↓
+Confirm patient
+        ↓
+CHECKED_IN
+```
+
+Future hardware version:
+
+```text
+QR scan
+   ↓
+Appointment validation
+   ↓
+Identity confirmation
+   ↓
+CHECKED_IN
+```
+
+---
+
+# 41. Kiosk Clinical Intake
+
+After patient identification/check-in:
+
+```text
+Has anything changed since your last health update?
+
+[ No ]
+[ Yes ]
+```
+
+If yes:
+
+```text
+AI voice/touch interview
+       ↓
+Update clinical report
+```
+
+If no:
+
+```text
+Continue
+```
+
+---
+
+# 42. Kiosk Document Scanning
+
+Later hardware:
+
+```text
+Kiosk Camera
+      ↓
+Capture document
+      ↓
+Image processing
+      ↓
+Tesseract OCR
+      ↓
+Clinical extraction
+      ↓
+Medical timeline
+```
+
+In the web-only prototype, use normal file uploads.
+
+---
+
+# 43. Kiosk Clinical Completion
+
+After intake:
+
+```text
+Information Collected
+
+✓ Patient profile
+✓ Current complaint
+✓ Clinical history
+✓ Previous records
+✓ New documents
+
+[ Finish ]
+```
+
+The backend changes the visit:
+
+```text
+READY_FOR_CONSULTATION
+```
+
+---
+
+# 44. Kiosk Security
+
+The kiosk must authenticate as a hospital-controlled device/session in future production.
+
+Current prototype may use:
+
+```text
+Kiosk Admin Login
+```
+
+The kiosk operator must not have access to:
+
+* unrelated patients,
+* system administration,
+* database controls,
+* user management.
+
+---
+
+# 45. Kiosk Mode vs Patient Mode
+
+Same codebase:
+
+```text
+React Application
+│
+├── Patient Mode
+│
+└── Kiosk Mode
+```
+
+Use different layouts:
+
+```text
+PatientLayout
+KioskLayout
+```
+
+Shared:
+
+```text
+API
+Authentication
+Clinical Components
+Document Components
+Appointment Components
+```
+
+---
+
+# 46. Shared Component Strategy
+
+Build shared components:
+
+```text
+QCButton
+QCInput
+QCCard
+QCGlassCard
+QCVoiceButton
+QCQuestion
+QCClinicalReport
+QCDocumentUpload
+QCAppointment
+QCProgress
+```
+
+Both patient website and kiosk can reuse them.
+
+---
+
+# 47. Kiosk UI Requirements
+
+The kiosk UI must use:
+
+* large buttons,
+* large text,
+* high contrast,
+* minimal navigation,
+* voice instructions,
+* touch interaction,
+* simple wording,
+* obvious next action.
+
+This follows the problem statement's accessibility requirements for elderly and low-literacy users.
+
+---
+
+# 48. Kiosk Responsive Behavior
+
+The same page should detect kiosk layout:
 
 ```javascript
-{
-  patientId,
-
-  visitId,
-
-  eventType,
-
-  title,
-
-  summary,
-
-  eventDate,
-
-  sourceType,
-
-  sourceId,
-
-  verified,
-
-  createdAt
-}
+isKioskMode === true
 ```
 
-Event types:
+Then apply:
 
 ```text
-CONSULTATION
-DIAGNOSIS
-LAB_RESULT
-PRESCRIPTION
-IMAGING
-SURGERY
-HOSPITALIZATION
-DISCHARGE
-DOCUMENT
+larger typography
+larger touch targets
+reduced navigation
+full-screen layout
+reduced decorative UI
 ```
 
 ---
 
-# 30. Authentication
+# 49. AI Architecture
 
-## Current prototype
+AI remains external.
+
+```text
+React
+ ↓
+Express
+ ↓
+AI Service
+ ↓
+OpenAI API
+```
+
+No local LLM.
+
+No Ollama.
+
+No local Whisper.
+
+No local TTS model.
+
+---
+
+# 50. AI Provider Interface
+
+```text
+providers/
+└── ai/
+    ├── AIProvider.js
+    └── OpenAIProvider.js
+```
+
+Methods:
+
+```javascript
+generateQuestion()
+structureHistory()
+generateClinicalSummary()
+extractClinicalEntities()
+```
+
+---
+
+# 51. Speech Architecture
+
+```text
+Browser Microphone
+        ↓
+Express
+        ↓
+OpenAI Speech API
+        ↓
+Transcript
+        ↓
+Clinical AI
+```
+
+Text-to-speech:
+
+```text
+Question text
+      ↓
+OpenAI TTS
+      ↓
+Audio response
+      ↓
+Browser
+```
+
+---
+
+# 52. Multilingual Support
 
 Use:
 
+**i18next + react-i18next**
+
+Initial:
+
 ```text
-Email/Username
+English
+Hindi
+```
+
+Future:
+
+```text
+Gujarati
+Marathi
+Tamil
+Telugu
+Bengali
+Kannada
+Malayalam
+etc.
+```
+
+---
+
+# 53. UI/UX Direction
+
+The interface follows the previously defined Quantum Care design:
+
+## Light
+
+```text
+Light Pink
+Light Orange
+Light Blue
+White
+Soft Lavender
+```
+
+## Dark
+
+```text
+Dark Grey
+Black
+Dark Purple
+Light Purple
+Soft Violet
+```
+
+Visual style:
+
+```text
+Minimalism
 +
-Password
+Glassmorphism
++
+Blur morphism
++
+Material Design usability
++
+Controlled animation
 ```
-
-No OTP.
-
-No ABHA authentication.
-
-No biometric authentication.
-
-No social login.
 
 ---
 
-# 31. Authentication Flow
+# 54. UI Libraries
+
+Use where appropriate:
 
 ```text
-User
- ↓
-Login
- ↓
-POST /api/v1/auth/login
- ↓
-Backend validates credentials
- ↓
-Password verification
- ↓
-Session/JWT created
- ↓
-Role determined
- ↓
-Dashboard
+Tailwind CSS
+shadcn/ui
+React Bits
+Aceternity UI
+Magic UI
+Animate / Motion
+Hover.dev
+Lucide React
+```
+
+These must not be used simply because they exist.
+
+The interface must maintain one coherent design system.
+
+---
+
+# 55. Frontend Folder Structure
+
+```text
+client/
+│
+├── src/
+│   ├── components/
+│   │   ├── ui/
+│   │   ├── clinical/
+│   │   ├── kiosk/
+│   │   ├── documents/
+│   │   └── appointments/
+│   │
+│   ├── features/
+│   │   ├── auth/
+│   │   ├── patient/
+│   │   ├── kiosk/
+│   │   ├── clinical-intake/
+│   │   ├── documents/
+│   │   ├── appointments/
+│   │   └── timeline/
+│   │
+│   ├── pages/
+│   │   ├── public/
+│   │   ├── patient/
+│   │   └── kiosk/
+│   │
+│   ├── hooks/
+│   ├── services/
+│   ├── stores/
+│   ├── schemas/
+│   ├── i18n/
+│   ├── utils/
+│   │
+│   ├── App.jsx
+│   └── main.jsx
 ```
 
 ---
 
-# 32. Password Security
+# 56. Backend Folder Structure
 
-Passwords must never be stored directly.
+```text
+server/
+│
+├── src/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── repositories/
+│   ├── routes/
+│   ├── schemas/
+│   ├── services/
+│   │   ├── auth/
+│   │   ├── patients/
+│   │   ├── clinical/
+│   │   ├── documents/
+│   │   ├── appointments/
+│   │   ├── kiosk/
+│   │   ├── consent/
+│   │   └── ai/
+│   │
+│   ├── providers/
+│   │   ├── ai/
+│   │   ├── otp/
+│   │   ├── aadhaar/
+│   │   ├── ocr/
+│   │   ├── storage/
+│   │   └── maps/
+│   │
+│   ├── utils/
+│   ├── jobs/
+│   ├── app.js
+│   └── server.js
+│
+├── storage/
+└── tests/
+```
+
+---
+
+# 57. API Validation
 
 Use:
 
-**Argon2id**
+**Zod**
 
-Fallback:
+Every API request must be validated.
 
-**bcrypt**
-
-Store only:
+Flow:
 
 ```text
-passwordHash
-```
-
-Never store:
-
-```text
-password
-```
-
----
-
-# 33. Authorization
-
-Roles:
-
-```text
-PATIENT
-DOCTOR
-STAFF
-ADMIN
-```
-
-Backend middleware:
-
-```text
-requireAuth
-requireRole
-requirePatientOwnership
-requireDoctorAccess
-```
-
-Frontend route protection is only a UI convenience.
-
-Backend authorization is authoritative.
-
----
-
-# 34. Session Strategy
-
-Use HTTP-only cookies for the authenticated session.
-
-Cookie rules:
-
-```text
-HttpOnly
-Secure in production
-SameSite=Lax
-```
-
-Do not store sensitive authentication tokens in `localStorage`.
-
----
-
-# 35. API Base URL
-
-Development:
-
-```text
-http://localhost:5000/api/v1
-```
-
-Production later:
-
-```text
-https://api.quantumcare.in/api/v1
+Request
+ ↓
+Authentication
+ ↓
+Authorization
+ ↓
+Validation
+ ↓
+Controller
+ ↓
+Service
+ ↓
+Repository
+ ↓
+MongoDB
 ```
 
 ---
 
-# 36. API Response Format
+# 58. API Response Format
 
 Success:
 
@@ -1213,7 +1646,7 @@ Success:
 }
 ```
 
-Error:
+Failure:
 
 ```json
 {
@@ -1227,20 +1660,7 @@ Error:
 
 ---
 
-# 37. Authentication APIs
-
-```text
-POST /api/v1/auth/register
-POST /api/v1/auth/login
-POST /api/v1/auth/logout
-GET  /api/v1/auth/me
-POST /api/v1/auth/forgot-password
-POST /api/v1/auth/reset-password
-```
-
----
-
-# 38. Patient APIs
+# 59. Patient API
 
 ```text
 GET   /api/v1/patients/me
@@ -1250,16 +1670,14 @@ GET   /api/v1/patients/me/history
 PATCH /api/v1/patients/me/history
 
 GET   /api/v1/patients/me/timeline
-
 GET   /api/v1/patients/me/documents
-
-GET   /api/v1/patients/me/visits
 GET   /api/v1/patients/me/appointments
+GET   /api/v1/patients/me/visits
 ```
 
 ---
 
-# 39. Clinical Intake APIs
+# 60. Clinical API
 
 ```text
 POST /api/v1/clinical-sessions
@@ -1275,83 +1693,26 @@ GET  /api/v1/clinical-sessions/:id/report
 
 ---
 
-# 40. Voice APIs
-
-```text
-POST /api/v1/voice/transcribe
-POST /api/v1/voice/synthesize
-```
-
-Voice request:
-
-```text
-multipart/form-data
-```
-
-The audio should be processed and converted to text.
-
-Audio should not be permanently stored by default.
-
----
-
-# 41. Document APIs
+# 61. Document API
 
 ```text
 POST   /api/v1/documents
 GET    /api/v1/documents
 GET    /api/v1/documents/:id
 GET    /api/v1/documents/:id/file
-GET    /api/v1/documents/:id/extraction
 
 POST   /api/v1/documents/:id/process
-POST   /api/v1/documents/:id/reprocess
+GET    /api/v1/documents/:id/extraction
 
 PATCH  /api/v1/documents/:id/verify
+POST   /api/v1/documents/:id/reprocess
+
 DELETE /api/v1/documents/:id
 ```
 
 ---
 
-# 42. Hospital APIs
-
-```text
-GET /api/v1/hospitals
-GET /api/v1/hospitals/:id
-GET /api/v1/hospitals/:id/departments
-GET /api/v1/hospitals/:id/doctors
-
-GET /api/v1/hospitals/recommended
-```
-
----
-
-# 43. Doctor APIs
-
-```text
-GET   /api/v1/doctor/dashboard
-GET   /api/v1/doctor/queue
-GET   /api/v1/doctor/alerts
-
-GET   /api/v1/doctor/patients
-GET   /api/v1/doctor/patients/:id
-
-GET   /api/v1/doctor/patients/:id/history
-GET   /api/v1/doctor/patients/:id/timeline
-GET   /api/v1/doctor/patients/:id/documents
-
-GET   /api/v1/doctor/visits/:id
-PATCH /api/v1/doctor/visits/:id/report
-
-POST  /api/v1/doctor/visits/:id/verify
-POST  /api/v1/doctor/visits/:id/complete
-
-POST  /api/v1/doctor/visits/:id/diagnosis
-POST  /api/v1/doctor/visits/:id/prescription
-```
-
----
-
-# 44. Appointment APIs
+# 62. Appointment API
 
 ```text
 GET  /api/v1/appointments/slots
@@ -1361,6 +1722,7 @@ GET  /api/v1/appointments/:id
 
 POST /api/v1/appointments/:id/cancel
 POST /api/v1/appointments/:id/reschedule
+
 POST /api/v1/appointments/:id/check-in
 
 GET  /api/v1/appointments/:id/qr
@@ -1368,1031 +1730,223 @@ GET  /api/v1/appointments/:id/qr
 
 ---
 
-# 45. Payment
-
-Payment gateway is **not implemented in the first version**.
-
-The API architecture must leave a future extension point:
+# 63. Hospital API
 
 ```text
-POST /api/v1/payments/create-order
-POST /api/v1/payments/verify
-POST /api/v1/payments/webhook
-```
-
-Do not implement or expose these endpoints until payment integration begins.
-
----
-
-# 46. QR Code
-
-Use an npm QR library.
-
-The QR contains only:
-
-```text
-appointmentId
-secureToken
-```
-
-Never place inside the QR:
-
-* patient name,
-* phone,
-* diagnosis,
-* medicines,
-* medical history,
-* ABHA details.
-
-Kiosk support later can consume the existing appointment QR API.
-
----
-
-# 47. QR Check-In
-
-Current prototype:
-
-The patient can display/download the appointment QR.
-
-A temporary web prototype can simulate scanning using:
-
-* manual appointment code,
-* simulated QR input,
-* browser camera if desired.
-
-Actual hospital kiosk scanner integration is deferred.
-
-Future:
-
-```text
-Kiosk Camera
-   ↓
-QR Reader
-   ↓
-API
-   ↓
-Appointment Validation
-   ↓
-CHECKED_IN
+GET /api/v1/hospitals
+GET /api/v1/hospitals/:id
+GET /api/v1/hospitals/:id/departments
+GET /api/v1/hospitals/:id/doctors
+GET /api/v1/hospitals/recommended
 ```
 
 ---
 
-# 48. AI Architecture
+# 64. Kiosk API
 
-AI must run through external APIs.
+The kiosk should reuse existing patient APIs wherever possible.
 
-No local LLM.
-
-No Ollama.
-
-No local Whisper.
-
-No local Piper.
-
-Architecture:
+Dedicated kiosk endpoints:
 
 ```text
-React
-  ↓
-Express
-  ↓
-AI Service
-  ↓
-External AI API
-  ↓
-Structured response
-  ↓
-Validation
-  ↓
-MongoDB
+POST /api/v1/kiosk/login
+GET  /api/v1/kiosk/session
+POST /api/v1/kiosk/patient/search
+POST /api/v1/kiosk/patient/check-in
+
+POST /api/v1/kiosk/appointments
+POST /api/v1/kiosk/clinical-session
+
+GET  /api/v1/kiosk/patient/:id
 ```
+
+The kiosk API must apply hospital/kiosk authorization.
 
 ---
 
-# 49. AI Provider Abstraction
+# 65. Kiosk Session
 
-Create:
-
-```text
-providers/
-    ai/
-        AIProvider.js
-        OpenAIProvider.js
-```
-
-Interface:
-
-```javascript
-generateQuestion()
-structureHistory()
-summarizeHistory()
-extractClinicalEntities()
-```
-
-The application services call:
-
-```javascript
-aiProvider.generateQuestion(...)
-```
-
-not:
-
-```javascript
-openai.responses.create(...)
-```
-
-directly.
-
-This allows the provider to be changed later.
-
----
-
-# 50. AI Uses
-
-AI is allowed to:
-
-* understand natural patient speech,
-* convert patient language into structured text,
-* generate adaptive questions,
-* structure history,
-* summarize information,
-* extract clinical entities,
-* identify predefined red-flag concepts.
-
-AI is not allowed to:
-
-* make the final diagnosis,
-* autonomously prescribe,
-* alter verified doctor records,
-* fabricate missing information,
-* create unsupported patient facts.
-
----
-
-# 51. AI Question Engine
-
-Use a hybrid system:
-
-```text
-Clinical rules
-+
-Structured questionnaire
-+
-LLM natural-language generation
-```
-
-The rules determine:
-
-* what information is required,
-* which sections must be completed,
-* which branches are allowed,
-* when the interview can finish,
-* which predefined red flags matter.
-
-The AI generates the natural conversational wording.
-
-This is more controllable than letting the LLM run the entire medical interview with unrestricted autonomy.
-
----
-
-# 52. AI Question Response Schema
-
-The AI must return structured JSON:
-
-```json
-{
-  "questionId": "q_123",
-  "section": "HPI",
-  "type": "SINGLE_SELECT",
-  "question": "When did the pain start?",
-  "options": [
-    "Today",
-    "Yesterday",
-    "2-3 days ago",
-    "More than a week ago",
-    "I don't know"
-  ],
-  "allowVoice": true,
-  "required": true
-}
-```
-
-Frontend renders the question.
-
-The AI must never generate HTML or React code.
-
----
-
-# 53. Patient Voice Flow
-
-```text
-Patient presses microphone
-        ↓
-Browser records audio
-        ↓
-Audio sent to backend
-        ↓
-OpenAI speech API
-        ↓
-Transcript
-        ↓
-Clinical AI
-        ↓
-Structured answer
-        ↓
-Confirmation if confidence is low
-```
-
-Example:
-
-```text
-Patient:
-"Mujhe teen din se pet mein dard hai."
-
-System:
-duration = 3 days
-complaint = abdominal pain
-language = Hindi
-```
-
----
-
-# 54. Touch Flow
-
-Every clinical question should provide a touch alternative where practical.
-
-Examples:
-
-```text
-Pain severity:
-0–10
-
-Pain location:
-Body diagram
-
-Symptoms:
-Checkboxes
-
-Duration:
-Preset buttons
-
-Yes/no:
-Large buttons
-```
-
-This satisfies the original requirement for dual-mode input.
-
----
-
-# 55. Multilingual Architecture
-
-Use:
-
-**i18next + react-i18next**
-
-Initial UI languages:
-
-```text
-English
-Hindi
-```
-
-Architecture must allow:
-
-```text
-Gujarati
-Marathi
-Tamil
-Telugu
-Bengali
-Kannada
-Malayalam
-and other supported languages
-```
-
-The clinical conversation language is stored in the clinical session.
-
----
-
-# 56. Text-to-Speech
-
-The web frontend receives AI-generated question text.
-
-The backend calls external TTS.
-
-```text
-Question
-   ↓
-TTS
-   ↓
-Audio
-   ↓
-Browser
-```
-
-TTS audio should be temporary.
-
----
-
-# 57. OCR
-
-For the current prototype, OCR should use:
-
-**Tesseract.js**
-
-No cloud OCR is required initially.
-
-Flow:
-
-```text
-Patient uploads image/PDF
-        ↓
-Server validates file
-        ↓
-Tesseract OCR
-        ↓
-Raw text
-        ↓
-OpenAI extraction
-        ↓
-Structured document data
-```
-
-This keeps document processing inexpensive and locally controlled.
-
----
-
-# 58. OCR Limitations
-
-The prototype must explicitly treat OCR output as uncertain.
-
-Especially for:
-
-* poor handwriting,
-* blurred images,
-* folded paper,
-* shadows,
-* low-quality scans,
-* mixed scripts.
-
-The system should show:
-
-```text
-OCR Confidence / Verification Required
-```
-
-where applicable.
-
----
-
-# 59. Document Extraction
-
-OpenAI receives the OCR text, not the entire document unnecessarily.
-
-Input:
-
-```text
-OCR text
-+
-document metadata
-```
-
-Output:
-
-```json
-{
-  "diagnoses": [],
-  "medications": [],
-  "labResults": [],
-  "procedures": [],
-  "documentDate": null
-}
-```
-
-The result must pass schema validation before storage.
-
----
-
-# 60. Medical Document Provenance
-
-Every extracted item must reference:
-
-```text
-documentId
-sourceType
-confidence
-page/section where available
-```
-
-Example:
+Create a temporary session:
 
 ```javascript
 {
-  name: "Metformin",
-  dosage: "500 mg",
-  confidence: 0.94,
-  sourceDocumentId: "..."
-}
-```
-
----
-
-# 61. Hospital Recommendation
-
-For the prototype use:
-
-**OpenStreetMap + Leaflet**
-
-Do not require a paid Google Maps API.
-
-Hospital data can initially be seeded into MongoDB.
-
-Example:
-
-```text
-Hospital A
-Jaipur
-General Medicine
-Coordinates
-
-Hospital B
-Jaipur
-Cardiology
-Coordinates
-```
-
-Leaflet displays the map.
-
----
-
-# 62. Recommendation Logic
-
-The application considers:
-
-```text
-patient complaint
-+
-department/speciality
-+
-hospital availability
-+
-distance
-+
-patient preference
-```
-
-It returns:
-
-```text
-Hospital
-Department
-Next available slot
-Distance
-```
-
-The AI may assist with normalization, but actual availability must come from the hospital/appointment data.
-
----
-
-# 63. Appointment Recommendation
-
-Example:
-
-```text
-Patient:
-"I have persistent stomach pain."
-
-System:
-Recommended department:
-General Medicine
-
-Available:
-Hospital A
-10:30 AM
-
-Hospital B
-11:00 AM
-
-Hospital C
-12:15 PM
-```
-
-The system must not claim:
-
-```text
-"You have gastritis."
-```
-
-unless a physician diagnoses it.
-
----
-
-# 64. Appointment State Machine
-
-```text
-REQUESTED
-   ↓
-CONFIRMED
-   ↓
-CHECKED_IN
-   ↓
-IN_INTAKE
-   ↓
-READY_FOR_DOCTOR
-   ↓
-IN_CONSULTATION
-   ↓
-COMPLETED
-```
-
-Alternative:
-
-```text
-CONFIRMED
-   ↓
-NO_SHOW
-```
-
-or:
-
-```text
-CONFIRMED
-   ↓
-CANCELLED
-```
-
----
-
-# 65. No-Show Logic
-
-An appointment is not considered an arrival because it was booked.
-
-Physical/check-in status is separate.
-
-```text
-PAID/BOOKED
-≠
-ARRIVED
-```
-
-Future kiosk:
-
-```text
-QR scanned
-+
-identity verified
-=
-CHECKED_IN
-```
-
-Current web prototype may simulate this.
-
----
-
-# 66. Doctor Dashboard
-
-The doctor must see:
-
-```text
-Today's Patients
-Checked-in
-Ready
-Priority
-Completed
-```
-
-Patient queue:
-
-```text
-Token
-Patient
-Appointment
-Status
-Priority
-```
-
----
-
-# 67. Doctor Patient View
-
-Sections:
-
-```text
-Overview
-Current Complaint
-Clinical History
-AI Summary
-Medical Timeline
-Documents
-Previous Visits
-Consultation
-```
-
----
-
-# 68. AI Clinical Summary
-
-The summary combines:
-
-```text
-Current symptom interview
-+
-Patient history
-+
-Previous documents
-+
-Document extraction
-+
-Relevant timeline events
-```
-
-Output:
-
-```text
-Chief Complaint
-HPI
-Past History
-Surgical History
-Medication History
-Allergies
-Family History
-Personal History
-ROS
-Previous Investigations
-```
-
-This aligns with the source's specified physician-ready summary.
-
----
-
-# 69. Doctor Verification
-
-AI summary state:
-
-```text
-DRAFT
-```
-
-Doctor actions:
-
-```text
-Edit
-Accept
-Reject
-```
-
-After acceptance:
-
-```text
-DOCTOR_VERIFIED
-```
-
-The system records:
-
-```text
-doctorId
-timestamp
-changes
-```
-
----
-
-# 70. Red-Flag Engine
-
-The red-flag system must be deterministic for the prototype.
-
-Use a rule-based layer.
-
-Example:
-
-```text
-chest pain
-+
-breathlessness
-=
-priority alert
-```
-
-The LLM can normalize patient language:
-
-```text
-"can't breathe"
-→ breathlessness
-```
-
-but the actual alert decision should be made by explicit application rules.
-
-The original specification explicitly calls for red-flag detection and priority triage alerts.
-
----
-
-# 71. Notifications
-
-Current prototype can use:
-
-* in-app notifications,
-* browser notifications,
-* optional development email.
-
-Do not implement SMS/WhatsApp in the first version.
-
-Future providers can be added later.
-
----
-
-# 72. Consent
-
-Prototype consent screen:
-
-```text
-I understand that Quantum Care will use the information
-I provide to prepare a medical history for my healthcare visit.
-
-[ Listen ]
-[ I Agree ]
-```
-
-Consent must be stored:
-
-```javascript
-{
+  kioskId,
+  operatorId,
+  hospitalId,
   patientId,
-  purpose,
-  granted,
-  source: "WEB",
-  version,
-  grantedAt
+
+  status:
+    "STARTED" |
+    "PATIENT_IDENTIFIED" |
+    "IN_INTAKE" |
+    "COMPLETED" |
+    "TERMINATED",
+
+  startedAt,
+  terminatedAt
 }
 ```
 
----
-
-# 73. Data Sharing
-
-Prototype:
+At the end of each patient interaction:
 
 ```text
-Doctor requests patient record
-        ↓
-Patient approves
-        ↓
-Doctor receives authorized data
+Terminate session
+↓
+Clear temporary state
+↓
+Return to kiosk home
 ```
 
-Patient can see:
+The original problem specifically requires temporary session cleanup.
+
+---
+
+# 66. Kiosk Authorization
+
+The current prototype uses:
 
 ```text
-Hospital A
-Shared
-
-Doctor B
-Shared
-
-Hospital C
-Not shared
+Kiosk login
++
+Hospital assignment
 ```
 
----
+The backend checks:
 
-# 74. Security
+```text
+kiosk user
++
+hospital
++
+kiosk session
+```
 
-Required:
-
-* HTTPS in deployment
-* secure authentication
-* password hashing
-* authorization middleware
-* request validation
-* rate limiting
-* secure cookies
-* local file access restrictions
-* audit logs
-* no secrets in frontend
-* no sensitive information in logs
+The kiosk operator cannot access arbitrary hospital administration.
 
 ---
 
-# 75. Helmet
+# 67. Shared API Principle
+
+Patient website:
+
+```text
+/api/v1/patients/*
+```
+
+Kiosk:
+
+```text
+/api/v1/kiosk/*
+```
+
+Both eventually call the same internal services.
+
+Example:
+
+```text
+Patient website
+       ↓
+PatientService
+
+Kiosk
+       ↓
+KioskService
+       ↓
+PatientService
+```
+
+Clinical business logic must not be duplicated.
+
+---
+
+# 68. Database Indexes
+
+Required indexes:
+
+```text
+users.aadhaarReference
+users.phone
+
+patients.patientCode
+
+appointments.appointmentCode
+appointments.patientId
+appointments.doctorId
+appointments.appointmentDate
+appointments.status
+
+documents.patientId
+documents.visitId
+
+medical_events.patientId + eventDate
+
+clinical_sessions.patientId
+```
+
+Aadhaar identifiers must be carefully protected and uniquely indexed only where technically required.
+
+---
+
+# 69. Security Middleware
 
 Use:
 
-**Helmet**
-
-for Express security headers.
+```text
+helmet
+cors
+express-rate-limit
+authentication
+authorization
+request-id
+central error handling
+```
 
 ---
 
-# 76. CORS
+# 70. Logging
 
-Development:
-
-```text
-http://localhost:5173
-```
-
-Backend:
-
-```text
-http://localhost:5000
-```
-
-Production origins must be explicitly configured.
-
-Do not use unrestricted:
-
-```text
-*
-```
-
-for authenticated APIs.
-
----
-
-# 77. Rate Limiting
-
-Apply limits to:
-
-```text
-/auth/*
-/voice/*
-/documents/*
-/ai/*
-```
-
-This is especially important for public AI endpoints.
-
----
-
-# 78. Logging
-
-Use structured logging.
-
-Recommended:
+Use:
 
 **Pino**
 
-Log:
-
-* request ID
-* route
-* status
-* latency
-* error type
-
 Never log:
 
-* passwords
-* tokens
-* complete patient history
-* raw medical documents
-* API keys
-* full private AI prompts
+* Aadhaar numbers,
+* OTPs,
+* passwords,
+* session secrets,
+* medical document contents,
+* complete medical history.
 
 ---
 
-# 79. Audit Logs
+# 71. Audit Logging
 
-Record sensitive actions:
+Record:
 
 ```text
-LOGIN
-LOGOUT
-PATIENT_VIEW
-DOCUMENT_UPLOAD
-DOCUMENT_VIEW
-REPORT_GENERATED
-REPORT_EDITED
-REPORT_ACCEPTED
-CONSENT_GRANTED
-CONSENT_REVOKED
-DATA_SHARED
+PATIENT_LOGIN
+PATIENT_PROFILE_UPDATED
+OTP_REQUESTED
+OTP_VERIFIED
+DOCUMENT_UPLOADED
+DOCUMENT_VIEWED
+CLINICAL_SESSION_STARTED
+CLINICAL_REPORT_GENERATED
 APPOINTMENT_CREATED
 APPOINTMENT_CANCELLED
+KIOSK_LOGIN
+KIOSK_PATIENT_SEARCH
+KIOSK_CHECK_IN
+CONSENT_GRANTED
+CONSENT_REVOKED
 ```
 
 ---
 
-# 80. File Security
-
-Uploaded files must be validated by:
-
-* MIME type
-* file extension
-* file size
-* file signature/magic bytes where practical
-
-Allowed prototype formats:
-
-```text
-PDF
-PNG
-JPG
-JPEG
-WEBP
-```
-
-Maximum size:
-
-**20 MB per file**
-
----
-
-# 81. Local File Access
-
-Files must not be served directly from an exposed public folder.
-
-Instead:
-
-```text
-GET /api/v1/documents/:id/file
-```
-
-Backend checks authorization before returning the file.
-
----
-
-# 82. Temporary Processing Files
-
-Temporary OCR/audio files must be cleaned after processing.
-
-Example:
-
-```text
-storage/temporary/
-```
-
-Cleanup should happen after:
-
-```text
-successful processing
-or
-failure after retry limit
-```
-
----
-
-# 83. AI Error Handling
-
-If the AI API fails:
-
-```text
-AI failure
-   ↓
-Retry once
-   ↓
-If failure persists
-   ↓
-Fallback to manual interaction
-```
-
-Patient should still be able to complete an appointment without AI.
-
----
-
-# 84. OCR Error Handling
-
-If OCR fails:
-
-```text
-OCR failed
-   ↓
-Retry
-   ↓
-If still failed:
-display original document
-+
-allow manual information entry
-```
-
----
-
-# 85. External Service Isolation
-
-Provider code:
-
-```text
-providers/
-  ai/
-  speech/
-  ocr/
-  storage/
-  maps/
-```
-
-Services must call providers.
-
-Controllers must not call third-party APIs directly.
-
----
-
-# 86. Environment Variables
-
-Create:
+# 72. Environment Variables
 
 `.env.example`
-
-with:
 
 ```text
 NODE_ENV=development
@@ -2405,193 +1959,506 @@ SESSION_SECRET=
 
 OPENAI_API_KEY=
 OPENAI_MODEL=
-
 OPENAI_TRANSCRIBE_MODEL=
 OPENAI_TTS_MODEL=
 
-MAPS_PROVIDER=openstreetmap
-
-STORAGE_PROVIDER=local
-
-UPLOAD_DIRECTORY=./storage/documents
+OTP_PROVIDER=mock
+AADHAAR_PROVIDER=mock
 
 CLIENT_URL=http://localhost:5173
 API_URL=http://localhost:5000
+
+STORAGE_PROVIDER=local
+UPLOAD_DIRECTORY=./storage/documents
+
+MAPS_PROVIDER=openstreetmap
 ```
 
-Do not commit actual secrets.
+Payment variables must not be required yet.
 
 ---
 
-# 87. API Documentation
-
-Use OpenAPI.
-
-File:
+# 73. Development OTP Configuration
 
 ```text
-docs/openapi.yaml
+OTP_PROVIDER=mock
 ```
 
-Document:
+Example:
 
-* routes,
-* auth requirements,
-* request schema,
-* response schema,
-* error responses.
+```text
+User requests OTP
+      ↓
+Backend creates OTP
+      ↓
+Console displays OTP
+      ↓
+User enters OTP
+      ↓
+Verification succeeds
+```
+
+When a real authorized provider is integrated:
+
+```text
+OTP_PROVIDER=production
+```
+
+No frontend code should change.
 
 ---
 
-# 88. API Testing
+# 74. Development Aadhaar Configuration
+
+For prototype:
+
+```text
+AADHAAR_PROVIDER=mock
+```
+
+The provider validates:
+
+* 12-digit format,
+* registration state,
+* prototype test identity.
+
+Later:
+
+```text
+AADHAAR_PROVIDER=authorized
+```
+
+The provider implementation changes, not the rest of the application.
+
+---
+
+# 75. Current Kiosk URL
+
+The same application can be accessed at:
+
+```text
+http://localhost:5173/kiosk
+```
+
+or later:
+
+```text
+https://quantumcare.in/kiosk
+```
+
+The kiosk may run the browser in fullscreen/kiosk-browser mode.
+
+No separate kiosk frontend is required.
+
+---
+
+# 76. Kiosk Layout
+
+Kiosk mode uses:
+
+```text
+KioskLayout
+```
+
+rather than:
+
+```text
+PatientLayout
+```
+
+Kiosk layout:
+
+* full screen,
+* large typography,
+* large touch targets,
+* minimal navigation,
+* no patient account settings,
+* no unrelated site navigation.
+
+---
+
+# 77. Kiosk Visual Workflow
+
+```text
+KIOSK HOME
+     ↓
+Hospital operator login
+     ↓
+Identify patient
+     ↓
+Existing / New
+     ↓
+Patient information
+     ↓
+Appointment / Intake
+     ↓
+Clinical questions
+     ↓
+Document upload/scan
+     ↓
+Digital report
+     ↓
+Complete
+     ↓
+Clear session
+     ↓
+Kiosk home
+```
+
+---
+
+# 78. Same Design System
+
+The website and kiosk share:
+
+```text
+colors
+typography
+buttons
+cards
+clinical components
+voice interaction
+clinical question logic
+document components
+```
+
+Only layout and sizing differ.
+
+---
+
+# 79. Future Physical Kiosk Hardware
+
+Later hardware may add:
+
+```text
+Camera
+QR scanner
+Microphone
+Speaker
+Touch display
+Printer
+```
+
+The software interface already has endpoints ready for these capabilities.
+
+---
+
+# 80. Future QR Hardware Integration
+
+Later:
+
+```text
+Camera
+ ↓
+QR scanner
+ ↓
+Appointment token
+ ↓
+POST /api/v1/kiosk/patient/check-in
+ ↓
+Appointment verified
+ ↓
+Patient identified
+```
+
+No changes to the appointment database structure should be required.
+
+---
+
+# 81. Payment Gateway Future
+
+Payment remains deferred.
+
+Later:
+
+```text
+Appointment
+   ↓
+Payment Order
+   ↓
+Payment Gateway
+   ↓
+Verification
+   ↓
+Appointment confirmation
+```
+
+The current appointment architecture must not depend on payment.
+
+---
+
+# 82. Cloud Storage Future
+
+Current:
+
+```text
+LocalStorageProvider
+```
+
+Future:
+
+```text
+S3StorageProvider
+```
+
+No service should directly depend on local filesystem paths.
+
+---
+
+# 83. ABDM Future
+
+Future provider:
+
+```text
+providers/
+└── abdm/
+    └── ABDMProvider.js
+```
+
+Future capabilities:
+
+* ABHA linking,
+* consent-based data exchange,
+* FHIR mapping,
+* interoperability,
+* participating hospital record retrieval.
+
+The source problem explicitly envisions ABHA and FHIR integration as part of the larger solution.
+
+---
+
+# 84. FHIR Mapping Future
+
+Future mappings:
+
+```text
+Patient
+→ FHIR Patient
+
+Visit
+→ FHIR Encounter
+
+Diagnosis
+→ FHIR Condition
+
+Lab result
+→ FHIR Observation
+
+Document
+→ FHIR DocumentReference
+
+Prescription
+→ FHIR MedicationRequest
+```
+
+The first prototype does not require a FHIR server.
+
+---
+
+# 85. Testing
+
+## Unit
 
 Use:
 
-**Postman or Bruno**
-
-Maintain:
-
-```text
-docs/api/
-    quantum-care-api.json
-```
-
-Test:
-
-* authentication
-* patient APIs
-* appointment APIs
-* clinical session APIs
-* document APIs
-* doctor APIs
-* admin APIs
-
----
-
-# 89. Automated Testing
-
-## Frontend
-
 ```text
 Vitest
+```
+
+## React components
+
+Use:
+
+```text
 React Testing Library
 ```
 
-Test:
+## API
 
-* forms,
-* navigation,
-* intake UI,
-* report rendering,
-* appointment selection.
-
-## Backend
+Use:
 
 ```text
-Vitest
 Supertest
 ```
 
-Test:
-
-* APIs
-* authorization
-* database services
-* appointment state transitions
-* clinical session logic.
-
 ## End-to-end
+
+Use:
 
 ```text
 Playwright
 ```
 
-Test full flows.
-
 ---
 
-# 90. Required End-to-End Test
+# 86. Critical E2E Test
 
-The main demonstration test should be:
+The primary demonstration workflow:
 
 ```text
-Create patient
-   ↓
+Register using Aadhaar + OTP
+        ↓
+Create password/PIN
+        ↓
 Login
-   ↓
-Describe symptom
-   ↓
+        ↓
+Complete profile
+        ↓
+Describe health problem
+        ↓
 Answer AI questions
-   ↓
+        ↓
 Generate clinical report
-   ↓
-Upload medical report
-   ↓
+        ↓
+Upload medical document
+        ↓
 OCR
-   ↓
+        ↓
 Extract information
-   ↓
+        ↓
 Medical timeline
-   ↓
-Find hospital
-   ↓
+        ↓
 Book appointment
-   ↓
-Generate QR
-   ↓
-Simulate check-in
-   ↓
-Doctor login
-   ↓
-Doctor sees patient
-   ↓
-Doctor sees clinical report
-   ↓
-Doctor opens document
-   ↓
-Doctor verifies report
-   ↓
-Complete consultation
+        ↓
+Generate appointment QR
+        ↓
+Open kiosk mode
+        ↓
+Identify patient
+        ↓
+Check in
+        ↓
+Update information
+        ↓
+Complete kiosk session
 ```
 
 ---
 
-# 91. Seed Data
+# 87. UI/UX Technical Requirements
 
-Create a seed script:
-
-```text
-npm run seed
-```
-
-It must create synthetic:
+The interface must use:
 
 ```text
-2 hospitals
-5 departments
-10 doctors
-10 patients
-20 appointments
-sample medical documents
-sample clinical reports
-sample medical timeline events
-sample red-flag cases
+React
+Tailwind
+shadcn/ui
+Lucide
+React Bits
+Aceternity UI
+Magic UI
+Motion/Animate
+Hover.dev
 ```
 
-No real patient information.
+where appropriate.
+
+Design:
+
+## Light
+
+```text
+Light Pink
+Light Orange
+Light Blue
+White
+```
+
+## Dark
+
+```text
+Dark Grey
+Black
+Dark Purple
+Light Purple
+```
+
+Visual system:
+
+```text
+Minimal
+Glassmorphism
+Blur morphism
+Soft Material Design
+Controlled animation
+```
 
 ---
 
-# 92. Development Scripts
+# 88. No-Glitch Requirement
 
-Root `package.json` should provide:
+The application must:
+
+* prevent duplicate form submission,
+* preserve form state,
+* preserve clinical session progress,
+* show loading states,
+* show clear errors,
+* provide retry,
+* avoid layout shifts,
+* avoid unnecessary page reloads,
+* cache safe data,
+* recover from failed AI/OCR requests.
+
+---
+
+# 89. Kiosk No-Glitch Requirement
+
+A kiosk session must never accidentally expose the previous patient's data.
+
+After every session:
+
+```text
+Patient data
+↓
+Session terminated
+↓
+Temporary frontend state cleared
+↓
+Temporary backend session cleared
+↓
+Return to kiosk home
+```
+
+The next patient must start with a clean state.
+
+---
+
+# 90. Development Tools
+
+Required:
+
+```text
+VS Code
+Node.js
+npm
+Git
+GitHub
+MongoDB Community
+MongoDB Compass
+Postman / Bruno
+Chrome
+```
+
+Optional:
+
+```text
+Docker Desktop
+Figma
+draw.io
+```
+
+---
+
+# 91. Development Scripts
 
 ```text
 npm run dev
-npm run server
 npm run client
+npm run server
 
 npm run build
+
 npm run test
 npm run test:e2e
 
@@ -2603,914 +2470,206 @@ npm run seed
 
 ---
 
-# 93. Local Development Ports
+# 92. Seed Data
 
-```text
-React:
-5173
-
-Express:
-5000
-
-MongoDB:
-27017
-```
-
-If later needed:
-
-```text
-Redis:
-6379
-```
-
-Redis is not mandatory during the first implementation.
-
----
-
-# 94. Background Processing
-
-Do not introduce Redis/BullMQ immediately.
-
-For the first prototype:
-
-```text
-API
- ↓
-process document
- ↓
-return result
-```
-
-If OCR/AI processing becomes slow, introduce:
-
-```text
-Redis
-+
-BullMQ
-```
-
-as an optimization.
-
-This avoids unnecessary infrastructure for the prototype.
-
----
-
-# 95. Performance Requirements
-
-Patient dashboard initial render:
-
-**target < 2 seconds on local development**
-
-Doctor dashboard:
-
-**target < 2 seconds for standard patient record**
-
-Document processing can be asynchronous.
-
-AI processing can show:
-
-```text
-Processing...
-```
-
-rather than blocking the entire application.
-
----
-
-# 96. Accessibility
-
-Target:
-
-**WCAG 2.2 AA principles**
-
-The patient application must provide:
-
-* large buttons,
-* high contrast,
-* semantic labels,
-* keyboard accessibility,
-* readable typography,
-* clear focus states,
-* screen-reader labels,
-* voice alternatives,
-* touch alternatives.
-
-This supports the original requirement for elderly and low-literacy users.
-
----
-
-# 97. Responsive Design
-
-Patient application:
-
-```text
-Mobile first
-Tablet
-Desktop
-```
-
-Doctor dashboard:
-
-```text
-Desktop first
-Tablet support
-```
-
-The architecture should later support kiosk-specific large-screen layouts.
-
----
-
-# 98. UI Design Direction
-
-Quantum Care should use:
-
-* clean healthcare aesthetic,
-* high readability,
-* restrained color palette,
-* strong information hierarchy,
-* minimal animation,
-* large patient controls,
-* dense but organized doctor dashboard.
-
-Patient screens and doctor screens should not look identical.
-
----
-
-# 99. Doctor Information Hierarchy
-
-Doctor screen priority:
-
-```text
-1. Patient identity
-2. Current complaint
-3. Red flags
-4. AI clinical summary
-5. Relevant history
-6. Current medication/allergies
-7. Timeline
-8. Documents
-9. Consultation actions
-```
-
-The doctor should not have to dig through five menus to discover that the patient reported something urgent.
-
----
-
-# 100. Patient Information Hierarchy
-
-Patient screen priority:
-
-```text
-1. What do you need to tell us?
-2. Voice/touch input
-3. Progress
-4. Review
-5. Appointment
-6. Records
-```
-
-Keep medical terminology out of patient-facing copy where simpler wording is possible.
-
----
-
-# 101. Admin Information Hierarchy
-
-Admin screen:
-
-```text
-1. Operational overview
-2. Appointments
-3. Users
-4. Doctors
-5. Hospitals
-6. Departments
-7. Documents
-8. Audit
-9. Analytics
-```
-
----
-
-# 102. Medical Data Provenance
-
-Every clinical field should support:
-
-```text
-sourceType:
-PATIENT_REPORTED
-DOCUMENT_EXTRACTED
-AI_STRUCTURED
-DOCTOR_ENTERED
-DOCTOR_VERIFIED
-```
-
-This is mandatory.
-
-The system must never make an AI-generated statement appear indistinguishable from a doctor-confirmed fact.
-
----
-
-# 103. AI Output Validation
-
-Every AI response must be validated.
-
-Process:
-
-```text
-AI
- ↓
-JSON
- ↓
-Zod validation
- ↓
-Valid?
- ├── YES → store
- └── NO  → retry/repair
-```
-
-No raw AI text should directly modify clinical database records.
-
----
-
-# 104. Clinical Prompt Rules
-
-Every clinical AI prompt must specify:
-
-* the AI is not the diagnosing physician,
-* information must not be fabricated,
-* unknown values must remain unknown,
-* patient statements must remain patient statements,
-* uncertainty must be preserved,
-* no medication recommendation unless explicitly requested as a non-authoritative classification task,
-* red flags must be surfaced according to application rules.
-
----
-
-# 105. AI Context Minimization
-
-Only send data necessary for a task.
-
-For example:
-
-For a follow-up question:
-
-```text
-current complaint
-previous relevant answers
-current clinical section
-```
-
-Do not send the patient's entire medical history unnecessarily.
-
----
-
-# 106. Doctor Access Model
-
-The doctor must not access any patient by simply changing:
-
-```text
-/patient/123
-```
-
-The backend checks:
-
-```text
-doctor identity
-+
-hospital relationship
-+
-appointment/visit/access permission
-+
-patient consent where applicable
-```
-
----
-
-# 107. Patient Data Ownership Model
-
-The patient profile is persistent.
-
-Each hospital visit is separate.
-
-Example:
-
-```text
-Patient
-│
-├── Profile
-├── Medical History
-├── Documents
-├── Timeline
-│
-├── Visit 1
-├── Visit 2
-└── Visit 3
-```
-
-This is necessary for the future cross-hospital workflow.
-
----
-
-# 108. Future Kiosk Compatibility
-
-The backend must remain client-agnostic.
-
-The same APIs will eventually serve:
-
-```text
-Patient Web
-Doctor Web
-Admin Web
-Kiosk
-```
-
-No web-only business logic may be required for clinical operations.
-
----
-
-# 109. Future Kiosk Modules
-
-When kiosk development starts, it will consume:
-
-```text
-Authentication API
-Patient API
-Appointment API
-QR API
-Clinical Session API
-Document API
-Triage API
-```
-
-The kiosk will add:
-
-* camera
-* QR scanning
-* touch optimization
-* microphone
-* speaker
-* kiosk device identity
-
-No new medical database is required.
-
----
-
-# 110. Future Payment Integration
-
-When payment is added:
-
-```text
-Appointment
-  ↓
-Payment Order
-  ↓
-Gateway
-  ↓
-Webhook
-  ↓
-Payment verification
-  ↓
-Appointment confirmation
-```
-
-The appointment model already reserves a place for future payment references.
-
-The current version must not require payment.
-
----
-
-# 111. Future OTP Integration
-
-When OTP is added:
-
-```text
-Mobile
-  ↓
-OTP provider
-  ↓
-Verification
-  ↓
-Authenticated session
-```
-
-The current authentication architecture should isolate identity verification so OTP can be plugged in later.
-
----
-
-# 112. Future Cloud Storage
-
-When cloud storage is required:
-
-Current:
-
-```text
-StorageProvider
-   ↓
-LocalStorageProvider
-```
-
-Future:
-
-```text
-StorageProvider
-   ↓
-S3StorageProvider
-```
-
-Controllers and clinical services must not know where a file physically lives.
-
----
-
-# 113. Future ABDM Integration
-
-Create a future provider:
-
-```text
-providers/abdm/
-    ABDMProvider.js
-```
-
-Do not mix ABDM implementation into normal patient controllers.
-
-Future mapping:
-
-```text
-Quantum Care Patient
-       ↓
-FHIR mapping
-       ↓
-ABDM
-```
-
-The supplied problem statement explicitly envisions ABHA linkage, FHIR-based interoperability and hospital information system integration.
-
----
-
-# 114. Future HIS/EMR Integration
-
-Create:
-
-```text
-providers/his/
-    HISProvider.js
-```
-
-Expected future operations:
-
-```text
-pushPatient()
-pushEncounter()
-pushClinicalSummary()
-pushPrescription()
-getPatientRecords()
-```
-
-Do not build assumptions about a particular hospital HIS into the core application.
-
----
-
-# 115. Production Interoperability Principle
-
-Architecture:
-
-```text
-Quantum Care internal model
-             |
-             v
-Interoperability layer
-             |
-             +--> FHIR
-             +--> ABDM
-             +--> HIS
-             +--> Other providers
-```
-
-Do not force the MongoDB schema itself to become a FHIR database.
-
----
-
-# 116. Prototype Cost Strategy
-
-The prototype should minimize recurring costs.
-
-## Free/local
-
-* React
-* Vite
-* Node.js
-* Express
-* MongoDB Community
-* Mongoose
-* Tailwind
-* shadcn/ui
-* Zustand
-* TanStack Query
-* React Hook Form
-* Zod
-* Leaflet
-* OpenStreetMap
-* Tesseract.js
-* QR library
-* Git
-* GitHub
-* Playwright
-* Vitest
-* ESLint
-* Prettier
-* Local filesystem
-
-## External API cost
-
-The only major paid service in the current AI architecture is the external AI API usage.
-
-The prototype should minimize usage by:
-
-* using concise prompts,
-* limiting repeated calls,
-* caching stable outputs,
-* using deterministic UI options where possible,
-* sending only necessary context.
-
-No assumption should be made that external AI APIs are unlimited or permanently free.
-
----
-
-# 117. No Cloud Requirement
-
-The complete prototype can run locally:
-
-```text
-Browser
-  ↓
-React
-  ↓
-Express
-  ↓
-MongoDB
-  ↓
-Local storage
-```
-
-AI calls are external:
-
-```text
-Express
-  ↓
-OpenAI API
-```
-
-No AWS infrastructure, cloud database, or cloud file storage is required for the prototype.
-
----
-
-# 118. Recommended Development Machine
-
-Minimum practical prototype environment:
-
-```text
-4-core CPU
-8 GB RAM
-10+ GB available storage
-Stable internet connection
-Modern Chrome/Edge/Firefox
-```
-
-A GPU is not required because AI runs through external APIs.
-
----
-
-# 119. Browser Requirements
-
-Target:
-
-* Chrome
-* Edge
-* Firefox
-* Safari
-
-Voice functionality requires browser microphone permission.
-
----
-
-# 120. Development Tools
-
-Mandatory:
-
-```text
-VS Code
-Node.js
-npm
-Git
-GitHub
-MongoDB Community
-MongoDB Compass
-Postman or Bruno
-Chrome/Edge
-```
-
-Recommended:
-
-```text
-Docker Desktop
-Figma
-draw.io
-```
-
-Docker is optional for the initial prototype.
-
----
-
-# 121. Documentation Structure
-
-Repository:
-
-```text
-docs/
-│
-├── PRD.md
-├── TRD.md
-├── API.md
-├── architecture.md
-├── database.md
-├── ai.md
-├── security.md
-├── deployment.md
-└── openapi.yaml
-```
-
-The PRD defines behavior.
-
-The TRD defines implementation.
-
-The OpenAPI file defines the API contract.
-
----
-
-# 122. Architecture Diagram
-
-High-level:
-
-```text
-                         QUANTUM CARE
-                              |
-        +---------------------+---------------------+
-        |                     |                     |
-        v                     v                     v
-   PATIENT WEB           DOCTOR WEB             ADMIN WEB
-        |                     |                     |
-        +---------------------+---------------------+
-                              |
-                              v
-                     REACT / VITE FRONTEND
-                              |
-                              v
-                       REST API / HTTP
-                              |
-                              v
-                    NODE.JS + EXPRESS
-                              |
-       +----------------------+----------------------+
-       |                      |                      |
-       v                      v                      v
-  AUTH SERVICE          CLINICAL SERVICE       APPOINTMENT
-       |                      |                   SERVICE
-       |                      |                      |
-       +----------------------+----------------------+
-                              |
-             +----------------+----------------+
-             |                |                |
-             v                v                v
-        MongoDB          Local Storage    External AI APIs
-                                              |
-                                       +------+------+
-                                       |             |
-                                       v             v
-                                   AI / STT        TTS
-
-                    DOCUMENT PROCESSING
-                              |
-                         Tesseract.js
-                              |
-                         OpenAI extraction
-```
-
----
-
-# 123. Current End-to-End Technical Flow
-
-```text
-Patient opens website
-       ↓
-React
-       ↓
-Express authentication
-       ↓
-MongoDB patient profile
-       ↓
-Clinical intake session
-       ↓
-Voice / Touch
-       ↓
-OpenAI Speech API when voice is used
-       ↓
-OpenAI clinical reasoning/structuring
-       ↓
-Structured clinical answers
-       ↓
-Clinical report
-       ↓
-Patient uploads document
-       ↓
-Local storage
-       ↓
-Tesseract.js
-       ↓
-OCR text
-       ↓
-OpenAI extraction
-       ↓
-Structured medical information
-       ↓
-Medical timeline
-       ↓
-Hospital recommendation
-       ↓
-Appointment
-       ↓
-QR
-       ↓
-Doctor dashboard
-       ↓
-Clinical summary
-       ↓
-Doctor verification
-       ↓
-Consultation
-```
-
----
-
-# 124. Main Development Milestones
-
-## Milestone 1
-
-Project setup:
-
-```text
-React
-Express
-MongoDB
-Authentication
-Routing
-UI system
-```
-
-## Milestone 2
-
-Patient:
-
-```text
-Profile
-Dashboard
-Clinical intake
-Voice
-Touch
-AI questions
-```
-
-## Milestone 3
-
-Documents:
-
-```text
-Upload
-Local storage
-OCR
-AI extraction
-Timeline
-```
-
-## Milestone 4
-
-Appointments:
+Create synthetic:
 
 ```text
 Hospitals
 Departments
+Kiosk users
+Patients
 Doctors
-Slots
-Booking
-QR
-```
-
-## Milestone 5
-
-Doctor:
-
-```text
-Queue
-Patient profile
-Clinical report
+Appointments
+Clinical sessions
+Medical reports
 Documents
-Timeline
-Verification
-Consultation
+Timeline events
 ```
 
-## Milestone 6
+No real medical data should be used for the prototype.
 
-Governance:
+---
 
-```text
-Consent
-Sharing
-Audit
-Security
-```
-
-## Milestone 7
-
-Testing:
+# 93. Final Architecture
 
 ```text
-Unit
-Integration
-E2E
-Demo data
-Performance
+                         QUANTUM CARE
+                              |
+                +-------------+-------------+
+                |                           |
+                v                           v
+          PATIENT WEBSITE              KIOSK MODE
+                |                           |
+                +-------------+-------------+
+                              |
+                              v
+                       REACT APPLICATION
+                              |
+                           REST API
+                              |
+                              v
+                       NODE + EXPRESS
+                              |
+       +----------------------+----------------------+
+       |                      |                      |
+       v                      v                      v
+   AUTH SERVICE         CLINICAL SERVICE      APPOINTMENT
+       |                      |                 SERVICE
+       |                      |                      |
+       +----------------------+----------------------+
+                              |
+                +-------------+-------------+
+                |                           |
+                v                           v
+             MongoDB                  Local Storage
+                |
+                |
+          +-----+------+
+          |            |
+          v            v
+       OpenAI       Tesseract
+       APIs           OCR
 ```
 
 ---
 
-# 125. Definition of Done
+# 94. Complete Current Workflow
 
-The website prototype is considered technically complete when:
+```text
+                    PATIENT
+                       |
+                       v
+                 CREATE PROFILE
+                       |
+               Aadhaar Number
+                       |
+                       v
+                    OTP
+                       |
+                       v
+             Create PIN/Password
+                       |
+                       v
+                    LOGIN
+                       |
+                       v
+              PATIENT DASHBOARD
+                       |
+                       v
+           "What are you suffering from?"
+                       |
+             +---------+---------+
+             |                   |
+           VOICE                TOUCH
+             |                   |
+             +---------+---------+
+                       |
+                       v
+                AI QUESTIONS
+                       |
+                       v
+            DIGITAL CLINICAL REPORT
+                       |
+                       v
+              UPLOAD OLD REPORTS
+                       |
+                       v
+                  OCR + AI
+                       |
+                       v
+               MEDICAL TIMELINE
+                       |
+                       v
+              BOOK APPOINTMENT
+                       |
+                       v
+                  QR GENERATED
+                       |
+                       v
+               PATIENT ARRIVES
+                       |
+                       v
+                  KIOSK MODE
+                       |
+                       v
+             PATIENT IDENTIFICATION
+                       |
+                       v
+                   CHECK-IN
+                       |
+                       v
+             UPDATE HEALTH DETAILS
+                       |
+                       v
+              DOCUMENT PROCESSING
+                       |
+                       v
+             FINAL DIGITAL REPORT
+                       |
+                       v
+              READY FOR CONSULTATION
+```
+
+---
+
+# 95. Definition of Done for Current Version
+
+The current Quantum Care prototype is complete when:
 
 ### Patient
 
-* Can create an account.
-* Can log in.
-* Can create/update profile.
-* Can enter symptoms using text.
-* Can use voice input.
-* Can select responses using touch controls.
-* Can complete adaptive AI questions.
-* Can view initial clinical report.
+* Can register using Aadhaar number.
+* Can receive and verify OTP in prototype mode.
+* Can create a password/PIN.
+* Can log in using Aadhaar + password/PIN.
+* Can complete personal profile.
+* Can enter medical information.
+* Can describe current symptoms.
+* Can use voice.
+* Can use touch/select inputs.
+* Can complete adaptive AI questioning.
+* Can receive a digital clinical report.
 * Can upload medical documents.
-* Can see document processing status.
-* Can view medical timeline.
-* Can search/select a hospital.
-* Can select department and doctor.
-* Can book an appointment.
-* Can receive appointment QR.
-* Can view appointments.
+* Can view OCR/extracted information.
+* Can see a medical timeline.
+* Can book an appointment without payment.
+* Can generate an appointment QR.
 
-### Doctor
+### Kiosk
 
-* Can log in.
-* Can see patient queue.
-* Can see current complaint.
-* Can view clinical report.
-* Can view previous history.
-* Can view timeline.
-* Can view documents.
-* Can view original documents.
-* Can edit/verify AI report.
-* Can add diagnosis.
-* Can add consultation notes.
-* Can complete consultation.
-
-### Admin
-
-* Can log in.
-* Can create doctors.
-* Can create staff.
-* Can create hospitals.
-* Can create departments.
-* Can manage appointment configuration.
-* Can view analytics.
-* Can view audit logs.
+* Uses the same React application.
+* Has a dedicated kiosk layout.
+* Allows authorized hospital kiosk user login.
+* Can identify existing patients.
+* Can register new patients.
+* Can retrieve patient information.
+* Can create appointments.
+* Can initiate clinical intake.
+* Can update patient information.
+* Can process documents.
+* Can complete the patient session.
+* Clears the session afterward.
 
 ### System
 
-* Uses MongoDB.
+* Uses MongoDB locally.
 * Uses local document storage.
 * Uses external AI APIs.
-* Does not require local AI models.
-* Does not require OTP.
-* Does not require payment gateway.
+* Uses OTP abstraction.
+* Uses Aadhaar-provider abstraction.
+* Does not require payment.
 * Does not require cloud storage.
-* Has role-based authorization.
-* Has API validation.
+* Does not require a separate kiosk frontend.
+* Has role-based access.
+* Has validation.
 * Has audit logging.
 * Has automated tests.
-* Can run entirely in a local development environment.
+* Can run locally.
 
 ---
 
-# 126. Final Technical Stack
-
-The final **Quantum Care prototype stack** is:
+# 96. Final Technical Stack
 
 ```text
 FRONTEND
@@ -3535,10 +2694,16 @@ Mongoose
 
 DATABASE
 MongoDB
-Local instance
+Local
+
+AUTHENTICATION
+Aadhaar Number
+OTP
+Password/PIN
+JWT/HTTP-only session architecture
 
 AI
-External OpenAI API
+OpenAI API
 OpenAI Speech API
 OpenAI TTS
 
@@ -3553,22 +2718,24 @@ OpenStreetMap
 Leaflet
 
 QR
-qrcode library
-
-AUTH
-Password authentication
-Argon2id/bcrypt
-HTTP-only session/JWT architecture
-No OTP
-
-PAYMENTS
-Not implemented yet
-
-CLOUD
-Not used yet
+qrcode
 
 KIOSK
-Not implemented yet
+Same React application
+Kiosk Mode
+/kiosk routes
+
+PAYMENT
+Deferred
+
+CLOUD
+Deferred
+
+ABDM
+Future
+
+HIS/EMR
+Future
 
 TESTING
 Vitest
@@ -3577,10 +2744,11 @@ Supertest
 Playwright
 
 DEVELOPMENT
+VS Code
+Node.js
+npm
 Git
 GitHub
-VS Code
-npm
 MongoDB Compass
 Postman/Bruno
 
@@ -3591,51 +2759,35 @@ Prettier
 
 ---
 
-# 127. Final Architecture Principle
+# 97. Final Architecture Principle
 
-The most important technical decision is this:
-
-```text
-                    QUANTUM CARE
-                         |
-       +-----------------+-----------------+
-       |                 |                 |
-    Patient Web      Doctor Web        Admin Web
-       |                 |                 |
-       +-----------------+-----------------+
-                         |
-                    REST API
-                         |
-                  Node + Express
-                         |
-       +-----------------+------------------+
-       |                 |                  |
-    MongoDB        Service Layer       Providers
-       |                 |                  |
-       |                 |        +---------+---------+
-       |                 |        |         |         |
-       |                 |      OpenAI    OCR      Maps
-       |                 |                  |
-       |                 |              Local Files
-       |                 |
-       +-----------------+
-```
-
-Every major external dependency is behind a provider/service boundary.
-
-That means when the prototype becomes a real application, we can replace:
+The most important decision in this revision is:
 
 ```text
-Local MongoDB → Cloud MongoDB
-Local files → S3
-Prototype auth → OTP/ABHA
-No payment → Razorpay
-OpenStreetMap → Google Maps if required
-Prototype OCR → advanced medical OCR
-OpenAI configuration → production AI configuration
-Web only → Web + Kiosk
+                  QUANTUM CARE
+                       |
+           +-----------+-----------+
+           |                       |
+           v                       v
+      PATIENT WEB             KIOSK MODE
+           |                       |
+           +-----------+-----------+
+                       |
+                       v
+                  SAME REACT APP
+                       |
+                       v
+                 SAME REST API
+                       |
+                       v
+                 SAME SERVICES
+                       |
+                       v
+                    MongoDB
 ```
 
-without rewriting Quantum Care's core clinical workflow.
+There is **one application, one backend, one database, and one clinical data model**.
 
-The web-first approach also directly supports the original problem's intended patient journey of structured history capture, document digitization, summary generation, and physician review before consultation.
+The website and kiosk are simply different experiences over the same system.
+
+That keeps the current prototype manageable while leaving a clean path toward the larger MediKiosk concept in the original problem statement, which ultimately envisions patient identification, structured history capture, document digitization, clinical summarization, consent, and integration with hospital systems/ABDM.
