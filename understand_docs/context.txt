@@ -81,11 +81,29 @@ In this project the main focus is to digital health profile, patient intake, app
     hospital admin can create doctor profile which will be used by doctor to login as doctor in application can patient to be see the doctor for appointment
     hospital interface can manage the doctor aviability, the fee structure, etc. and can update the aviability of the doctor
     hospital admin can see all the appointment and can cancel or reschedule them(reschedule will notify the user)
-    hospital can see the list of all the doctors registered in the hospital and can remove them
+    hospital can see the list of all the doctors registered in the hospital and can remove them and can change the login cradentials
     after login hospital admin will get a dashboard with list of all the patients waiting for consultation
     hospital admin can see the digital report of the patient (can't edit it, only doctor can edit it)
     hospital admin can see the uploaded documents of the patient and can view them
     hospital admin can update the patient's medical record}
 
 
-here are the tech stack
+***here are the tech stack***
+
+1.Frontend - React.js + JavaScript + Vite
+2.backend - Node.js + Express.js
+3.database - MongoDB
+4.authentication - 
+            -- user - registration - Aadhaar Number + OTP
+                    - login - Aadhaar Number + pin
+            
+            --hospital - registration - manual verifiaction and document upload via email request
+                        - login - cradentials given by the application admin after successful registraion
+                    
+            --doctor - registration - doctor will get a registration number and pin for the hospital to login to the application from the hospital admin
+                     - login - cradentials given by the hospital admin
+
+5.AI- External AI APIs
+6.OCR- Tesseract.js
+7.Storage- Local filesystem
+
