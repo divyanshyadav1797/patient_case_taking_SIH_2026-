@@ -1,0 +1,91 @@
+Project name : Quantum care
+
+In this project the main focus is to digital health profile, patient intake, appointment, medical-record digitization, and doctor-assistance.
+
+--there are two modes by which a user can interact with the application
+1. patient mode (webapp)
+2. kiosk mode   (from kiosk ui avilable at hospital premises)
+
+--there will be three user type
+1. patient
+2. doctor
+3. hospital admin
+
+--patient can create there account by using there aadhar card number 
+--hospital admin can register there hospital in the application and doctor can register themself in the application
+
+--there will be 3 page in login page 
+1. patient (user) register and login
+    in this user can register them by there aadhar number and otp send to there linked phone number and they can set a pin to login next time
+    the information like name, age, gender will be collected from there aadhar card and other information will be optional at the time of registration, user can fill the additional information later
+    for login the user can use there aadhar number and pin or  there aadhar card linked phone number or pin(pin was set at time of registraion)
+
+2. Hospital Login and Register
+    hospital can request registration of there hospital by the licence number and the name of the hospital and communication details like phone number and email address
+    then  hospital will  be verfied by applicaition manager and later will comunicate with hospital for verification document via  email and once  the  hospital is register successfully
+    hospital admin will reciver a registraion number and pin for the hospital to login to the application
+
+3.Doctor Login and Register
+    doctor can be registered by the hospital admin 
+    after registraion doctor will get a email with login credentials and can login to the webapp by those credentials and handle patient requests
+    doctor will have there own dashboard to handle patient requests
+
+--user work flow
+    1. patient (user)
+        workflow in kiosk
+        patient will go to kisok to book an appointment to a doctor, first when user enter there aadhar and pin they will be given
+        a option to select language eg hindi, english, marathi, gujrati, etc
+
+        after language selection they will given a chat with our ai which will ask about the patient problem (there will be chat and voice option to tell ai)
+        after patient answer small questions by ai about the suffering the patient will be asked to scan his (or her) prevous medical documents eg (diagonistic reports, scans etc.)
+        in this phase the AI will create a structured clinical report of the patient which will include all the information patient told to the AI and all the information extracted from the medical documents
+        the application  will analyze the information give by the user and will give the list of avilable doctor of that Hospital
+        if the hospital charges fee then the  patient is directed to the  payment gateway and if not then the appointment will be registered 
+        after this the digital report will be send to the doctor and the documents uploaded by the user are stored in the database and ever user go to any doctor in the country then the document and scan can be seen during conslutation
+        user will be given a token number and when the doctor call the token then the user can go to the consultation room
+        after appointment is booked the kiosk interface will get back to the login page of user so the next patient can use the kiosk
+
+    workflow in home webapp
+        patient can login to there account using there aadhar card and pin or there aadhar card linked phone number or pin(pin was set at time of registraion)
+        after login user can see his profile and can edit it
+        user can book an appointment to a doctor when use select the option to book appointment then a option to select language eg hindi, english, marathi, gujrati, etc
+
+        after language selection they will given a chat with our ai which will ask about the patient problem (there will be chat and voice option to tell ai)
+        after patient answer small questions by ai about the suffering the patient will be asked to scan his (or her) prevous medical documents eg (diagonistic reports, scans etc.)
+        in this phase the AI will create a structured clinical report of the patient which will include all the information patient told to the AI and all the information extracted from the medical documents
+        on the basis of flags and details told by user the web app will hospital and doctor to book according to user requirement, aviability of doctor and location of hospital, and severity of the patient problem
+        if the hospital charges fee then the  patient is directed to the  payment gateway and if not then the appointment will be registered 
+        after this the digital report will be send to the doctor and the documents uploaded by the user are stored in the database and ever user go to any doctor in the country then the document and scan can be seen during conslutation
+        user will be given a token number and when the doctor call the token then the user can go to the consultation room
+        user can also upload his medical documents and can see his medical timeline
+        user can also request a digital health profile
+        there will be a timeline which can be seen in profile page which will show the user about every consultation they ever had(this will be created by the ai and the application itself)
+        
+
+--doctor work flow
+    after login doctor will get a dashboard with list of all the patients waiting for consultation
+    doctor can see the digital report of the patient and can edit it
+    doctor can see the uploaded documents of the patient and can view them
+    docotr can also see the past history of patient medical record whenever the patient uploaded the document in the past
+    doctor will create report and suggest scans to the patients and the report will be given in physical form (so user can see it and upload it whenever the user book the next appointment or later)
+    doctor can see the timeline of user medical history (if the user have used the application in past) if doctor wants to see
+
+--hospital admin work flow
+    
+    {**kiosk mode in hospital admin page**
+    there will be a option to togle to the kisok mode if the kiosk mode is on then the patient can use the kiosk to tell there problem and book appointment by login there profile for temprory basis
+    to go to the hospital admin interface again and togle off the kiosk mode the hospital have to enter the pin to the cradential to go the normal hospital interface}
+    
+    {**hospital admin interface**
+    hospital admin will have a feature of editing hospital profile(name of hospital, email, phone number, etc)
+    hospital admin can create doctor profile which will be used by doctor to login as doctor in application can patient to be see the doctor for appointment
+    hospital interface can manage the doctor aviability, the fee structure, etc. and can update the aviability of the doctor
+    hospital admin can see all the appointment and can cancel or reschedule them(reschedule will notify the user)
+    hospital can see the list of all the doctors registered in the hospital and can remove them
+    after login hospital admin will get a dashboard with list of all the patients waiting for consultation
+    hospital admin can see the digital report of the patient (can't edit it, only doctor can edit it)
+    hospital admin can see the uploaded documents of the patient and can view them
+    hospital admin can update the patient's medical record}
+
+
+here are the tech stack
