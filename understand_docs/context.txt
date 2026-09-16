@@ -88,6 +88,10 @@ In this project the main focus is to digital health profile, patient intake, app
     hospital admin can update the patient's medical record}
 
 
+
+
+
+
 ***here are the tech stack***
 
 1.Frontend - React.js + JavaScript + Vite
@@ -107,3 +111,139 @@ In this project the main focus is to digital health profile, patient intake, app
 6.OCR- Tesseract.js
 7.Storage- Local filesystem
 
+
+
+
+
+**UI/UX guidelines**
+
+The application should be minimal and not loaded with things to see, each thing saprated by cards and elements and limited information on the first look.
+    
+Quantum Care should feel like a **modern healthcare platform rather than a traditional hospital portal**.
+
+The interface must combine:
+
+* Minimalism
+* Glassmorphism
+* Soft blur effects
+* Material Design principles
+* Clear typography
+* Large and accessible controls
+* Gentle animations
+* Strong visual hierarchy
+* Calm healthcare aesthetics
+* Consistent spacing
+* Responsive layouts
+The application has two visual themes.
+
+-- Light Mode
+
+Primary palette:
+
+* Light Pink
+* Light Orange
+* Light Blue
+* White
+
+Supporting colors:
+
+* Soft lavender
+* Very light peach
+* Cool grey
+* Dark charcoal for text
+
+### Suggested palette
+
+```text
+Background:
+#FFF9FB
+
+Surface:
+#FFFFFF
+
+Soft Pink:
+#F9DDE8
+
+Pink Accent:
+#EFA7C0
+
+Soft Orange:
+#FFE4C7
+
+Orange Accent:
+#F5B27A
+
+Soft Blue:
+#DDEEFF
+
+Blue Accent:
+#9CCAF2
+
+Lavender:
+#E9E1F7
+
+Primary Text:
+#25232A
+
+Secondary Text:
+#706B76
+
+Border:
+#E9E5EA
+```
+
+These values are the design baseline and can be refined visually during implementation.
+
+---
+
+-- Dark Mode
+
+Primary palette:
+
+* Dark Grey
+* Black
+* Light Purple
+* Dark Purple
+
+Supporting colors:
+
+* Soft violet
+* Muted blue-purple
+* Grey lavender
+* Light text
+
+### Suggested palette
+
+```text
+Background:
+#0E0D12
+
+Surface:
+#17151D
+
+Elevated Surface:
+#211D29
+
+Dark Purple:
+#39264D
+
+Purple:
+#7656A8
+
+Light Purple:
+#CBB8F2
+
+Soft Accent:
+#A992D8
+
+Text:
+#F7F4FA
+
+Secondary Text:
+#AAA4B4
+
+Border:
+#302B37
+
+
+-- in kisok interface make it with large and bold text with large fonts with user friendly interface so the workflow be smooth and all the thing work fine and make the kiosk interface totally minimal with only the  important stuff in the user front
