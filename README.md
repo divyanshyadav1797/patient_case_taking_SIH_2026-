@@ -556,25 +556,15 @@ The AI-generated report remains a draft until a doctor verifies it.
 
 Backend Structure
 
-server/
-├── src/
-│   ├── config/
-│   ├── routes/
-│   ├── controllers/
-│   ├── services/
-│   ├── repositories/
-│   ├── models/
-│   ├── providers/
-│   ├── schemas/
-│   ├── middleware/
-│   ├── utils/
-│   └── app.js
-│
-├── storage/
-│   ├── documents/
-│   └── temporary/
-│
-└── tests/
+backend/
+├── config/
+│   └── db.js
+├── controllers/
+├── middleware/
+├── models/
+├── routes/
+├── server.js
+└── .env.example
 
 Layer responsibilities
 
@@ -622,42 +612,32 @@ The rule is simple: controllers coordinate, services decide, repositories store,
 
 Repository Structure
 
-quantum-care/
+patient_case_taking_SIH_2026-/
 │
-├── client/
-│   └── src/
-│       ├── components/
-│       ├── features/
-│       ├── pages/
-│       ├── services/
-│       ├── hooks/
-│       ├── stores/
-│       ├── schemas/
-│       ├── i18n/
-│       └── utils/
-│
-├── server/
+├── frontend/
 │   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── models/
-│   │   ├── providers/
-│   │   ├── repositories/
-│   │   ├── routes/
-│   │   ├── schemas/
+│   │   ├── components/
+│   │   ├── pages/
+│   │   ├── context/
 │   │   ├── services/
-│   │   └── utils/
-│   ├── storage/
-│   └── tests/
+│   │   ├── routes/
+│   │   ├── data/
+│   │   └── styles/
+│   ├── public/
+│   ├── index.html
+│   └── package.json
+│
+├── backend/
+│   ├── config/
+│   ├── controllers/
+│   ├── middleware/
+│   ├── models/
+│   ├── routes/
+│   └── server.js
 │
 ├── docs/
-│   ├── PRD.md
-│   ├── TRD.md
-│   └── backend-architecture.md
-│
-├── .env.example
-├── package.json
+├── prototypes/
+├── .gitignore
 └── README.md
 
 Core API Areas
@@ -1017,30 +997,30 @@ You also need an OpenAI API key for AI/speech features.
 Clone
 
 git clone <your-repository-url>
-cd quantum-care
+cd patient_case_taking_SIH_2026-
 
 Install dependencies
 
+Frontend:
+
+cd frontend
 npm install
 
-If client/server are separate packages:
+Backend:
 
-cd client
-npm install
-
-cd ../server
+cd ../backend
 npm install
 
 Environment
 
-Create .env from .env.example.
+Create `backend/.env` from `backend/.env.example`.
 
 Example:
 
 NODE_ENV=development
 PORT=5000
 
-MONGODB_URI=mongodb://127.0.0.1:27017/quantumcare
+MONGO_URI=mongodb://127.0.0.1:27017/medikiosk
 
 OPENAI_API_KEY=your_key_here
 OPENAI_MODEL=your_model
@@ -1057,15 +1037,15 @@ Run
 
 Frontend:
 
-npm run client
+cd frontend
+npm run dev
 
 Backend:
 
-npm run server
-
-Or use:
-
+cd backend
 npm run dev
+
+The Vite app proxies `/api` to `http://localhost:5000`.
 
 Development Principles
 

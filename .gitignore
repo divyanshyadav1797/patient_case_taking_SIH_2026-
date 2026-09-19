@@ -72,3 +72,8 @@ desktop.ini
 # Vite specific
 # ========================
 *.local
+
+# ========================
+# Prototype local installs
+# ========================
+prototypes/**/node_modules/
