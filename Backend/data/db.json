@@ -1,0 +1,585 @@
+{
+  "users": [
+    {
+      "_id": "local_1789736189701_rkjp1yglr",
+      "customId": "P-10249",
+      "name": "Rahul Sharma",
+      "email": "rahul.sharma@example.com",
+      "phone": "9876543210",
+      "passwordHash": "$2b$10$VMLZPfdhKPA260IORj/gN.T8PKDqQtoenFj5mBEYiTdI/qfObFw2S",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "11a1c7f4b088c440cbe32788f7b85153bc0943c4f627a98e23d299b9bd983039",
+      "maskedAadhaar": "XXXX XXXX 9012",
+      "patientDetails": {
+        "age": 28,
+        "gender": "Male",
+        "bloodGroup": "B+",
+        "abhaId": "91-4521-8890-2341",
+        "address": "Plot 42, Malviya Nagar, Jaipur, Rajasthan",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-RJ-2024-8819",
+          "hasPrivateScheme": true,
+          "privateProvider": "Star Health",
+          "privatePolicyNum": "STAR-IND-44912"
+        }
+      },
+      "createdAt": "2026-09-18T12:56:29.701Z",
+      "updatedAt": "2026-09-19T16:26:12.942Z",
+      "lastLoginAt": "2026-09-19T16:26:12.942Z"
+    },
+    {
+      "_id": "local_1789736189751_snatjhawf",
+      "customId": "DOC-8821",
+      "name": "Dr. Sarah Jenkins",
+      "email": "dr.sarah@medicare.org",
+      "phone": "9829012345",
+      "passwordHash": "$2b$10$LjJwlRFZc.I/PEqaIyzmLOc4rAX5T/JN1y70a8Hs5qPnygMUAqFrW",
+      "role": "doctor",
+      "status": "ACTIVE",
+      "doctorDetails": {
+        "nmcId": "NMC-2018-99412",
+        "specialty": "Chief Cardiologist",
+        "department": "Cardiology",
+        "hospitalName": "SMS Hospital Jaipur"
+      },
+      "createdAt": "2026-09-18T12:56:29.751Z",
+      "updatedAt": "2026-09-19T16:26:12.398Z",
+      "lastLoginAt": "2026-09-19T16:26:12.398Z"
+    },
+    {
+      "_id": "local_1789736189799_vv2ioub0s",
+      "customId": "HOSP-RAJ-01",
+      "name": "SMS Hospital Jaipur",
+      "email": "admin@smshospital.org",
+      "phone": "01412560291",
+      "passwordHash": "$2b$10$8qXD2C12TtaCFLIXWXEzyudzBf7V8m1YBiifQoXSrlYN/wPBLKTf6",
+      "role": "hospital",
+      "status": "ACTIVE",
+      "hospitalDetails": {
+        "hospitalRegNo": "RJ-MED-2014-991",
+        "licenseNumber": "LIC-SMS-9918",
+        "facilityType": "Super Specialty Government Hospital",
+        "address": "Jawahar Lal Nehru Marg, Jaipur, Rajasthan 302004"
+      },
+      "createdAt": "2026-09-18T12:56:29.798Z",
+      "updatedAt": "2026-09-19T16:26:12.448Z",
+      "lastLoginAt": "2026-09-19T16:26:12.448Z"
+    },
+    {
+      "_id": "local_1789736189852_khzao66gq",
+      "customId": "KIOSK-TER-04",
+      "name": "OPD Check-In Terminal 04",
+      "email": "kiosk.terminal04@smshospital.org",
+      "phone": "9999900004",
+      "passwordHash": "$2b$10$NMQVs3/vbyEyszMimgVBWOTp1/GFXlQUfns.QoskLO7wmF0SeruCu",
+      "role": "kiosk",
+      "status": "ACTIVE",
+      "kioskDetails": {
+        "terminalId": "KIOSK-TER-04",
+        "hospitalId": "HOSP-RAJ-01",
+        "location": "Main Hospital Ground Floor - Reception A"
+      },
+      "createdAt": "2026-09-18T12:56:29.852Z",
+      "updatedAt": "2026-09-19T16:26:12.497Z",
+      "lastLoginAt": "2026-09-19T16:26:12.497Z"
+    },
+    {
+      "_id": "user_1789736197418_2ezyh01q1",
+      "customId": "PAT-79305",
+      "name": "Test Patient 5582",
+      "email": "patient5582@test.com",
+      "phone": "9800005582",
+      "passwordHash": "$2b$10$pA8Bff98LGrYFfVnUE4BXuT6PiuzVyhHADGr3fsI3gl5as4TJQm92",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "634fed469b2841fe6b21e8aa9795ffd3187ee8f0329d86270223c7ebe2e64bb8",
+      "maskedAadhaar": "XXXX XXXX 5582",
+      "lastLoginAt": "2026-09-18T12:56:37.467Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-1072-1588-5677",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-5582",
+          "hasPrivateScheme": false
+        }
+      },
+      "createdAt": "2026-09-18T12:56:37.418Z",
+      "updatedAt": "2026-09-18T12:56:37.467Z"
+    },
+    {
+      "_id": "user_1789736287425_h29aggs3k",
+      "customId": "PAT-80944",
+      "name": "Test Patient 2262",
+      "email": "patient2262@test.com",
+      "phone": "9800002262",
+      "passwordHash": "$2b$10$XCP8MTy/0hDpEPoIDRB36eOBZ/JwSala9f.hJjzI78oRXSJHF4b1u",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "fbb69f542999ac995352878cf64b95ada672e027497a49a2dc196f4090a5bfb9",
+      "maskedAadhaar": "XXXX XXXX 2262",
+      "lastLoginAt": "2026-09-18T12:58:07.474Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-9214-4557-9769",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-2262",
+          "hasPrivateScheme": false
+        }
+      },
+      "createdAt": "2026-09-18T12:58:07.425Z",
+      "updatedAt": "2026-09-18T12:58:07.474Z"
+    },
+    {
+      "_id": "user_1789736458585_a3rj17uh7",
+      "customId": "PAT-25564",
+      "name": "Test Patient 1681",
+      "email": "patient1681@test.com",
+      "phone": "9800001681",
+      "passwordHash": "$2b$10$WL0D8tnXfGyzeNKLeYoPIu/065MUA.5dHwkPPvqEdTsB0uHwkvkcS",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "d39dea2b2bfbaa5de0ec2acbecacf9144208af14ccac2e8ecad9f7bfa6219f26",
+      "maskedAadhaar": "XXXX XXXX 1681",
+      "lastLoginAt": "2026-09-18T13:00:58.585Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-2396-6075-4258",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-1681"
+        }
+      },
+      "createdAt": "2026-09-18T13:00:58.585Z",
+      "updatedAt": "2026-09-18T13:00:58.585Z"
+    },
+    {
+      "_id": "user_1789834602016_7ins97fmp",
+      "customId": "PAT-36446",
+      "name": "Test Patient 1744",
+      "email": "patient1744@test.com",
+      "phone": "9800001744",
+      "passwordHash": "$2b$10$6UISYNBNdJb8CDMMkH0oUOZcexoldnNonMBOcERpVyMlsgkw3.TkC",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "09d3d5612c2374290971c85b2221120282601c8bd7489bca8c5f0cf87d4dc323",
+      "maskedAadhaar": "XXXX XXXX 1744",
+      "lastLoginAt": "2026-09-19T16:16:42.015Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-9845-7311-6454",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-1744"
+        }
+      },
+      "createdAt": "2026-09-19T16:16:42.016Z",
+      "updatedAt": "2026-09-19T16:16:42.016Z"
+    },
+    {
+      "_id": "user_1789835132282_639z32qcq",
+      "customId": "PAT-97436",
+      "name": "Test Patient 2511",
+      "email": "patient2511@test.com",
+      "phone": "9800002511",
+      "passwordHash": "$2b$10$Zhnl2Oaezqbh5GD6fsY4QevXYdlv10S1HRyp2.zhuS8XlMQ7a6Dwq",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "ca17fc5f2d96cf8868ea599d0c7e1ba80025528b2056a0f0f51376b93cef76aa",
+      "maskedAadhaar": "XXXX XXXX 2511",
+      "lastLoginAt": "2026-09-19T16:25:32.282Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-3199-5581-4598",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-2511"
+        }
+      },
+      "createdAt": "2026-09-19T16:25:32.282Z",
+      "updatedAt": "2026-09-19T16:25:32.282Z"
+    },
+    {
+      "_id": "user_1789835172597_tv48rvpnx",
+      "customId": "PAT-39632",
+      "name": "Test Patient 9996",
+      "email": "patient9996@test.com",
+      "phone": "9800009996",
+      "passwordHash": "$2b$10$RAGRk8pINB1lpabrh67GleHx40kOz02jTJOXp4myZa3vD7URMq0De",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "d5d18c470c92165fe7264ca59799096dd9679fcc369319023347239f85094989",
+      "maskedAadhaar": "XXXX XXXX 9996",
+      "lastLoginAt": "2026-09-19T16:26:12.597Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-2411-9288-1277",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-9996"
+        }
+      },
+      "createdAt": "2026-09-19T16:26:12.597Z",
+      "updatedAt": "2026-09-19T16:26:12.597Z"
+    }
+  ],
+  "otpSessions": [
+    {
+      "sessionId": "otp_1789834602030_63d430a7b613",
+      "phone": "9876500000",
+      "aadhaarReference": "24cd1ff1d07130f657c882a4e7b7a51100ba3f67289411c87088a7d99e46e5c4",
+      "maskedAadhaar": "XXXX XXXX 1234",
+      "otpHash": "$2b$08$ocCfQ3PTvry/18PdLGVzFOzZy63oK2UCVNXm7ybklkspuBlmNlwBe",
+      "attempts": 0,
+      "isVerified": true,
+      "expiresAt": "2026-09-19T16:26:42.030Z",
+      "verificationToken": "vtok_e60816c7fe96f54d61519134f19e27002673c0efcbd9f4c3"
+    },
+    {
+      "sessionId": "otp_1789835132297_5cb73e01df99",
+      "phone": "9876500000",
+      "aadhaarReference": "24cd1ff1d07130f657c882a4e7b7a51100ba3f67289411c87088a7d99e46e5c4",
+      "maskedAadhaar": "XXXX XXXX 1234",
+      "otpHash": "$2b$08$avSd2hflHieKmzhl854gvuk0kK2HvH5CEp/2sieRr1OqkGQs5uzWa",
+      "attempts": 0,
+      "isVerified": true,
+      "expiresAt": "2026-09-19T16:35:32.297Z",
+      "verificationToken": "vtok_5b2d3581182d0abebd46cf956fdf29f6c8f9c8f179ff0b91"
+    },
+    {
+      "sessionId": "otp_1789835172611_96b2837eb0e6",
+      "phone": "9876500000",
+      "aadhaarReference": "24cd1ff1d07130f657c882a4e7b7a51100ba3f67289411c87088a7d99e46e5c4",
+      "maskedAadhaar": "XXXX XXXX 1234",
+      "otpHash": "$2b$08$.06xGimT6TQT1xqA9hEwle4P4XxCQDj9O7s3hG.s0ccpQ.ZoEbBda",
+      "attempts": 0,
+      "isVerified": true,
+      "expiresAt": "2026-09-19T16:36:12.612Z",
+      "verificationToken": "vtok_53f418fe4ae7b1dd2ec0606cd4bef3a62b33d4a7c87ecbb6"
+    }
+  ],
+  "blacklistedTokens": [
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbF8xNzg5NzM2MTg5NzAxX3JranAxeWdsciIsImlkIjoibG9jYWxfMTc4OTczNjE4OTcwMV9ya2pwMXlnbHIiLCJjdXN0b21JZCI6IlAtMTAyNDkiLCJyb2xlIjoicGF0aWVudCIsIm5hbWUiOiJSYWh1bCBTaGFybWEiLCJlbWFpbCI6InJhaHVsLnNoYXJtYUBleGFtcGxlLmNvbSIsInRva2VuVHlwZSI6ImFjY2VzcyIsImp0aSI6IjMxMjdiNDY0LTAzMmYtNGM3OS04ZDYyLThjY2I5MjliMTE4ZiIsImlhdCI6MTc4OTczNjQ1OCwiZXhwIjoxNzkwMzQxMjU4fQ.sIWHwDkOk863M1fZ2dI0KiXN5_-_XnZ2aumWvQ1uN2s",
+      "jti": "3127b464-032f-4c79-8d62-8ccb929b118f",
+      "userId": "local_1789736189701_rkjp1yglr",
+      "reason": "logout",
+      "expiresAt": "2026-09-25T13:00:58.000Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbF8xNzg5NzM2MTg5NzAxX3JranAxeWdsciIsImlkIjoibG9jYWxfMTc4OTczNjE4OTcwMV9ya2pwMXlnbHIiLCJjdXN0b21JZCI6IlAtMTAyNDkiLCJyb2xlIjoicGF0aWVudCIsInRva2VuVHlwZSI6InJlZnJlc2giLCJqdGkiOiI0OTkyYTE0NS1hYjg5LTQwYmUtYmFiZS03Y2I3NmNkYzk4NjIiLCJpYXQiOjE3ODk3MzY0NTgsImV4cCI6MTc5MDM0MTI1OH0.8Vwu69bAJYrYd5IATMWv_IDe1FNe1ko8eLCNgBx-8JU",
+      "jti": "4992a145-ab89-40be-babe-7cb76cdc9862",
+      "userId": "local_1789736189701_rkjp1yglr",
+      "reason": "logout",
+      "expiresAt": "2026-09-25T13:00:58.000Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbF8xNzg5NzM2MTg5NzAxX3JranAxeWdsciIsImlkIjoibG9jYWxfMTc4OTczNjE4OTcwMV9ya2pwMXlnbHIiLCJjdXN0b21JZCI6IlAtMTAyNDkiLCJyb2xlIjoicGF0aWVudCIsIm5hbWUiOiJSYWh1bCBTaGFybWEiLCJlbWFpbCI6InJhaHVsLnNoYXJtYUBleGFtcGxlLmNvbSIsInRva2VuVHlwZSI6ImFjY2VzcyIsImp0aSI6IjYxNGZmMmE1LWZmNTAtNGRmMS1hNGUyLTFhNDZjYjUxMzY3MiIsImlhdCI6MTc4OTgzNDYwMiwiZXhwIjoxNzkwNDM5NDAyfQ.P_fjgRtbh-Nhodja5zvWipCgcSn86p61zllFe9HTnRQ",
+      "jti": "614ff2a5-ff50-4df1-a4e2-1a46cb513672",
+      "userId": "local_1789736189701_rkjp1yglr",
+      "reason": "logout",
+      "expiresAt": "2026-09-26T16:16:42.000Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbF8xNzg5NzM2MTg5NzAxX3JranAxeWdsciIsImlkIjoibG9jYWxfMTc4OTczNjE4OTcwMV9ya2pwMXlnbHIiLCJjdXN0b21JZCI6IlAtMTAyNDkiLCJyb2xlIjoicGF0aWVudCIsInRva2VuVHlwZSI6InJlZnJlc2giLCJqdGkiOiIyYzg3ZDYxNi0zOGQ5LTQwYmUtYWFjOC0yNDg4YWVhZTcwZGQiLCJpYXQiOjE3ODk4MzQ2MDEsImV4cCI6MTc5MDQzOTQwMX0.nyMXVSdpnV8lGwc7HfLr1mAcTp6_IBSUVnGfjUzRJdo",
+      "jti": "2c87d616-38d9-40be-aac8-2488aeae70dd",
+      "userId": "local_1789736189701_rkjp1yglr",
+      "reason": "logout",
+      "expiresAt": "2026-09-26T16:16:41.000Z"
+    }
+  ],
+  "appointments": [
+    {
+      "id": "APT-K001",
+      "patientId": "P-KIOSK",
+      "patientName": "Aadhaar Walk-in Patient",
+      "doctorName": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "hospital": "SMS Hospital Jaipur",
+      "date": "Today",
+      "time": "09:56 pm",
+      "status": "Upcoming",
+      "type": "Kiosk Check-In (TK-001)",
+      "createdAt": "2026-09-19T16:26:12.972Z"
+    },
+    {
+      "id": "APT-940",
+      "patientId": "P-10249",
+      "patientName": "Rahul Sharma",
+      "doctorName": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "hospital": "SMS Hospital, Jaipur",
+      "date": "Sep 26, 2026",
+      "time": "02:00 PM",
+      "status": "Upcoming",
+      "type": "General Consultation",
+      "createdAt": "2026-09-19T16:26:12.947Z",
+      "updatedAt": "2026-09-19T16:26:12.949Z"
+    },
+    {
+      "id": "APT-711",
+      "patientId": "P-10249",
+      "patientName": "Rahul Sharma",
+      "doctorName": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "hospital": "SMS Hospital, Jaipur",
+      "date": "Sep 25, 2026",
+      "time": "11:30 AM",
+      "status": "Upcoming",
+      "type": "General Consultation",
+      "createdAt": "2026-09-19T16:25:32.628Z"
+    },
+    {
+      "id": "APT-101",
+      "patientId": "P-10249",
+      "patientName": "Rahul Sharma",
+      "doctorName": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "hospital": "SMS Hospital, Jaipur",
+      "date": "Tomorrow, Sep 19",
+      "time": "10:30 AM",
+      "status": "Upcoming",
+      "type": "Hospital Consultation"
+    },
+    {
+      "id": "APT-102",
+      "patientId": "P-10249",
+      "patientName": "Rahul Sharma",
+      "doctorName": "Dr. Priya Patel",
+      "specialty": "General Physician",
+      "hospital": "Apollo Clinic",
+      "date": "Sep 24, 2026",
+      "time": "02:00 PM",
+      "status": "Upcoming",
+      "type": "Routine Follow-up"
+    },
+    {
+      "id": "APT-098",
+      "patientId": "P-10249",
+      "patientName": "Rahul Sharma",
+      "doctorName": "Dr. Rajesh Gupta",
+      "specialty": "Orthopedics",
+      "hospital": "Fortis Hospital",
+      "date": "Aug 14, 2026",
+      "time": "11:15 AM",
+      "status": "Completed",
+      "type": "Knee Joint Consultation"
+    },
+    {
+      "id": "APT-095",
+      "patientId": "P-10249",
+      "patientName": "Rahul Sharma",
+      "doctorName": "Dr. Michael Chang",
+      "specialty": "Neurology",
+      "hospital": "Eternal Heart Care",
+      "date": "Jul 28, 2026",
+      "time": "04:00 PM",
+      "status": "Cancelled",
+      "type": "Migraine Review"
+    }
+  ],
+  "doctors": [
+    {
+      "id": 1,
+      "name": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "department": "Cardiology",
+      "experience": "14 yrs exp",
+      "rating": "4.9",
+      "reviews": 142,
+      "available": "Available Today",
+      "fee": "₹800",
+      "image": "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+      "hospital": "SMS Hospital Jaipur"
+    },
+    {
+      "id": 2,
+      "name": "Dr. Michael Chang",
+      "specialty": "Neurology",
+      "department": "Neurology",
+      "experience": "12 yrs exp",
+      "rating": "4.8",
+      "reviews": 98,
+      "available": "Next slot: Tomorrow",
+      "fee": "₹1,000",
+      "image": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300",
+      "hospital": "SMS Hospital Jaipur"
+    },
+    {
+      "id": 3,
+      "name": "Dr. Priya Patel",
+      "specialty": "General Physician",
+      "department": "General Medicine",
+      "experience": "9 yrs exp",
+      "rating": "4.9",
+      "reviews": 210,
+      "available": "Available Today",
+      "fee": "₹500",
+      "image": "https://images.unsplash.com/photo-1594824813581-9b16866b1a20?auto=format&fit=crop&q=80&w=300",
+      "hospital": "SMS Hospital Jaipur"
+    },
+    {
+      "id": 4,
+      "name": "Dr. Rajesh Gupta",
+      "specialty": "Orthopedics",
+      "department": "Orthopedics",
+      "experience": "16 yrs exp",
+      "rating": "4.7",
+      "reviews": 175,
+      "available": "Available Today",
+      "fee": "₹900",
+      "image": "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300",
+      "hospital": "SMS Hospital Jaipur"
+    },
+    {
+      "id": 5,
+      "name": "Dr. Ananya Roy",
+      "specialty": "Pediatrics",
+      "department": "Pediatrics",
+      "experience": "8 yrs exp",
+      "rating": "4.9",
+      "reviews": 89,
+      "available": "Next slot: Monday",
+      "fee": "₹600",
+      "image": "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300",
+      "hospital": "SMS Hospital Jaipur"
+    }
+  ],
+  "records": [
+    {
+      "id": "REC-85",
+      "patientId": "P-10249",
+      "title": "Blood Pressure Log Report",
+      "doctor": "Dr. Sarah Jenkins",
+      "hospital": "SMS Hospital Jaipur",
+      "date": "Sep 19, 2026",
+      "type": "Vitals Chart",
+      "file": "report.pdf",
+      "size": "1.2 MB",
+      "createdAt": "2026-09-19T16:26:12.964Z"
+    },
+    {
+      "id": "REC-01",
+      "patientId": "P-10249",
+      "title": "Comprehensive Lipid & Blood Profile",
+      "doctor": "Dr. Sarah Jenkins",
+      "hospital": "SMS Central Lab",
+      "date": "Sep 10, 2026",
+      "type": "Lab Report",
+      "file": "blood_report_sep2026.pdf",
+      "size": "1.8 MB"
+    },
+    {
+      "id": "REC-02",
+      "patientId": "P-10249",
+      "title": "Chest X-Ray Digital Imaging",
+      "doctor": "Dr. Rajesh Gupta",
+      "hospital": "Radiology Wing B",
+      "date": "Aug 14, 2026",
+      "type": "Diagnostic Scan",
+      "file": "chest_xray_aug2026.pdf",
+      "size": "4.2 MB"
+    },
+    {
+      "id": "REC-03",
+      "patientId": "P-10249",
+      "title": "Hypertension Discharge Summary",
+      "doctor": "Dr. Priya Patel",
+      "hospital": "SMS Hospital",
+      "date": "Jul 28, 2026",
+      "type": "Discharge Summary",
+      "file": "discharge_jul2026.pdf",
+      "size": "2.5 MB"
+    }
+  ],
+  "prescriptions": [
+    {
+      "id": "RX-465",
+      "patient": "Rahul Sharma",
+      "patientId": "P-10249",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "19 Sept 2026",
+      "diagnosis": "Mild Hypertension",
+      "medicines": "Telmisartan 40mg once daily (30 Days)",
+      "status": "Active",
+      "createdAt": "2026-09-19T16:26:12.968Z"
+    },
+    {
+      "id": "RX-101",
+      "patient": "Rahul Sharma",
+      "patientId": "P-10249",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "10 Sep 2026",
+      "diagnosis": "Tension Headache",
+      "medicines": "Paracetamol (650mg) - Twice daily after food (3 Days)",
+      "status": "Active"
+    },
+    {
+      "id": "RX-102",
+      "patient": "Priya Sharma",
+      "patientId": "P1002",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "10 Sep 2026",
+      "diagnosis": "Allergic Rhinitis",
+      "medicines": "Cetirizine (10mg) - Once daily at bedtime (7 Days)",
+      "status": "Active"
+    },
+    {
+      "id": "RX-103",
+      "patient": "Aman Verma",
+      "patientId": "P1003",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "08 Sep 2026",
+      "diagnosis": "Essential Hypertension",
+      "medicines": "Amlodipine (5mg) - Once daily in morning (30 Days)",
+      "status": "Active"
+    }
+  ],
+  "kioskTokens": [
+    {
+      "tokenNumber": "TK-001",
+      "patientName": "Aadhaar Walk-in Patient",
+      "aadhaar": "XXXX XXXX 9012",
+      "department": "Cardiology",
+      "doctor": "Dr. Sarah Jenkins",
+      "concern": "Chest heaviness",
+      "status": "WAITING",
+      "timestamp": "2026-09-19T16:26:12.971Z"
+    }
+  ]
+}

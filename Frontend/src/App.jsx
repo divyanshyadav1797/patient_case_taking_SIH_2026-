@@ -1,122 +1,139 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './routes/ProtectedRoute';
 
-function App() {
-  const [count, setCount] = useState(0)
+// ── Auth ───────────────────────────────────────────────
+import Login from './pages/Login/Login';
 
+// ── Patient ────────────────────────────────────────────
+import PatientLayout      from './components/patient/PatientLayout';
+import PatientDashboard   from './pages/Patient/PatientDashboard';
+import PatientAppointments from './pages/Patient/PatientAppointments';
+import PatientDoctors     from './pages/Patient/PatientDoctors';
+import PatientRecords     from './pages/Patient/PatientRecords';
+import PatientMedicines   from './pages/Patient/PatientMedicines';
+import PatientSchemes     from './pages/Patient/PatientSchemes';
+import PatientMyScheme    from './pages/Patient/PatientMyScheme';
+import PatientEmergency   from './pages/Patient/PatientEmergency';
+import PatientProfile     from './pages/Patient/PatientProfile';
+import PatientSupport     from './pages/Patient/PatientSupport';
+
+// ── Doctor ─────────────────────────────────────────────
+import DoctorLayout       from './components/doctor/DoctorLayout';
+import DoctorDashboard    from './pages/Doctor/DashboardPage';
+import DoctorPatients     from './pages/Doctor/PatientsPage';
+import DoctorAppointments from './pages/Doctor/AppointmentsPage';
+import DoctorPrescriptions from './pages/Doctor/PrescriptionsPage';
+import DoctorMedicalRecords from './pages/Doctor/MedicalRecordsPage';
+import DoctorMessages     from './pages/Doctor/MessagesPage';
+import DoctorSettings     from './pages/Doctor/SettingsPage';
+import DoctorHelp         from './pages/Doctor/HelpPage';
+
+// ── Hospital ───────────────────────────────────────────
+import HospitalLayout     from './components/hospital/HospitalLayout';
+import HospitalDashboard  from './pages/Hospital/HospitalDashboard';
+import HospitalPatients   from './pages/Hospital/HospitalPatients';
+import HospitalDoctors    from './pages/Hospital/HospitalDoctors';
+import HospitalAppointments from './pages/Hospital/HospitalAppointments';
+import HospitalOPD        from './pages/Hospital/HospitalOPD';
+import HospitalOperations from './pages/Hospital/HospitalOperations';
+import HospitalRecords    from './pages/Hospital/HospitalRecords';
+import HospitalStaff      from './pages/Hospital/HospitalStaff';
+import HospitalReports    from './pages/Hospital/HospitalReports';
+import HospitalSettings   from './pages/Hospital/HospitalSettings';
+import HospitalHelp       from './pages/Hospital/HospitalHelp';
+
+// ── Kiosk ──────────────────────────────────────────────
+import KioskPage          from './pages/Kiosk/KioskPage';
+
+// ── 404 ───────────────────────────────────────────────
+import NotFound           from './pages/NotFound/NotFound';
+
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* Root redirect */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
-      <div className="ticks"></div>
+          {/* Authentication */}
+          <Route path="/login" element={<Login />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+          {/* ── Patient Portal ── */}
+          <Route
+            path="/patient"
+            element={
+              <ProtectedRoute allowedRoles={['patient']}>
+                <PatientLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard"     element={<PatientDashboard />} />
+            <Route path="appointments"  element={<PatientAppointments />} />
+            <Route path="doctors"       element={<PatientDoctors />} />
+            <Route path="records"       element={<PatientRecords />} />
+            <Route path="medicines"     element={<PatientMedicines />} />
+            <Route path="schemes"       element={<PatientSchemes />} />
+            <Route path="my-scheme"     element={<PatientMyScheme />} />
+            <Route path="emergency"     element={<PatientEmergency />} />
+            <Route path="profile"       element={<PatientProfile />} />
+            <Route path="support"       element={<PatientSupport />} />
+          </Route>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          {/* ── Doctor Portal ── */}
+          <Route
+            path="/doctor"
+            element={
+              <ProtectedRoute allowedRoles={['doctor']}>
+                <DoctorLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard"     element={<DoctorDashboard />} />
+            <Route path="patients"      element={<DoctorPatients />} />
+            <Route path="appointments"  element={<DoctorAppointments />} />
+            <Route path="prescriptions" element={<DoctorPrescriptions />} />
+            <Route path="records"       element={<DoctorMedicalRecords />} />
+            <Route path="messages"      element={<DoctorMessages />} />
+            <Route path="settings"      element={<DoctorSettings />} />
+            <Route path="help"          element={<DoctorHelp />} />
+          </Route>
+
+          {/* ── Hospital Portal ── */}
+          <Route
+            path="/hospital"
+            element={
+              <ProtectedRoute allowedRoles={['hospital']}>
+                <HospitalLayout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard"    element={<HospitalDashboard />} />
+            <Route path="patients"     element={<HospitalPatients />} />
+            <Route path="doctors"      element={<HospitalDoctors />} />
+            <Route path="appointments" element={<HospitalAppointments />} />
+            <Route path="opd"          element={<HospitalOPD />} />
+            <Route path="operations"   element={<HospitalOperations />} />
+            <Route path="records"      element={<HospitalRecords />} />
+            <Route path="staff"        element={<HospitalStaff />} />
+            <Route path="reports"      element={<HospitalReports />} />
+            <Route path="settings"     element={<HospitalSettings />} />
+            <Route path="help"         element={<HospitalHelp />} />
+          </Route>
+
+          {/* ── Kiosk Portal ── */}
+          <Route path="/kiosk" element={<KioskPage />} />
+          <Route path="/kiosk/dashboard" element={<Navigate to="/kiosk" replace />} />
+
+          {/* 404 */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  );
 }
-
-export default App
