@@ -1,6 +1,6 @@
 /**
  * Quantum Care Authentication Service
- * Seamlessly integrates with the Node.js + Express backend on http://localhost:5000/api/v1/auth
+ * Seamlessly integrates with the Node.js + Express backend on http://localhost:3000/api/v1/auth
  * with resilient offline fallback for local demoing.
  */
 
