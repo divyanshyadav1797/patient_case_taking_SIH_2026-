@@ -4,7 +4,7 @@ const dbConfig = require('../config/db');
 const BlacklistedToken = require('../models/BlacklistedToken');
 
 const DATA_DIR = path.join(__dirname, '../../data');
-const DB_FILE = path.join(DATA_DIR, 'db.json');
+const DB_FILE = process.env.LOCAL_DB_FILE || path.join(DATA_DIR, 'db.json');
 
 // Fast in-memory cache of blacklisted tokens: Map<token, expiresAtTimestamp>
 const blacklistCache = new Map();

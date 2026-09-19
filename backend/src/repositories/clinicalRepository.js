@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 const DATA_DIR = path.join(__dirname, '../../data');
-const DB_FILE = path.join(DATA_DIR, 'db.json');
+const DB_FILE = process.env.LOCAL_DB_FILE || path.join(DATA_DIR, 'db.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {

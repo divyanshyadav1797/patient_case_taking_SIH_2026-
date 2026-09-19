@@ -1,8 +1,13 @@
 const { spawn } = require('child_process');
+const fs = require('fs');
 const http = require('http');
+const os = require('os');
+const path = require('path');
 
 const testScript = process.argv[2];
 const port = Number(process.env.PORT || 3000);
+const sourceDbFile = path.join(__dirname, 'data', 'db.json');
+const testDbFile = path.join(os.tmpdir(), `quantum-care-test-${process.pid}.json`);
 
 if (!testScript) {
   console.error('Usage: node test-runner.js <test-script>');
@@ -43,8 +48,10 @@ function waitForServer(timeoutMs = 10000) {
 }
 
 async function run() {
+  fs.copyFileSync(sourceDbFile, testDbFile);
+  const testEnvironment = { ...process.env, LOCAL_DB_FILE: testDbFile };
   const server = spawn(process.execPath, ['server.js'], {
-    env: process.env,
+    env: testEnvironment,
     stdio: 'inherit'
   });
 
@@ -52,7 +59,7 @@ async function run() {
   try {
     await waitForServer();
     testProcess = spawn(process.execPath, [testScript], {
-      env: process.env,
+      env: testEnvironment,
       stdio: 'inherit'
     });
 
@@ -73,6 +80,9 @@ async function run() {
     }
     if (!server.killed) {
       server.kill();
+    }
+    if (fs.existsSync(testDbFile)) {
+      fs.unlinkSync(testDbFile);
     }
   }
 }

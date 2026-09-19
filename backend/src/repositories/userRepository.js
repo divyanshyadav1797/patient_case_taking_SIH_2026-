@@ -7,7 +7,7 @@ const OtpSession = require('../models/OtpSession');
 const { hashAadhaar, maskAadhaar } = require('../utils/aadhaarUtils');
 
 const DATA_DIR = path.join(__dirname, '../../data');
-const DB_FILE = path.join(DATA_DIR, 'db.json');
+const DB_FILE = process.env.LOCAL_DB_FILE || path.join(DATA_DIR, 'db.json');
 
 // Ensure data directory exists
 if (!fs.existsSync(DATA_DIR)) {
