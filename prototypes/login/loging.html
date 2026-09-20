@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedConnect - Authentication Portal</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: '#2563EB',
+                        primaryDark: '#1D4ED8',
+                        secondary: '#DBEAFE',
+                        secondaryDark: '#BFDBFE',
+                        success: '#16A34A',
+                        successLight: '#DCFCE7',
+                        background: '#F8FAFC',
+                        maintext: '#172033',
+                        sectext: '#64748B',
+                        error: '#DC2626',
+                        warning: '#F59E0B',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #1E3A8A; 
+            color: #172033;
+            /* High-Res Modern Healthcare Background */
+            background-image: linear-gradient(135deg, rgba(30, 58, 138, 0.60) 0%, rgba(37, 99, 235, 0.45) 100%), 
+                              url('https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=2400');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphism utility */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.82);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.55);
+            box-shadow: 0 30px 60px -15px rgba(15, 23, 42, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.3) inset;
+        }
+
+        /* Input Icon Positioning */
+        .input-icon-wrapper {
+            position: relative;
+        }
+        .input-icon-wrapper i.leading-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748B;
+            pointer-events: none;
+        }
+        .input-with-icon {
+            padding-left: 2.75rem !important;
+        }
+
+        /* Custom Scrollbar for form area */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(241, 245, 249, 0.5);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+
+        .hidden-element {
+            display: none !important;
+        }
+
+        /* Tab Transition */
+        .tab-btn {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    
+    <!-- Ambient Glassmorphism Refraction Glows -->
+    <div class="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-500/15 blur-3xl pointer-events-none animate-pulse"></div>
+    <div class="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-teal-500/10 blur-3xl pointer-events-none"></div>
+
+    <div class="glass-card w-full max-w-[600px] rounded-[2rem] flex flex-col relative z-10 overflow-hidden max-h-[95vh] flex-shrink-0 shadow-2xl">
+        
+        <!-- Header Section -->
+        <div class="pt-8 px-8 sm:px-10 pb-4 text-center shrink-0">
+            <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-secondary text-primary text-2xl mb-4 shadow-sm border border-secondaryDark">
+                <i class="fa-solid fa-square-plus text-primary"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-maintext tracking-tight mb-1">MedConnect</h1>
+            <p class="text-sectext text-sm font-medium">Secure Healthcare Portal</p>
+        </div>
+
+        <!-- Scrollable Form Area -->
+        <div class="overflow-y-auto custom-scrollbar px-8 sm:px-10 pb-10">
+            
+            <div class="flex p-1 bg-gray-100 rounded-xl mb-6 mt-2 relative border border-gray-200">
+                <button onclick="setMode('login')" id="mode-login" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 text-primary bg-white shadow-sm z-10 tab-btn">
+                    Login
+                </button>
+                <button onclick="setMode('signup')" id="mode-signup" class="flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 text-sectext hover:text-maintext z-10 tab-btn">
+                    Sign Up
+                </button>
+            </div>
+
+            <!-- Header Text specific to mode -->
+            <div class="text-center mb-6">
+                <h2 id="dynamic-heading" class="text-2xl font-semibold text-maintext">Welcome Back</h2>
+                <p id="dynamic-subheading" class="text-sectext text-sm mt-1">Please enter your credentials to continue</p>
+            </div>
+
+            <div class="flex border-b border-gray-200 mb-8">
+                <button onclick="setRole('patient')" id="tab-patient" class="flex-1 py-3 text-sm font-semibold border-b-2 border-primary text-primary transition-colors">
+                    <i class="fa-solid fa-user mr-2"></i>Patient
+                </button>
+                <button onclick="setRole('doctor')" id="tab-doctor" class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-sectext hover:text-maintext transition-colors">
+                    <i class="fa-solid fa-user-doctor mr-2"></i>Doctor
+                </button>
+                <button onclick="setRole('hospital')" id="tab-hospital" class="flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-sectext hover:text-maintext transition-colors">
+                    <i class="fa-regular fa-building mr-2"></i>Hospital
+                </button>
+            </div>
+
+            <div class="relative min-h-[300px]">
+                
+                <!-- ================== LOGIN FORMS ================== -->
+                
+                <!-- 1. Patient Login -->
+                <form id="form-login-patient" class="space-y-4" onsubmit="handleAuth(event, 'Login Successful')">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-regular fa-envelope leading-icon"></i>
+                        <input type="text" required placeholder="Email or Phone Number" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-lock leading-icon"></i>
+                        <input type="password" required placeholder="Password" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    
+                    <!-- Simulated reCAPTCHA -->
+                    <div class="flex items-center justify-between p-4 bg-gray-50/80 border border-gray-200 rounded-xl mt-2">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" required class="w-5 h-5 rounded text-primary border-gray-300 focus:ring-primary">
+                            <span class="text-sm font-medium text-maintext">I am human</span>
+                        </label>
+                        <i class="fa-solid fa-shield-halved text-primary text-xl opacity-80"></i>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 pb-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" class="w-4 h-4 rounded text-primary border-gray-300 focus:ring-primary">
+                            <span class="text-sm font-medium text-maintext">Remember me</span>
+                        </label>
+                        <a href="#" class="text-sm font-medium text-primary hover:underline">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="w-full bg-primary hover:bg-primaryDark text-white font-semibold py-4 rounded-xl transition-all shadow-md shadow-primary/25 flex justify-center items-center gap-2 text-lg transform hover:-translate-y-0.5">
+                        Patient Sign In <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <!-- 2. Doctor Login -->
+                <form id="form-login-doctor" class="space-y-4 hidden-element" onsubmit="handleAuth(event, 'Doctor Login Successful')">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-stethoscope leading-icon"></i>
+                        <input type="text" required placeholder="NMC ID or Professional Email" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-lock leading-icon"></i>
+                        <input type="password" required placeholder="Password" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    
+                    <!-- Simulated reCAPTCHA -->
+                    <div class="flex items-center justify-between p-4 bg-gray-50/80 border border-gray-200 rounded-xl mt-2">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" required class="w-5 h-5 rounded text-primary border-gray-300 focus:ring-primary">
+                            <span class="text-sm font-medium text-maintext">Verify Secure Session</span>
+                        </label>
+                        <i class="fa-solid fa-shield-halved text-primary text-xl opacity-80"></i>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 pb-4">
+                        <a href="#" class="text-sm font-medium text-primary hover:underline ml-auto">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="w-full bg-primary hover:bg-primaryDark text-white font-semibold py-4 rounded-xl transition-all shadow-md shadow-primary/25 flex justify-center items-center gap-2 text-lg transform hover:-translate-y-0.5">
+                        Doctor Sign In <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <!-- 3. Hospital Login -->
+                <form id="form-login-hospital" class="space-y-4 hidden-element" onsubmit="handleAuth(event, 'Facility Login Successful')">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-regular fa-building leading-icon"></i>
+                        <input type="text" required placeholder="Registration ID or Nodal Email" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-lock leading-icon"></i>
+                        <input type="password" required placeholder="Password" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    
+                    <!-- Simulated reCAPTCHA -->
+                    <div class="flex items-center justify-between p-4 bg-gray-50/80 border border-gray-200 rounded-xl mt-2">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" required class="w-5 h-5 rounded text-primary border-gray-300 focus:ring-primary">
+                            <span class="text-sm font-medium text-maintext">Facility Authorization</span>
+                        </label>
+                        <i class="fa-solid fa-shield-halved text-primary text-xl opacity-80"></i>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1 pb-4">
+                        <a href="#" class="text-sm font-medium text-primary hover:underline ml-auto">Forgot password?</a>
+                    </div>
+                    <button type="submit" class="w-full bg-primary hover:bg-primaryDark text-white font-semibold py-4 rounded-xl transition-all shadow-md shadow-primary/25 flex justify-center items-center gap-2 text-lg transform hover:-translate-y-0.5">
+                        Facility Sign In <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </form>
+
+                <!-- ================== SIGN UP FORMS ================== -->
+
+                <!-- 4. Patient Sign Up -->
+                <form id="form-signup-patient" class="space-y-4 hidden-element" onsubmit="handleAuth(event, 'Patient Registered')">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-regular fa-user leading-icon"></i>
+                        <input type="text" required placeholder="Full Name (as per ID)" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="input-icon-wrapper">
+                            <i class="fa-regular fa-envelope leading-icon"></i>
+                            <input type="email" required placeholder="Email Address" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                        </div>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-phone leading-icon"></i>
+                            <input type="tel" required placeholder="Mobile Number" class="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                        </div>
+                    </div>
+
+                    <!-- Aadhaar Section -->
+                    <div class="p-4 rounded-xl border border-gray-200 bg-white/70 backdrop-blur-sm space-y-3">
+                        <label class="block text-sm font-bold text-maintext"><i class="fa-regular fa-id-card mr-2 text-slate-700"></i>Aadhaar Verification</label>
+                        <select class="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext focus:border-primary focus:ring-1 focus:ring-primary outline-none bg-white/90">
+                            <option value="digilocker">Fetch via DigiLocker (Fastest)</option>
+                            <option value="otp">Verify via Aadhaar OTP</option>
+                        </select>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <input type="text" placeholder="12-Digit Aadhaar No." pattern="[0-9]{12}" maxlength="12" class="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-maintext focus:border-primary outline-none bg-white/90">
+                            <button type="button" class="bg-white border border-slate-300 text-slate-800 font-semibold px-4 py-3 rounded-xl hover:bg-slate-50 transition-colors whitespace-nowrap text-sm shadow-sm">
+                                Get OTP
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Health Coverage Section with Enrollment Question -->
+                    <div class="space-y-3 p-4 rounded-xl border border-gray-200 bg-white/70 backdrop-blur-sm text-left">
+                        <div>
+                            <label class="block text-xs font-bold text-maintext uppercase tracking-wide flex items-center gap-1.5">
+                                <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+                                Are you enrolled in any sort of health scheme?
+                            </label>
+                            <p class="text-[11px] text-sectext mt-0.5">Please specify so we can link your cashless hospital treatment & benefits.</p>
+                        </div>
+
+                        <!-- Yes/No Radios -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 bg-white cursor-pointer select-none">
+                                <input type="radio" name="signup_scheme_enrolled" value="no" checked onchange="toggleSignupEnrollment(false)" class="w-4 h-4 text-slate-800 border-gray-300">
+                                <div>
+                                    <span class="text-xs font-bold text-maintext block">No, not enrolled</span>
+                                    <span class="text-[10px] text-sectext block">Fast registration</span>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-2 p-2.5 rounded-lg border border-gray-200 bg-white cursor-pointer select-none">
+                                <input type="radio" name="signup_scheme_enrolled" value="yes" onchange="toggleSignupEnrollment(true)" class="w-4 h-4 text-slate-800 border-gray-300">
+                                <div>
+                                    <span class="text-xs font-bold text-maintext block">Yes, I am enrolled</span>
+                                    <span class="text-[10px] text-slate-700 font-semibold block">Gov / Private Scheme</span>
+                                </div>
+                            </label>
+                        </div>
+
+                        <!-- Collapsible Dual Scheme Area -->
+                        <div id="signup-scheme-options" class="hidden-element space-y-2.5 pt-2 border-t border-gray-200">
+                            <p class="text-xs font-semibold text-slate-800">Select your scheme(s) — You can select both:</p>
+
+                            <!-- Option 1: Health scheme in Rajasthan government -->
+                            <div class="bg-white p-3 rounded-lg border border-gray-200">
+                                <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                                    <input type="checkbox" id="signup-chk-gov" onchange="toggleSignupGovFields()" class="w-4 h-4 mt-0.5 rounded text-slate-800 border-gray-300">
+                                    <div class="flex-1">
+                                        <span class="text-xs font-bold text-maintext block flex items-center gap-1.5">
+                                            <i class="fa-solid fa-building-columns text-slate-700"></i>Health scheme in Rajasthan government
+                                        </span>
+                                        <span class="text-[11px] text-sectext block">RGHS, Mukhyamantri Ayushman Arogya (MAA-Y), Jan Aadhaar</span>
+                                    </div>
+                                </label>
+                                <div id="signup-gov-inputs" class="hidden-element mt-2 pt-2 border-t border-gray-100 space-y-2">
+                                    <select id="signup-gov-type" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs bg-gray-50 outline-none focus:border-primary">
+                                        <option value="RGHS">RGHS (Rajasthan Government Health Scheme)</option>
+                                        <option value="MAA-Y">Mukhyamantri Ayushman Arogya (MAA-Y)</option>
+                                        <option value="Jan-Aadhaar">Jan Aadhaar Health Card</option>
+                                        <option value="Other-RJ">Other Rajasthan State Scheme</option>
+                                    </select>
+                                    <input type="text" id="signup-gov-num" placeholder="Rajasthan Scheme Card / Beneficiary Number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs outline-none focus:border-primary bg-white">
+                                </div>
+                            </div>
+
+                            <!-- Option 2: Health scheme in private section -->
+                            <div class="bg-white p-3 rounded-lg border border-gray-200">
+                                <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                                    <input type="checkbox" id="signup-chk-private" onchange="toggleSignupPrivateFields()" class="w-4 h-4 mt-0.5 rounded text-success border-gray-300">
+                                    <div class="flex-1">
+                                        <span class="text-xs font-bold text-maintext block flex items-center gap-1.5">
+                                            <i class="fa-solid fa-shield-heart text-success"></i>Health scheme in private section
+                                        </span>
+                                        <span class="text-[11px] text-sectext block">Private Health Insurance, Corporate Mediclaim, TPA Cover</span>
+                                    </div>
+                                </label>
+                                <div id="signup-private-inputs" class="hidden-element mt-2 pt-2 border-t border-gray-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <input type="text" id="signup-priv-provider" placeholder="Insurance Provider (e.g. Star Health)" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs outline-none focus:border-primary bg-white">
+                                    <input type="text" id="signup-priv-num" placeholder="Policy / Card Number" class="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs outline-none focus:border-primary bg-white">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-icon-wrapper pt-2">
+                        <i class="fa-solid fa-lock leading-icon"></i>
+                        <input type="password" required placeholder="Create Password" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    
+                    <div class="pt-2">
+                        <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold py-4 rounded-xl transition-all shadow-md shadow-emerald-900/20 flex justify-center items-center gap-2 text-lg transform hover:-translate-y-0.5">
+                            Create Account <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 5. Doctor Sign Up -->
+                <form id="form-signup-doctor" class="space-y-4 hidden-element" onsubmit="handleAuth(event, 'Doctor Registered')">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-solid fa-user-doctor leading-icon"></i>
+                        <input type="text" required placeholder="Full Name (with Title, e.g., Dr. Smith)" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="input-icon-wrapper">
+                            <i class="fa-regular fa-envelope leading-icon"></i>
+                            <input type="email" required placeholder="Professional Email" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80">
+                        </div>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-phone leading-icon"></i>
+                            <input type="tel" required placeholder="Mobile Number" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80">
+                        </div>
+                    </div>
+
+                    <!-- NMC Authentication Block -->
+                    <div class="p-4 rounded-xl border border-warning/30 bg-warning/5 space-y-3">
+                        <label class="block text-sm font-bold text-maintext"><i class="fa-solid fa-certificate mr-2 text-warning"></i>NMC Verification</label>
+                        <p class="text-xs text-sectext mb-2">Registration will be cross-checked with the National Medical Commission registry.</p>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <input type="text" required placeholder="NMC Registration No." class="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-maintext focus:border-primary outline-none bg-white/90">
+                            <button type="button" class="bg-white border border-warning text-warning font-semibold px-4 py-3 rounded-xl hover:bg-orange-50 transition-colors whitespace-nowrap text-sm shadow-sm">
+                                Check Registry
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="input-icon-wrapper pt-2">
+                        <i class="fa-solid fa-lock leading-icon"></i>
+                        <input type="password" required placeholder="Create Secure Password" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    
+                    <div class="pt-2">
+                        <button type="submit" class="w-full bg-primary hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition-all shadow-md shadow-blue-500/20 flex justify-center items-center gap-2 text-lg transform hover:-translate-y-0.5">
+                            Submit Application <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- 6. Hospital Sign Up -->
+                <form id="form-signup-hospital" class="space-y-4 hidden-element" onsubmit="handleAuth(event, 'Facility Registered')">
+                    <div class="input-icon-wrapper">
+                        <i class="fa-regular fa-building leading-icon"></i>
+                        <input type="text" required placeholder="Hospital Legal Name" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="input-icon-wrapper">
+                            <i class="fa-regular fa-envelope leading-icon"></i>
+                            <input type="email" required placeholder="Official Nodal Email" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80">
+                        </div>
+                        <div class="input-icon-wrapper">
+                            <i class="fa-solid fa-phone leading-icon"></i>
+                            <input type="tel" required placeholder="Nodal Contact No." class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80">
+                        </div>
+                    </div>
+
+                    <!-- Facility Auth Block -->
+                    <div class="p-4 rounded-xl border border-success/30 bg-success/5 space-y-3">
+                        <label class="block text-sm font-bold text-maintext"><i class="fa-solid fa-file-contract mr-2 text-success"></i>Facility Authorization</label>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <input type="text" required placeholder="State Health Reg. No." class="flex-1 px-4 py-3 rounded-xl border border-gray-200 text-maintext focus:border-primary outline-none bg-white/90">
+                            <button type="button" class="bg-white border border-success text-success font-semibold px-4 py-3 rounded-xl hover:bg-green-50 transition-colors whitespace-nowrap text-sm shadow-sm">
+                                Verify Document
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="input-icon-wrapper pt-2">
+                        <i class="fa-solid fa-lock leading-icon"></i>
+                        <input type="password" required placeholder="Admin Password" class="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80">
+                    </div>
+                    
+                    <div class="pt-2">
+                        <button type="submit" class="w-full bg-primary hover:bg-blue-700 text-white font-semibold py-4 rounded-xl transition-all shadow-md shadow-blue-500/20 flex justify-center items-center gap-2 text-lg transform hover:-translate-y-0.5">
+                            Register Facility <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State management
+        let currentMode = 'login';   // 'login' | 'signup'
+        let currentRole = 'patient'; // 'patient' | 'doctor' | 'hospital'
+
+        // References to DOM elements
+        const formIds = [
+            'form-login-patient', 'form-login-doctor', 'form-login-hospital',
+            'form-signup-patient', 'form-signup-doctor', 'form-signup-hospital'
+        ];
+        
+        const tabs = {
+            patient: document.getElementById('tab-patient'),
+            doctor: document.getElementById('tab-doctor'),
+            hospital: document.getElementById('tab-hospital')
+        };
+
+        const modeBtns = {
+            login: document.getElementById('mode-login'),
+            signup: document.getElementById('mode-signup')
+        };
+
+        const dynHeading = document.getElementById('dynamic-heading');
+        const dynSubheading = document.getElementById('dynamic-subheading');
+
+        // Core UI Update Function
+        function updateUI() {
+            // 1. Update Mode Buttons styling
+            Object.values(modeBtns).forEach(btn => {
+                btn.className = "flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 text-sectext hover:text-primary z-10 tab-btn bg-transparent shadow-none";
+            });
+            modeBtns[currentMode].className = "flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 text-primary bg-white shadow-sm z-10 tab-btn border border-blue-200/60";
+
+            // 2. Update Header Text
+            if(currentMode === 'login') {
+                dynHeading.textContent = "Welcome Back";
+                dynSubheading.textContent = "Please enter your credentials to continue";
+            } else {
+                dynHeading.textContent = "Create an Account";
+                dynSubheading.textContent = "Join the secure healthcare network";
+            }
+
+            // 3. Update Role Tabs styling
+            Object.values(tabs).forEach(tab => {
+                tab.className = "flex-1 py-3 text-sm font-semibold border-b-2 border-transparent text-sectext hover:text-primary transition-colors";
+            });
+            tabs[currentRole].className = "flex-1 py-3 text-sm font-semibold border-b-2 border-primary text-primary transition-colors";
+
+            // 4. Hide all forms, show active one
+            formIds.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.classList.add('hidden-element');
+            });
+
+            const activeFormId = `form-${currentMode}-${currentRole}`;
+            const activeForm = document.getElementById(activeFormId);
+            if(activeForm) {
+                activeForm.classList.remove('hidden-element');
+                // Optional: small animation class can be added here
+            }
+        }
+
+        // Setters for UI interactions
+        function setMode(mode) {
+            currentMode = mode;
+            updateUI();
+        }
+
+        function setRole(role) {
+            currentRole = role;
+            updateUI();
+        }
+
+        // Registration Scheme Toggles
+        function toggleSignupEnrollment(isEnrolled) {
+            const container = document.getElementById('signup-scheme-options');
+            if (isEnrolled) {
+                container.classList.remove('hidden-element');
+            } else {
+                container.classList.add('hidden-element');
+                document.getElementById('signup-chk-gov').checked = false;
+                document.getElementById('signup-gov-inputs').classList.add('hidden-element');
+                document.getElementById('signup-chk-private').checked = false;
+                document.getElementById('signup-private-inputs').classList.add('hidden-element');
+            }
+        }
+
+        function toggleSignupGovFields() {
+            const chk = document.getElementById('signup-chk-gov');
+            const box = document.getElementById('signup-gov-inputs');
+            if (chk.checked) {
+                box.classList.remove('hidden-element');
+                document.getElementById('signup-gov-num').focus();
+            } else {
+                box.classList.add('hidden-element');
+            }
+        }
+
+        function toggleSignupPrivateFields() {
+            const chk = document.getElementById('signup-chk-private');
+            const box = document.getElementById('signup-private-inputs');
+            if (chk.checked) {
+                box.classList.remove('hidden-element');
+                document.getElementById('signup-priv-provider').focus();
+            } else {
+                box.classList.add('hidden-element');
+            }
+        }
+
+        // Simulated form submission with customized success message
+        function handleAuth(event, successMsg) {
+            event.preventDefault();
+            const form = event.target;
+            const btn = form.querySelector('button[type="submit"]');
+            const originalHTML = btn.innerHTML;
+            
+            // Loading State
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+
+            // Simulate API Call
+            setTimeout(() => {
+                // Success State
+                btn.innerHTML = `<i class="fa-solid fa-check"></i> ${successMsg}`;
+                btn.classList.replace('bg-primary', 'bg-success');
+                btn.classList.replace('hover:bg-blue-700', 'hover:bg-green-600');
+                
+                // Fast Patient Login Redirect
+                if (form.id === 'form-login-patient') {
+                    localStorage.setItem("patientLoggedIn", "true");
+                    setTimeout(() => {
+                        window.location.href = "../Patient/1page/D2/index.html";
+                    }, 1000);
+                    return;
+                }
+
+                // Patient Signup: Save Scheme Selections
+                if (form.id === 'form-signup-patient') {
+                    const isEnrolled = document.querySelector('input[name="signup_scheme_enrolled"]:checked')?.value === 'yes';
+                    if (isEnrolled) {
+                        const chkGov = document.getElementById('signup-chk-gov').checked;
+                        const chkPriv = document.getElementById('signup-chk-private').checked;
+                        localStorage.setItem("hasGovScheme", chkGov ? "true" : "false");
+                        if (chkGov) {
+                            localStorage.setItem("govSchemeName", document.getElementById('signup-gov-type').value);
+                            localStorage.setItem("govSchemeNumber", document.getElementById('signup-gov-num').value || "RGHS-RJ-XXXX");
+                        }
+                        localStorage.setItem("hasPrivateScheme", chkPriv ? "true" : "false");
+                        if (chkPriv) {
+                            localStorage.setItem("privateProvider", document.getElementById('signup-priv-provider').value || "Star Health");
+                            localStorage.setItem("privatePolicyNumber", document.getElementById('signup-priv-num').value || "POL-DEMO-01");
+                        }
+                    }
+                }
+
+                // Reset State after 2 seconds for other forms
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.replace('bg-success', 'bg-primary');
+                    btn.classList.replace('hover:bg-green-600', 'hover:bg-blue-700');
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-80', 'cursor-not-allowed');
+                    form.reset();
+                    
+                    // Reset dropdowns if it was patient signup
+                    if(form.id === 'form-signup-patient') {
+                        coverageSelect.dispatchEvent(new Event('change'));
+                    }
+                }, 2000);
+            }, 1500);
+        }
+
+        // Initialize UI explicitly on load
+        window.addEventListener('DOMContentLoaded', () => {
+            updateUI();
+        });
+    </script>
+</body>
+</html>
