@@ -256,6 +256,90 @@
       },
       "createdAt": "2026-09-19T16:26:12.597Z",
       "updatedAt": "2026-09-19T16:26:12.597Z"
+    },
+    {
+      "_id": "user_1789839034268_6mvl65ivq",
+      "customId": "PAT-11760",
+      "name": "Test Patient 4250",
+      "email": "patient4250@test.com",
+      "phone": "9800004250",
+      "passwordHash": "$2b$10$t9uQc8xyVg5e6QOZlw0Vyejyxy0HUM5CSFo8WxH8UG/43ZdzY99X6",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "683c225f55c773494ab43f24c0fd3d6214f831145c85cbf74db1a0e4a6315167",
+      "maskedAadhaar": "XXXX XXXX 4250",
+      "lastLoginAt": "2026-09-19T17:30:34.268Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-2628-7102-5450",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-4250"
+        }
+      },
+      "createdAt": "2026-09-19T17:30:34.268Z",
+      "updatedAt": "2026-09-19T17:30:34.268Z"
+    },
+    {
+      "_id": "user_1789839319189_vmk97f675",
+      "customId": "PAT-67228",
+      "name": "Test Patient 8769",
+      "email": "patient8769@test.com",
+      "phone": "9800008769",
+      "passwordHash": "$2b$10$nkzTw.NtHNXLva62an1xX.hQmGSe4duDZiSsvXNqzG0BQILP8l7s2",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "9321447ee976f5c7b135f803662af3a93ebc898767f7e5e83515eb2b894eb487",
+      "maskedAadhaar": "XXXX XXXX 8769",
+      "lastLoginAt": "2026-09-19T17:35:19.189Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-5283-7596-9590",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-8769"
+        }
+      },
+      "createdAt": "2026-09-19T17:35:19.189Z",
+      "updatedAt": "2026-09-19T17:35:19.189Z"
+    },
+    {
+      "_id": "user_1789839333570_k6z0842tc",
+      "customId": "PAT-79112",
+      "name": "Test Patient 1058",
+      "email": "patient1058@test.com",
+      "phone": "9800001058",
+      "passwordHash": "$2b$10$fkVti6FvdX91y98kuXsPIeV5wC7GT0P8LjcGh1uJd0Y8Nl1fan7i.",
+      "role": "patient",
+      "status": "ACTIVE",
+      "aadhaarReference": "b31f400880111637a0583758bc13dc9e44b3589c68116d144e15b3d94ad54c63",
+      "maskedAadhaar": "XXXX XXXX 1058",
+      "lastLoginAt": "2026-09-19T17:35:33.570Z",
+      "patientDetails": {
+        "age": null,
+        "gender": null,
+        "bloodGroup": null,
+        "address": null,
+        "abhaId": "91-5207-2928-3650",
+        "schemes": {
+          "isEnrolled": true,
+          "hasGovScheme": true,
+          "govSchemeType": "RGHS",
+          "govSchemeNum": "RGHS-1058"
+        }
+      },
+      "createdAt": "2026-09-19T17:35:33.570Z",
+      "updatedAt": "2026-09-19T17:35:33.570Z"
     }
   ],
   "otpSessions": [
@@ -321,9 +405,104 @@
       "userId": "local_1789736189701_rkjp1yglr",
       "reason": "logout",
       "expiresAt": "2026-09-26T16:16:41.000Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbF8xNzg5NzM2MTg5NzAxX3JranAxeWdsciIsImlkIjoibG9jYWxfMTc4OTczNjE4OTcwMV9ya2pwMXlnbHIiLCJjdXN0b21JZCI6IlAtMTAyNDkiLCJyb2xlIjoicGF0aWVudCIsIm5hbWUiOiJSYWh1bCBTaGFybWEiLCJlbWFpbCI6InJhaHVsLnNoYXJtYUBleGFtcGxlLmNvbSIsInRva2VuVHlwZSI6ImFjY2VzcyIsImp0aSI6IjRhNjdiYmVhLWMyMmItNDRhOC05OGUzLWMxMDllYzlmYjFmYiIsImlhdCI6MTc4OTgzOTMxOSwiZXhwIjoxNzkwNDQ0MTE5fQ.VheVHgloQJ0gmvAI-OutbrufC_ooLreseedFO11J-0s",
+      "jti": "4a67bbea-c22b-44a8-98e3-c109ec9fb1fb",
+      "userId": "local_1789736189701_rkjp1yglr",
+      "reason": "logout",
+      "expiresAt": "2026-09-26T17:35:19.000Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbF8xNzg5NzM2MTg5NzAxX3JranAxeWdsciIsImlkIjoibG9jYWxfMTc4OTczNjE4OTcwMV9ya2pwMXlnbHIiLCJjdXN0b21JZCI6IlAtMTAyNDkiLCJyb2xlIjoicGF0aWVudCIsInRva2VuVHlwZSI6InJlZnJlc2giLCJqdGkiOiIzN2RlYjhkNi1hOWUyLTQ0NGEtOGQwNC01YmQ0MjBmY2QyMWMiLCJpYXQiOjE3ODk4MzkzMTgsImV4cCI6MTc5MDQ0NDExOH0.0XTg129cW6IV3tUN3mIrbi2E_VOxMPe3HMghpXOAnTA",
+      "jti": "37deb8d6-a9e2-444a-8d04-5bd420fcd21c",
+      "userId": "local_1789736189701_rkjp1yglr",
+      "reason": "logout",
+      "expiresAt": "2026-09-26T17:35:18.000Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbF8xNzg5NzM2MTg5NzAxX3JranAxeWdsciIsImlkIjoibG9jYWxfMTc4OTczNjE4OTcwMV9ya2pwMXlnbHIiLCJjdXN0b21JZCI6IlAtMTAyNDkiLCJyb2xlIjoicGF0aWVudCIsIm5hbWUiOiJSYWh1bCBTaGFybWEiLCJlbWFpbCI6InJhaHVsLnNoYXJtYUBleGFtcGxlLmNvbSIsInRva2VuVHlwZSI6ImFjY2VzcyIsImp0aSI6IjIzNmYwMzA3LWFlM2ItNDZiNS04MWE3LWNmYWZmMDU0YjM1NCIsImlhdCI6MTc4OTgzOTMzMywiZXhwIjoxNzkwNDQ0MTMzfQ.fg1imOhEmoKjteaH3Bb82srl4LmkOOJGNr30BPZns54",
+      "jti": "236f0307-ae3b-46b5-81a7-cfaff054b354",
+      "userId": "local_1789736189701_rkjp1yglr",
+      "reason": "logout",
+      "expiresAt": "2026-09-26T17:35:33.000Z"
+    },
+    {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbF8xNzg5NzM2MTg5NzAxX3JranAxeWdsciIsImlkIjoibG9jYWxfMTc4OTczNjE4OTcwMV9ya2pwMXlnbHIiLCJjdXN0b21JZCI6IlAtMTAyNDkiLCJyb2xlIjoicGF0aWVudCIsInRva2VuVHlwZSI6InJlZnJlc2giLCJqdGkiOiI2MWFlNTE3Yy1lYjU2LTRiMWQtOTk0OC0zZjVhNGE2ZWEzOWIiLCJpYXQiOjE3ODk4MzkzMzMsImV4cCI6MTc5MDQ0NDEzM30.S79OydYpC7w6z4DqG2ihQFfRqVnYgPnwhY5-DDUy4Ic",
+      "jti": "61ae517c-eb56-4b1d-9948-3f5a4a6ea39b",
+      "userId": "local_1789736189701_rkjp1yglr",
+      "reason": "logout",
+      "expiresAt": "2026-09-26T17:35:33.000Z"
     }
   ],
   "appointments": [
+    {
+      "id": "APT-K003",
+      "patientId": "P-KIOSK",
+      "patientName": "Aadhaar Walk-in Patient",
+      "doctorName": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "hospital": "SMS Hospital Jaipur",
+      "date": "Today",
+      "time": "11:05 pm",
+      "status": "Upcoming",
+      "type": "Kiosk Check-In (TK-003)",
+      "createdAt": "2026-09-19T17:35:44.756Z"
+    },
+    {
+      "id": "APT-928",
+      "patientId": "P-10249",
+      "patientName": "Rahul Sharma",
+      "doctorName": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "hospital": "SMS Hospital, Jaipur",
+      "date": "Sep 26, 2026",
+      "time": "02:00 PM",
+      "status": "Upcoming",
+      "type": "General Consultation",
+      "createdAt": "2026-09-19T17:35:44.733Z",
+      "updatedAt": "2026-09-19T17:35:44.735Z"
+    },
+    {
+      "id": "APT-K002",
+      "patientId": "P-KIOSK",
+      "patientName": "Aadhaar Walk-in Patient",
+      "doctorName": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "hospital": "SMS Hospital Jaipur",
+      "date": "Today",
+      "time": "11:00 pm",
+      "status": "Upcoming",
+      "type": "Kiosk Check-In (TK-002)",
+      "createdAt": "2026-09-19T17:30:34.849Z"
+    },
+    {
+      "id": "APT-438",
+      "patientId": "P-10249",
+      "patientName": "Rahul Sharma",
+      "doctorName": "Dr. Sarah Jenkins",
+      "specialty": "Cardiology",
+      "hospital": "SMS Hospital, Jaipur",
+      "date": "Sep 26, 2026",
+      "time": "02:00 PM",
+      "status": "Upcoming",
+      "type": "General Consultation",
+      "createdAt": "2026-09-19T17:30:34.827Z",
+      "updatedAt": "2026-09-19T17:30:34.829Z"
+    },
+    {
+      "id": "APT-K002",
+      "patientId": "P-KIOSK",
+      "patientName": "Walk-in Patient",
+      "doctorName": "Dr. Neha Jain",
+      "specialty": "Eye Care",
+      "hospital": "SMS Hospital Jaipur",
+      "date": "Today",
+      "time": "10:51 pm",
+      "status": "Upcoming",
+      "type": "Kiosk Check-In (TK-002)",
+      "createdAt": "2026-09-19T17:21:52.981Z"
+    },
     {
       "id": "APT-K001",
       "patientId": "P-KIOSK",
@@ -482,6 +661,30 @@
   ],
   "records": [
     {
+      "id": "REC-19",
+      "patientId": "P-10249",
+      "title": "Blood Pressure Log Report",
+      "doctor": "Dr. Sarah Jenkins",
+      "hospital": "SMS Hospital Jaipur",
+      "date": "Sep 19, 2026",
+      "type": "Vitals Chart",
+      "file": "report.pdf",
+      "size": "1.2 MB",
+      "createdAt": "2026-09-19T17:35:44.750Z"
+    },
+    {
+      "id": "REC-99",
+      "patientId": "P-10249",
+      "title": "Blood Pressure Log Report",
+      "doctor": "Dr. Sarah Jenkins",
+      "hospital": "SMS Hospital Jaipur",
+      "date": "Sep 19, 2026",
+      "type": "Vitals Chart",
+      "file": "report.pdf",
+      "size": "1.2 MB",
+      "createdAt": "2026-09-19T17:30:34.842Z"
+    },
+    {
       "id": "REC-85",
       "patientId": "P-10249",
       "title": "Blood Pressure Log Report",
@@ -529,6 +732,28 @@
   ],
   "prescriptions": [
     {
+      "id": "RX-198",
+      "patient": "Rahul Sharma",
+      "patientId": "P-10249",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "19 Sept 2026",
+      "diagnosis": "Mild Hypertension",
+      "medicines": "Telmisartan 40mg once daily (30 Days)",
+      "status": "Active",
+      "createdAt": "2026-09-19T17:35:44.754Z"
+    },
+    {
+      "id": "RX-967",
+      "patient": "Rahul Sharma",
+      "patientId": "P-10249",
+      "doctorName": "Dr. Sarah Jenkins",
+      "date": "19 Sept 2026",
+      "diagnosis": "Mild Hypertension",
+      "medicines": "Telmisartan 40mg once daily (30 Days)",
+      "status": "Active",
+      "createdAt": "2026-09-19T17:30:34.846Z"
+    },
+    {
       "id": "RX-465",
       "patient": "Rahul Sharma",
       "patientId": "P-10249",
@@ -571,6 +796,26 @@
     }
   ],
   "kioskTokens": [
+    {
+      "tokenNumber": "TK-003",
+      "patientName": "Aadhaar Walk-in Patient",
+      "aadhaar": "XXXX XXXX 9012",
+      "department": "Cardiology",
+      "doctor": "Dr. Sarah Jenkins",
+      "concern": "Chest heaviness",
+      "status": "WAITING",
+      "timestamp": "2026-09-19T17:35:44.756Z"
+    },
+    {
+      "tokenNumber": "TK-002",
+      "patientName": "Aadhaar Walk-in Patient",
+      "aadhaar": "XXXX XXXX 9012",
+      "department": "Cardiology",
+      "doctor": "Dr. Sarah Jenkins",
+      "concern": "Chest heaviness",
+      "status": "WAITING",
+      "timestamp": "2026-09-19T17:30:34.848Z"
+    },
     {
       "tokenNumber": "TK-001",
       "patientName": "Aadhaar Walk-in Patient",
