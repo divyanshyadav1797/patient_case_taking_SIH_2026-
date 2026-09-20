@@ -15,6 +15,7 @@
 **Kiosk:** Same React application in Kiosk Mode
 **Primary Architecture:** React + Node.js + Express + MongoDB REST architecture
 
+
 ---
 
 # 1. Purpose
