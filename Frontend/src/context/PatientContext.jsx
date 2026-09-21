@@ -145,10 +145,24 @@ export function PatientProvider({ children }) {
     }
   };
 
+  const uploadMedicalDocument = async (file, metadata = {}) => {
+    try {
+      const res = await api.uploadRecord(file, metadata);
+      const newRec = res.record || res;
+      setRecords((prev) => [newRec, ...prev]);
+      showToast('Document uploaded successfully with AI OCR analysis.');
+      return newRec;
+    } catch (err) {
+      showToast(err.message || 'Failed to upload document.');
+      throw err;
+    }
+  };
+
   const value = {
     doctors,
     appointments,
     records,
+    setRecords,
     medicines,
     schemes,
     toastMessage,
@@ -156,7 +170,8 @@ export function PatientProvider({ children }) {
     isMobileMenuOpen,
     setIsMobileMenuOpen,
     bookAppointment,
-    cancelAppointment
+    cancelAppointment,
+    uploadMedicalDocument
   };
 
   return <PatientContext.Provider value={value}>{children}</PatientContext.Provider>;

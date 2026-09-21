@@ -4,6 +4,8 @@ import cors from "cors";
 import healthRoutes from "./routes/health.routes.js";
 import intakeRoutes from "./routes/intake.routes.js";
 import ocrRoutes from "./routes/ocr.routes.js";
+import voiceRoutes
+    from "./routes/voice.routes.js";
 
 const app = express();
 
@@ -23,8 +25,11 @@ app.get("/", (req, res) => {
 });
 
 app.use("/health", healthRoutes);
-
 app.use("/api/v1/intake", intakeRoutes);
+app.use("/internal/ai/v1/ocr", ocrRoutes);
+if (voiceRoutes) {
+    app.use("/internal/ai/v1/voice", voiceRoutes);
+}
 
 app.use((err, req, res, next) => {
     console.error("SERVER ERROR:", err);
@@ -33,10 +38,5 @@ app.use((err, req, res, next) => {
         error: "Internal server error."
     });
 });
-
-app.use(
-    "/internal/ai/v1/ocr",
-    ocrRoutes
-);
 
 export default app;

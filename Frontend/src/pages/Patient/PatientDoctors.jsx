@@ -180,9 +180,11 @@ export default function PatientDoctors() {
     if (files.length === 0) return;
 
     const newDocs = files.map((f) => ({
+      file: f,
       name: f.name,
       size: (f.size / (1024 * 1024)).toFixed(2) + ' MB',
       type: f.type || 'Document',
+      preview: f.type.startsWith('image/') ? URL.createObjectURL(f) : null,
       uploadedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }));
 
@@ -195,21 +197,35 @@ export default function PatientDoctors() {
   };
 
   const proceedFromDocuments = async () => {
-    // Save records to MongoDB if any uploaded
+    // Save records and photos to MongoDB with real OCR if any uploaded
     if (uploadedDocs.length > 0) {
+      setIsAiLoading(true);
+      showToast('Processing uploaded documents with clinical OCR...');
       try {
         for (const doc of uploadedDocs) {
-          await api.createRecord({
-            title: doc.name,
-            type: 'Prescription / Lab Report',
-            doctor: 'External Doctor / Lab',
-            hospital: 'Patient Upload',
-            patientId: user?.customId || user?.id || 'P-10249',
-            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-          });
+          if (doc.file) {
+            await api.uploadRecord(doc.file, {
+              title: doc.name,
+              type: doc.file.type?.startsWith('image/') ? 'Diagnostic Photo' : 'Lab Report',
+              patientId: user?.customId || user?.id || 'P-10249',
+              clinicalReportId: reportId || undefined
+            });
+          } else {
+            await api.createRecord({
+              title: doc.name,
+              type: 'Prescription / Lab Report',
+              doctor: 'External Doctor / Lab',
+              hospital: 'Patient Upload',
+              patientId: user?.customId || user?.id || 'P-10249',
+              date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            });
+          }
         }
+        showToast('Medical documents saved and OCR analysis attached to clinical report.');
       } catch (err) {
         console.warn('[PatientDoctors] Upload persistence note:', err.message);
+      } finally {
+        setIsAiLoading(false);
       }
     }
     // Proceed to Step 4: Multi-hospital Doctor Recommendations

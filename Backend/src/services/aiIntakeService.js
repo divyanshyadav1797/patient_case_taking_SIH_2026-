@@ -4,35 +4,9 @@ const userRepository = require('../repositories/userRepository');
 // In-memory active intake sessions
 const sessions = new Map();
 
-// Helper to generate dynamic, medically relevant follow-up questions if AI service is offline
-const CLINICAL_KNOWLEDGE_QUESTIONS = {
-  fever: [
-    { question: 'How high has your temperature been and how many days has the fever lasted?', options: ['1-2 days (Low grade)', '3-5 days (Moderate)', 'More than 5 days (High grade > 102°F)', 'Other'] },
-    { question: 'Are you experiencing chills, body aches, shivering, or a severe sore throat?', options: ['Severe chills & body aches', 'Sore throat & cough', 'Headache & nausea', 'None of these', 'Other'] },
-    { question: 'Have you taken any fever-reducing medication like Paracetamol?', options: ['Yes, Paracetamol helped temporarily', 'Yes, but fever did not come down', 'No medication taken yet', 'Other'] }
-  ],
-  chest: [
-    { question: 'Does the chest discomfort feel like pressure, tightness, or a sharp stabbing sensation?', options: ['Heavy pressure / squeezing', 'Sharp stabbing pain on breathing', 'Burning sensation (heartburn)', 'Other'] },
-    { question: 'Does the pain spread to your left arm, neck, jaw, or shoulder blade?', options: ['Spreads to left arm and shoulder', 'Spreads to neck/jaw', 'Stays in center of chest', 'Other'] },
-    { question: 'Are you feeling short of breath, sweating, or unusually dizzy?', options: ['Yes, sweating & shortness of breath', 'Mild dizziness only', 'No associated symptoms', 'Other'] }
-  ],
-  stomach: [
-    { question: 'Where is the stomach pain located and when did it start?', options: ['Upper abdomen / epigastric', 'Lower right abdomen', 'Around navel / generalized', 'Lower pelvic area', 'Other'] },
-    { question: 'Have you had nausea, vomiting, diarrhoea, or inability to keep food down?', options: ['Nausea and vomiting', 'Diarrhoea / loose motions', 'Acid reflux / bloating', 'No nausea or vomiting', 'Other'] },
-    { question: 'Does eating food make the pain better or worse?', options: ['Worse after eating', 'Better after eating', 'No change with meals', 'Other'] }
-  ],
-  headache: [
-    { question: 'Is the headache throbbing on one side or a tight band around your whole head?', options: ['One-sided throbbing (pulsating)', 'Tight band around entire forehead', 'Back of head and neck stiffness', 'Other'] },
-    { question: 'Are you experiencing nausea, visual flashes, or sensitivity to light/sound?', options: ['Sensitive to bright light and noise', 'Visual blurriness or spots', 'Nausea / upset stomach', 'None of these', 'Other'] },
-    { question: 'How long have you had this episode and does it disturb your sleep?', options: ['Started today, very intense', 'Recurring for several days', 'Mild but continuous', 'Other'] }
-  ],
-  cough: [
-    { question: 'Is the cough dry or are you coughing up phlegm or mucus?', options: ['Dry irritating cough', 'Wet cough with yellow/green phlegm', 'Blood-tinged mucus', 'Other'] },
-    { question: 'Are you having difficulty breathing, wheezing, or chest tightness?', options: ['Wheezing on exertion', 'Shortness of breath even at rest', 'Chest tightness when lying down', 'No breathing difficulty', 'Other'] },
-    { question: 'Do you have a history of asthma, allergies, or smoking?', options: ['Known history of asthma', 'Seasonal allergies', 'Current or former smoker', 'None', 'Other'] }
-  ]
-};
-
+/**
+ * Classify complaint into a clinical category
+ */
 function getCategoryFromComplaint(complaint = '') {
   const c = complaint.toLowerCase();
   if (c.includes('chest') || c.includes('heart') || c.includes('palpitat') || c.includes('breath')) return 'chest';
@@ -40,36 +14,133 @@ function getCategoryFromComplaint(complaint = '') {
   if (c.includes('stomach') || c.includes('abdom') || c.includes('belly') || c.includes('digest') || c.includes('vomit') || c.includes('nausea') || c.includes('diarrh')) return 'stomach';
   if (c.includes('head') || c.includes('migrain') || c.includes('dizz')) return 'headache';
   if (c.includes('cough') || c.includes('cold') || c.includes('throat') || c.includes('sneeze')) return 'cough';
+  if (c.includes('joint') || c.includes('back') || c.includes('knee') || c.includes('bone') || c.includes('fracture')) return 'musculoskeletal';
+  if (c.includes('skin') || c.includes('rash') || c.includes('itch') || c.includes('allerg')) return 'dermatology';
+  if (c.includes('eye') || c.includes('vision') || c.includes('blur')) return 'ophthalmology';
+  if (c.includes('ear') || c.includes('hear') || c.includes('sinus') || c.includes('tonsil')) return 'ent';
+  if (c.includes('urin') || c.includes('kidney') || c.includes('bladder')) return 'urological';
+  if (c.includes('anxiety') || c.includes('depress') || c.includes('sleep') || c.includes('stress') || c.includes('panic')) return 'psychiatric';
   return 'general';
 }
 
-function getFallbackQuestion(complaint, questionCount) {
+/**
+ * CONTEXT-AWARE fallback question generator.
+ * Analyzes what the patient has already answered and generates the most logical next question.
+ * Falls back to this when the AI microservice is unavailable.
+ */
+function getFallbackQuestion(complaint, questionCount, conversation = []) {
   const cat = getCategoryFromComplaint(complaint);
-  const bank = CLINICAL_KNOWLEDGE_QUESTIONS[cat] || [
-    { question: 'When did your symptoms first begin, and how fast did they develop?', options: ['Started suddenly today', 'Developed over 2-3 days', 'Persistent for more than a week', 'Other'] },
-    { question: 'How severe would you rate your discomfort right now (1 being mild, 10 being severe)?', options: ['Mild (1-3) - manageable', 'Moderate (4-6) - affects daily tasks', 'Severe (7-10) - hard to bear', 'Other'] },
-    { question: 'Do you have any known medical conditions (diabetes, BP, asthma) or take regular medications?', options: ['Hypertension / High BP', 'Diabetes', 'Asthma / Respiratory issue', 'None / Healthy', 'Other'] }
-  ];
+  const answeredTopics = new Set();
+  const allAnswersText = conversation.map(c => `${c.answer || ''}`).join(' ').toLowerCase();
 
-  if (questionCount < bank.length) {
-    const q = bank[questionCount];
+  // Track what topics have already been covered
+  conversation.forEach(item => {
+    const q = (item.question || '').toLowerCase();
+    const a = (item.answer || '').toLowerCase();
+    if (q.includes('onset') || q.includes('when') || q.includes('how long') || q.includes('started')) answeredTopics.add('onset');
+    if (q.includes('severe') || q.includes('scale') || q.includes('rate') || q.includes('intensity')) answeredTopics.add('severity');
+    if (q.includes('where') || q.includes('location') || q.includes('which part') || q.includes('spread')) answeredTopics.add('location');
+    if (q.includes('medication') || q.includes('medicine') || q.includes('drug') || q.includes('taken')) answeredTopics.add('medications');
+    if (q.includes('allerg') || q.includes('reaction')) answeredTopics.add('allergies');
+    if (q.includes('history') || q.includes('condition') || q.includes('chronic') || q.includes('past')) answeredTopics.add('history');
+    if (q.includes('associated') || q.includes('other symptom') || q.includes('also experience')) answeredTopics.add('associated');
+    if (q.includes('worse') || q.includes('better') || q.includes('trigger') || q.includes('aggravat') || q.includes('reliev')) answeredTopics.add('aggravating');
+  });
+
+  // Build adaptive question queue based on what has NOT been asked yet
+  const questionQueue = [];
+
+  // FIRST: Always ask about onset/duration if not yet covered
+  if (!answeredTopics.has('onset')) {
+    questionQueue.push({
+      question: `When did your ${complaint.toLowerCase()} first start, and has it been getting worse?`,
+      options: ['Started suddenly a few hours ago', 'Started 1-2 days ago', 'Has been going on for a week or more', 'Comes and goes over several weeks', 'Other'],
+      questionRationale: 'Establishing temporal onset pattern',
+      urgentFlag: false
+    });
+  }
+
+  // SECOND: Ask about severity if not yet covered
+  if (!answeredTopics.has('severity')) {
+    questionQueue.push({
+      question: `How much does the ${complaint.toLowerCase()} affect your daily activities right now?`,
+      options: ['Mild — I can manage normally', 'Moderate — it slows me down', 'Severe — I can barely function', 'Unbearable — worst I have ever experienced', 'Other'],
+      questionRationale: 'Assessing clinical severity for triage',
+      urgentFlag: false
+    });
+  }
+
+  // THIRD: Context-specific follow-up based on category and prior answers
+  if (!answeredTopics.has('associated')) {
+    const associatedQuestions = {
+      chest: { question: 'Are you also experiencing any sweating, shortness of breath, or pain going to your arm or jaw?', options: ['Sweating and feeling uneasy', 'Shortness of breath on exertion', 'Pain spreading to left arm', 'Palpitations / rapid heartbeat', 'None of these', 'Other'], urgentFlag: true },
+      fever: { question: 'Along with the fever, are you experiencing any body aches, cold symptoms, or a rash?', options: ['Severe body aches and fatigue', 'Runny nose and sore throat', 'Skin rash or spots', 'Nausea or vomiting', 'None of these', 'Other'], urgentFlag: false },
+      stomach: { question: 'Are you also experiencing nausea, vomiting, changes in appetite, or blood in stool?', options: ['Nausea and vomiting', 'Loss of appetite', 'Diarrhoea or constipation', 'Blood in stool or dark stools', 'None of these', 'Other'], urgentFlag: allAnswersText.includes('blood') },
+      headache: { question: 'Along with the headache, do you notice any visual changes, nausea, or neck stiffness?', options: ['Nausea or vomiting', 'Sensitivity to light and sound', 'Visual disturbances / spots', 'Stiff neck', 'None of these', 'Other'], urgentFlag: allAnswersText.includes('worst') || allAnswersText.includes('sudden') },
+      cough: { question: 'Are you also experiencing any fever, wheezing, or bringing up colored phlegm?', options: ['Fever and chills', 'Wheezing or whistling sound', 'Thick yellow/green phlegm', 'Blood in phlegm', 'No other symptoms', 'Other'], urgentFlag: allAnswersText.includes('blood') },
+      musculoskeletal: { question: 'Is there any swelling, redness, or difficulty moving the affected area?', options: ['Noticeable swelling', 'Redness and warmth', 'Difficulty moving / stiffness', 'Numbness or tingling', 'None of these', 'Other'], urgentFlag: false },
+      dermatology: { question: 'How does the skin issue look — is it spreading, itchy, or painful?', options: ['Red and itchy patches', 'Spreading rash with bumps', 'Painful blisters or sores', 'Dry and flaking skin', 'Other'], urgentFlag: false },
+      general: { question: 'Are there any other symptoms you are experiencing along with this?', options: ['Fatigue and weakness', 'Loss of appetite', 'Difficulty sleeping', 'No other symptoms', 'Other'], urgentFlag: false }
+    };
+    const aq = associatedQuestions[cat] || associatedQuestions.general;
+    questionQueue.push({ ...aq, questionRationale: 'Identifying associated symptoms for differential diagnosis' });
+  }
+
+  // FOURTH: Aggravating/relieving factors
+  if (!answeredTopics.has('aggravating') && questionQueue.length < 2) {
+    questionQueue.push({
+      question: `Is there anything that makes your ${complaint.toLowerCase()} better or worse?`,
+      options: ['Worse with physical activity', 'Better with rest', 'Worse after eating', 'Better with medication', 'No clear pattern', 'Other'],
+      questionRationale: 'Identifying aggravating and relieving factors',
+      urgentFlag: false
+    });
+  }
+
+  // FIFTH: Medications
+  if (!answeredTopics.has('medications') && questionQueue.length < 2) {
+    questionQueue.push({
+      question: 'Have you taken any medication for this, or do you take regular medicines for any condition?',
+      options: ['Took over-the-counter painkillers', 'Taking prescribed medication regularly', 'Tried home remedies only', 'No medication taken', 'Other'],
+      questionRationale: 'Recording current medication use',
+      urgentFlag: false
+    });
+  }
+
+  // SIXTH: Past history and allergies
+  if (!answeredTopics.has('history') && questionQueue.length < 2) {
+    questionQueue.push({
+      question: 'Do you have any known medical conditions or allergies the doctor should know about?',
+      options: ['Diabetes', 'High blood pressure', 'Asthma or lung condition', 'Drug or food allergies', 'No known conditions', 'Other'],
+      questionRationale: 'Collecting relevant past medical history',
+      urgentFlag: false
+    });
+  }
+
+  // Pick the next unasked question from the queue
+  if (questionQueue.length > 0) {
+    const next = questionQueue[0];
     return {
-      question: q.question,
-      options: q.options,
+      question: next.question,
+      options: next.options,
+      questionRationale: next.questionRationale || `Clinical intake step ${questionCount + 1}`,
+      urgentFlag: next.urgentFlag || false,
       allowCustomText: true,
       allowVoice: true,
       complete: false,
-      reason: `Clinical intake step ${questionCount + 1}`
+      reason: `Adaptive clinical intake step ${questionCount + 1}`
     };
   }
 
+  // All topics covered — final wrap-up
   return {
-    question: 'Are there any other symptoms, allergies, or details the doctor should know?',
-    options: ['No other symptoms', 'Known drug allergies', 'History of surgery', 'Other'],
+    question: 'Is there anything else the doctor should know before your consultation?',
+    options: ['No, that covers everything', 'I have a previous report to share', 'There is something else I want to mention', 'Other'],
+    questionRationale: 'Final check before closing intake',
+    urgentFlag: false,
     allowCustomText: true,
     allowVoice: true,
     complete: true,
-    reason: 'Clinical intake complete'
+    reason: 'Clinical intake complete — all key topics covered'
   };
 }
 
@@ -83,7 +154,7 @@ class AiIntakeService {
     }
 
     const sessionId = `SES-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-    
+
     // Resolve patient details
     let resolvedName = patientName;
     if (!resolvedName && patientId) {
@@ -112,7 +183,7 @@ class AiIntakeService {
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://127.0.0.1:4100';
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 400);
+      const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch(`${aiServiceUrl}/api/v1/intake/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -137,7 +208,7 @@ class AiIntakeService {
     }
 
     if (!firstQuestion) {
-      firstQuestion = getFallbackQuestion(session.chiefComplaint, 0);
+      firstQuestion = getFallbackQuestion(session.chiefComplaint, 0, []);
     }
 
     session.currentQuestion = firstQuestion;
@@ -154,10 +225,25 @@ class AiIntakeService {
   /**
    * Submit answer and get next question or final report
    */
-  async answerIntake(sessionId, { answer, answerMethod = 'text' }) {
+  async answerIntake(
+    sessionId,
+    {
+      answer,
+      answerMethod = 'text',
+      originalAnswer = null,
+      answerLanguage = null,
+      patientId = null
+    }
+  ) {
     const session = sessions.get(sessionId);
     if (!session) {
       throw new Error(`Intake session '${sessionId}' not found or expired.`);
+    }
+    if (
+      patientId &&
+      String(session.patientId) !== String(patientId)
+    ) {
+      throw new Error('You are not authorized to answer this intake session.');
     }
 
     if (session.status !== 'active') {
@@ -171,10 +257,24 @@ class AiIntakeService {
     const cleanAnswer = String(answer).trim();
 
     session.conversation.push({
-      question: session.currentQuestion?.question || 'Medical query',
-      options: session.currentQuestion?.options || [],
+      question:
+        session.currentQuestion?.question ||
+        'Medical query',
+
+      options:
+        session.currentQuestion?.options ||
+        [],
+
       answer: cleanAnswer,
+
+      originalAnswer:
+        originalAnswer || cleanAnswer,
+
+      answerLanguage:
+        answerLanguage || session.language,
+
       answerMethod,
+
       timestamp: new Date()
     });
 
@@ -252,11 +352,16 @@ class AiIntakeService {
             nextQuestion = data.question;
           }
         }
-      } catch (e) {}
+      } catch (e) { }
     }
 
     if (!nextQuestion) {
-      nextQuestion = getFallbackQuestion(session.chiefComplaint, session.questionCount);
+      nextQuestion = getFallbackQuestion(session.chiefComplaint, session.questionCount, session.conversation);
+    }
+
+    // Propagate urgentFlag if detected
+    if (nextQuestion.urgentFlag) {
+      session.urgentFlagDetected = true;
     }
 
     session.questionCount += 1;
@@ -309,7 +414,7 @@ class AiIntakeService {
     const hasRespRedFlag = lowerAnswers.includes('shortness of breath even at rest') || lowerAnswers.includes('blood-tinged');
     const hasHighFever = lowerAnswers.includes('> 102') || lowerAnswers.includes('more than 5 days');
     const hasSeverePain = lowerAnswers.includes('severe (7-10)') || lowerAnswers.includes('hard to bear') || lowerAnswers.includes('incapacitating');
-    const isUrgent = hasChestRedFlag || hasRespRedFlag || (cat === 'headache' && lowerAnswers.includes('neck stiffness')) || (cat === 'stomach' && lowerAnswers.includes('lower right abdomen'));
+    const isUrgent = hasChestRedFlag || hasRespRedFlag || (cat === 'headache' && lowerAnswers.includes('neck stiffness')) || (cat === 'stomach' && lowerAnswers.includes('lower right abdomen')) || session.urgentFlagDetected;
 
     const triageLevel = isUrgent ? 'HIGH_ACUITY' : (hasSeverePain || hasHighFever ? 'PRIORITY_EVALUATION' : 'STANDARD_CONSULTATION');
 
@@ -397,8 +502,8 @@ class AiIntakeService {
     const patientGender = session.patientProfile?.gender || '';
     const demoStr = `${patientAge}${patientGender ? ` (${patientGender})` : ''}`;
 
-    const acuityLabel = isUrgent 
-      ? 'PRIORITY 1 - HIGH ACUITY (URGENT PHYSICIAN REVIEW REQUIRED)' 
+    const acuityLabel = isUrgent
+      ? 'PRIORITY 1 - HIGH ACUITY (URGENT PHYSICIAN REVIEW REQUIRED)'
       : (hasSeverePain || hasHighFever ? 'PRIORITY 2 - PRIORITY AMBULATORY EVALUATION' : 'PRIORITY 3 - ROUTINE AMBULATORY CONSULTATION');
 
     const summaryForDoctor = `CLINICAL INTAKE ENCOUNTER SUMMARY\n` +
@@ -451,6 +556,7 @@ class AiIntakeService {
       urgentReview: isUrgent,
       importantUnknowns: unknownVitals,
       suggestedScans,
+      suggestedInvestigations: suggestedScans,
       diagnosticImpression: differentials.join('\n')
     };
   }

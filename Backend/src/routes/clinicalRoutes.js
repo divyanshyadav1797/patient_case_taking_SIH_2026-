@@ -2,8 +2,12 @@ const express = require('express');
 const router = express.Router();
 const clinicalController = require('../controllers/clinicalController');
 const {
-    authenticateToken
+    authenticateToken,
+    authenticateOptionalToken
 } = require('../middleware/authMiddleware');
+
+const voiceUpload =
+    require('../middleware/voiceUpload');
 
 // ── Appointments ──
 router.get('/appointments', (req, res, next) => clinicalController.getAppointments(req, res, next));
@@ -28,11 +32,23 @@ router.post('/prescriptions', (req, res, next) => clinicalController.createPresc
 router.post('/ai/intake/start', (req, res, next) => clinicalController.startAiIntake(req, res, next));
 router.post('/ai/intake/:sessionId/answer', (req, res, next) => clinicalController.answerAiIntake(req, res, next));
 router.get('/ai/intake/:sessionId', (req, res, next) => clinicalController.getAiIntakeSession(req, res, next));
+router.post(
+    '/ai/intake/:sessionId/voice-answer',
+    authenticateToken,
+    voiceUpload.single('audio'),
+    (req, res, next) =>
+        clinicalController.answerAiIntakeByVoice(
+            req,
+            res,
+            next
+        )
+);
 
 // Compatibility alias for direct microservice route
 router.post('/intake/start', (req, res, next) => clinicalController.startAiIntake(req, res, next));
 router.post('/intake/:sessionId/answer', (req, res, next) => clinicalController.answerAiIntake(req, res, next));
 router.get('/intake/:sessionId', (req, res, next) => clinicalController.getAiIntakeSession(req, res, next));
+
 
 // ── Clinical Reports (AI Synthesized Reports & Doctor Review) ──
 router.get('/clinical-reports', (req, res, next) => clinicalController.getClinicalReports(req, res, next));
@@ -58,7 +74,7 @@ const upload =
 router.post(
     '/records/upload',
 
-    authenticateToken,
+    authenticateOptionalToken,
 
     upload.single('document'),
 
@@ -69,5 +85,7 @@ router.post(
             next
         )
 );
+
+
 
 module.exports = router;

@@ -119,8 +119,11 @@ export function DoctorProvider({ children }) {
           setPrescriptions(rxs.value);
         }
 
-        if (recs.status === 'fulfilled' && Array.isArray(recs.value)) {
-          setRecords(recs.value);
+        const allRecords = recs.status === 'fulfilled' && Array.isArray(recs.value) ? recs.value : [];
+        const allPrescriptions = rxs.status === 'fulfilled' && Array.isArray(rxs.value) ? rxs.value : [];
+
+        if (allRecords.length > 0) {
+          setRecords(allRecords);
         }
 
         if (reps.status === 'fulfilled' && Array.isArray(reps.value)) {
@@ -130,6 +133,10 @@ export function DoctorProvider({ children }) {
           const loadedPatients = [];
           reps.value.forEach(rep => {
             const symptomsStr = Array.isArray(rep.reportedSymptoms) ? rep.reportedSymptoms.join(', ') : (rep.reportedSymptoms || rep.chiefComplaint);
+            const pId = rep.patientId;
+            const patientRecords = allRecords.filter(r => String(r.patientId) === String(pId) || String(r.patientId) === String(rep.customId));
+            const patientPrescriptions = allPrescriptions.filter(p => String(p.patientId) === String(pId) || String(p.patientId) === String(rep.customId));
+
             loadedPatients.push({
               id: rep.patientId || `P-${Math.floor(1000 + Math.random() * 9000)}`,
               name: rep.patientName || 'Intake Patient',
@@ -155,8 +162,8 @@ export function DoctorProvider({ children }) {
               diagnosticImpression: rep.diagnosticImpression || '',
               conversation: rep.conversation || [],
               reportId: rep.id || rep.customId,
-              records: [],
-              prescriptions: [],
+              records: patientRecords,
+              prescriptions: patientPrescriptions,
               timeline: []
             });
           });

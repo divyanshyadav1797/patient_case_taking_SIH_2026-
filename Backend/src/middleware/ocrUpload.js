@@ -7,6 +7,7 @@ const MAX_FILE_SIZE =
 const ALLOWED_TYPES = [
     'application/pdf',
     'image/jpeg',
+    'image/jpg',
     'image/png',
     'image/webp'
 ];
@@ -20,15 +21,16 @@ const upload = multer({
     },
 
     fileFilter: (req, file, cb) => {
-        if (!ALLOWED_TYPES.includes(file.mimetype)) {
-            return cb(
-                new Error(
-                    'Only PDF, JPG, PNG and WebP files are supported.'
-                )
-            );
+        const extMatch = /\.(pdf|jpg|jpeg|png|webp)$/i.test(file.originalname);
+        if (ALLOWED_TYPES.includes(file.mimetype) || extMatch) {
+            return cb(null, true);
         }
 
-        cb(null, true);
+        cb(
+            new Error(
+                'Only PDF, JPG, PNG and WebP files are supported for clinical document analysis.'
+            )
+        );
     }
 });
 

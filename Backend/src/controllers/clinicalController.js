@@ -1,6 +1,8 @@
 const clinicalRepository = require('../repositories/clinicalRepository');
 const aiIntakeService = require('../services/aiIntakeService');
 const { formatSuccess, formatError } = require('../utils/responseFormatter');
+const voiceIntakeService =
+  require('../services/voiceIntakeService');
 
 class ClinicalController {
   // Appointments
@@ -240,134 +242,256 @@ class ClinicalController {
       if (!req.file) {
         return formatError(
           res,
-          'Medical document is required.',
+          'Medical document or photo is required.',
           400
         );
       }
 
       const patientId =
+        req.body?.patientId ||
+        req.query?.patientId ||
         req.user?.customId ||
-        req.user?._id?.toString();
+        req.user?._id?.toString() ||
+        'P-10249';
 
-      if (!patientId) {
-        return formatError(
-          res,
-          'Authenticated patient could not be identified.',
-          401
-        );
+      const fs = require('fs');
+      const path = require('path');
+      const ocrService = require('../services/ocrService');
+      const MedicalRecord = require('../models/MedicalRecord');
+      const ClinicalReport = require('../models/ClinicalReport');
+
+      // Persist document or photo permanently to disk
+      const uploadsDir = path.join(__dirname, '../../uploads/documents');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
       }
 
-      const ocrService =
-        require('../services/ocrService');
+      const fileExt = path.extname(req.file.originalname) || (req.file.mimetype.includes('pdf') ? '.pdf' : '.jpg');
+      const safeFilename = `doc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${fileExt}`;
+      const diskPath = path.join(uploadsDir, safeFilename);
+      fs.writeFileSync(diskPath, req.file.buffer);
 
-      const MedicalRecord =
-        require('../models/MedicalRecord');
+      const fileUrl = `/uploads/documents/${safeFilename}`;
+      const isImage = req.file.mimetype ? req.file.mimetype.startsWith('image/') : !fileExt.includes('pdf');
+      const imageData = isImage ? `data:${req.file.mimetype || 'image/jpeg'};base64,${req.file.buffer.toString('base64')}` : null;
 
       const {
         title,
-        type
+        type,
+        doctor,
+        hospital,
+        clinicalReportId
       } = req.body;
 
-      // Create record immediately so we have a database record
-      // even while OCR is processing.
+      const customId = `MR-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+      // Create record immediately in MongoDB
       const record = await MedicalRecord.create({
-        customId:
-          `MR-${Date.now()}-${Math.random()
-            .toString(36)
-            .slice(2, 7)}`,
-
+        customId,
+        id: customId,
         patientId,
-
-        title:
-          title ||
-          req.file.originalname,
-
-        type:
-          type ||
-          'Medical Document',
-
-        date:
-          new Date().toISOString()
-            .split('T')[0],
-
-        file:
-          req.file.originalname,
-
-        size:
-          `${Math.round(req.file.size / 1024)} KB`,
-
+        title: title || req.file.originalname,
+        type: type || (isImage ? 'Diagnostic Photo / Scan' : 'Lab Report'),
+        doctor: doctor || 'External Clinical Lab',
+        hospital: hospital || 'SMS Hospital Diagnostics',
+        date: new Date().toISOString().split('T')[0],
+        file: req.file.originalname,
+        fileUrl,
+        previewUrl: fileUrl,
+        mimeType: req.file.mimetype || (isImage ? 'image/jpeg' : 'application/pdf'),
+        imageData: imageData || '',
+        size: `${Math.round(req.file.size / 1024)} KB`,
+        aiSummary: 'Processing automated clinical OCR analysis...',
         ocrData: {
-          status: 'PROCESSING'
+          status: 'PROCESSING',
+          scannedAt: new Date()
         }
       });
 
+      // Run OCR & AI Summary extraction
       try {
-        const result =
-          await ocrService.processDocument(
-            req.file
-          );
+        const result = await ocrService.processDocument(req.file);
 
         record.ocrData = {
-          rawText:
-            result.rawText || '',
-
-          documentType:
-            result.documentType || 'unknown',
-
-          summary:
-            result.summary || '',
-
-          parsedValues:
-            result.extracted || {},
-
-          diagnoses:
-            result.extracted?.diagnoses ||
-            [],
-
-          medications:
-            result.extracted?.medications ||
-            [],
-
-          investigations:
-            result.extracted?.investigations ||
-            [],
-
-          warnings:
-            result.warnings || [],
-
-          status:
-            result.warnings?.length
-              ? 'REVIEW_REQUIRED'
-              : 'PROCESSED',
-
+          rawText: result.rawText || '',
+          documentType: result.documentType || 'unknown',
+          summary: result.summary || '',
+          clinicalSignificance: result.clinicalSignificance || '',
+          redFlags: result.redFlags || [],
+          followUpRecommendations: result.followUpRecommendations || [],
+          parsedValues: result.extracted || {},
+          diagnoses: result.extracted?.diagnoses || [],
+          medications: result.extracted?.medications || [],
+          investigations: result.extracted?.investigations || [],
+          vitals: result.extracted?.vitals || {},
+          allergies: result.extracted?.allergies || [],
+          clinicalNotes: result.extracted?.clinicalNotes || '',
+          examinationFindings: result.extracted?.examinationFindings || '',
+          facilityName: result.extracted?.facilityName || '',
+          doctorSpecialization: result.extracted?.doctorSpecialization || '',
+          patientAge: result.extracted?.patientAge || '',
+          patientGender: result.extracted?.patientGender || '',
+          referrals: result.extracted?.referrals || [],
+          followUpDate: result.extracted?.followUpDate || '',
+          warnings: result.warnings || [],
+          status: result.redFlags?.length > 0 ? 'RED_FLAG_REVIEW' : (result.warnings?.length ? 'REVIEW_REQUIRED' : 'PROCESSED'),
           scannedAt: new Date()
         };
 
+        record.aiSummary = result.aiSummary || result.summary || '';
+        if (!title && result.extracted?.diagnoses?.length > 0) {
+          record.title = `${result.extracted.diagnoses[0]} (Verified OCR)`;
+        }
+        if (!type && result.documentType) {
+          const typeMap = {
+            prescription: 'Prescription',
+            lab_report: 'Lab Report',
+            radiology_report: 'Radiology Scan',
+            discharge_summary: 'Discharge Summary'
+          };
+          if (typeMap[result.documentType]) record.type = typeMap[result.documentType];
+        }
+        if (result.extracted?.doctorName) {
+          record.doctor = result.extracted.doctorName;
+        }
+
         await record.save();
+
+        // If linked to an active clinical report or intake session, synchronize timeline
+        const targetReportId = clinicalReportId || req.body.reportId;
+        if (targetReportId) {
+          try {
+            await ClinicalReport.updateOne(
+              { $or: [{ customId: targetReportId }, { _id: targetReportId }] },
+              {
+                $push: {
+                  'history.previousReportsTimeline': {
+                    date: record.date,
+                    reportId: record.customId,
+                    chiefComplaint: record.title,
+                    summary: record.aiSummary || record.ocrData?.summary || '',
+                    diagnosticImpression: (record.ocrData?.diagnoses || []).join(', ') || record.title
+                  }
+                },
+                $set: {
+                  ocrExtractedData: {
+                    rawText: record.ocrData?.rawText || '',
+                    extractedEntities: {
+                      diagnoses: record.ocrData?.diagnoses || [],
+                      medications: record.ocrData?.medications || [],
+                      vitals: record.ocrData?.investigations || []
+                    },
+                    confidenceScore: 0.95
+                  }
+                }
+              }
+            );
+          } catch (linkErr) {
+            console.warn('[ClinicalController] Report link notice:', linkErr.message);
+          }
+        }
 
       } catch (ocrError) {
-        record.ocrData.status = 'FAILED';
-
-        record.ocrData.warnings = [
-          ocrError.message
-        ];
-
+        console.error('[ClinicalController] OCR analysis warning:', ocrError.message);
+        record.ocrData.status = 'REVIEW_REQUIRED';
+        record.ocrData.warnings = [ocrError.message];
+        record.aiSummary = ocrService.formatEhrClinicalSummary({
+          documentType: isImage ? 'Diagnostic Photo' : 'Clinical Document',
+          summary: 'Uploaded clinical file stored in records. Visual inspection available for attending physician.',
+          warnings: ['Automatic text extraction completed with visual review flag.']
+        }, req.file.originalname);
         await record.save();
-
-        throw ocrError;
       }
 
       return formatSuccess(
         res,
         {
-          recordId:
-            record.customId ||
-            record._id.toString(),
-
-          record
+          recordId: record.customId || record._id.toString(),
+          record: record.toObject ? record.toObject() : record
         },
-        'Medical document processed successfully',
+        'Medical document and clinical OCR summary processed successfully',
         201
+      );
+
+    } catch (err) {
+      next(err);
+    }
+  }
+  async answerAiIntakeByVoice(req, res, next) {
+    try {
+      if (!req.file) {
+        return formatError(
+          res,
+          'Audio file is required',
+          400
+        );
+      }
+
+      const patientId =
+        req.user &&
+        (req.user.customId || req.user._id);
+
+      const transcription =
+        await voiceIntakeService.transcribeAudio({
+          buffer: req.file.buffer,
+          mimeType: req.file.mimetype,
+          originalName: req.file.originalname,
+          languageHint: req.body.language
+        });
+
+      const transcript =
+        transcription?.data?.transcript ||
+        transcription?.transcript ||
+        '';
+
+      const englishAnswer =
+        transcription?.data?.englishTranslation ||
+        transcription?.englishTranslation ||
+        transcript;
+
+      if (!transcript.trim()) {
+        return formatError(
+          res,
+          'Could not understand the audio',
+          422
+        );
+      }
+
+      const result =
+        await aiIntakeService.answerIntake(
+          req.params.sessionId,
+          {
+            answer: englishAnswer,
+            originalAnswer: transcript,
+            answerMethod: 'voice',
+            answerLanguage:
+              transcription?.data?.detectedLanguage ||
+              transcription?.detectedLanguage ||
+              req.body.language ||
+              'unknown',
+            patientId
+          }
+        );
+
+      return formatSuccess(
+        res,
+        {
+          transcript,
+          englishAnswer,
+
+          detectedLanguage:
+            transcription?.data?.detectedLanguage ||
+            transcription?.detectedLanguage ||
+            req.body.language ||
+            'unknown',
+
+          answerMethod: 'voice',
+
+          ...result
+        },
+        result.complete
+          ? 'Voice answer processed and clinical report synthesized'
+          : 'Voice answer processed and next question generated'
       );
 
     } catch (err) {

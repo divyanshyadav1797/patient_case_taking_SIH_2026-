@@ -15,6 +15,10 @@ const MedicalRecordSchema = new mongoose.Schema({
   },
   file: { type: String, default: 'report.pdf' },
   fileUrl: { type: String },
+  previewUrl: { type: String },
+  mimeType: { type: String, default: 'application/pdf' },
+  imageData: { type: String }, // Base64 Data URI for fast photo preview
+  aiSummary: { type: String, default: '' },
   size: { type: String, default: '20 MB' },
   ocrData: {
     rawText: { type: String, default: '' },

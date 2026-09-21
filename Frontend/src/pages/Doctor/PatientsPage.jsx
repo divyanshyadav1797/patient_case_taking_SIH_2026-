@@ -10,6 +10,7 @@ export default function PatientsPage() {
     patients,
     selectedPatient,
     setSelectedPatient,
+    records,
     globalSearch,
     setPreviewDoc,
     setIsCreateRxOpen,
@@ -556,6 +557,93 @@ export default function PatientsPage() {
                         </div>
                       )}
 
+                      {/* Attached Documents & Visual Photos with OCR AI Summaries */}
+                      {(() => {
+                        const patientDocs = (records || []).filter(r =>
+                          selectedPatient && (
+                            String(r.patientId) === String(selectedPatient.id) ||
+                            String(r.patientId) === String(selectedPatient.customId) ||
+                            String(r.patientId) === String(selectedPatient.reportId)
+                          )
+                        );
+                        if (patientDocs.length === 0) return null;
+
+                        return (
+                          <div style={{
+                            margin: '20px 0',
+                            padding: '16px 20px',
+                            background: 'rgba(255, 255, 255, 0.85)',
+                            borderRadius: '14px',
+                            border: '1.5px solid rgba(59, 130, 246, 0.25)',
+                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.05)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                              <strong style={{ fontSize: '0.85rem', color: '#1E40AF', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '0.5px' }}>
+                                <i className="fa-solid fa-file-waveform"></i>
+                                Attached Diagnostic Documents & Photos ({patientDocs.length})
+                              </strong>
+                              <span style={{ fontSize: '0.75rem', color: '#16A34A', fontWeight: 600 }}>
+                                <i className="fa-solid fa-wand-magic-sparkles"></i> AI OCR Analyzed
+                              </span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+                              {patientDocs.map((doc, dIdx) => {
+                                const docUrl = doc.imageData || doc.fileUrl || doc.previewUrl;
+                                const isImg = Boolean(doc.imageData || doc.mimeType?.startsWith('image/') || (doc.file && /\.(png|jpg|jpeg|webp)$/i.test(doc.file)));
+
+                                return (
+                                  <div
+                                    key={doc.id || dIdx}
+                                    onClick={() => setPreviewDoc({ ...doc, patient: selectedPatient.name })}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '12px',
+                                      padding: '10px 12px',
+                                      background: '#F8FAFC',
+                                      borderRadius: '10px',
+                                      border: '1px solid #E2E8F0',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s ease'
+                                    }}
+                                  >
+                                    <div style={{
+                                      width: '42px',
+                                      height: '42px',
+                                      borderRadius: '6px',
+                                      overflow: 'hidden',
+                                      background: '#FFFFFF',
+                                      border: '1px solid #CBD5E1',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      flexShrink: 0
+                                    }}>
+                                      {isImg && docUrl ? (
+                                        <img src={docUrl} alt="doc" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      ) : (
+                                        <i className="fa-solid fa-file-pdf text-danger" style={{ fontSize: '1.2rem' }}></i>
+                                      )}
+                                    </div>
+                                    <div style={{ overflow: 'hidden', flex: 1 }}>
+                                      <strong style={{ fontSize: '0.85rem', color: '#0F172A', display: 'block', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                        {doc.title}
+                                      </strong>
+                                      <small style={{ fontSize: '0.74rem', color: '#64748B' }}>
+                                        {doc.type || 'Document'} · {doc.date}
+                                      </small>
+                                    </div>
+                                    <span style={{ fontSize: '0.8rem', color: '#2563EB' }}>
+                                      <i className="fa-solid fa-chevron-right"></i>
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       {/* Diagnostic Differentials & Investigations Grid with Functional Order Buttons */}
                       {(selectedPatient.diagnosticImpression || (selectedPatient.suggestedScans && selectedPatient.suggestedScans.length > 0)) && (
                         <div style={{
@@ -979,45 +1067,174 @@ export default function PatientsPage() {
               </div>
             )}
 
-            {/* Tab 3: Medical Records */}
-            {activeTab === 'records' && (
-              <div className="tab-pane active" id="paneRecords" role="tabpanel">
-                <div className="table-card">
-                  <div className="table-responsive">
-                    <table className="data-table">
-                      <thead>
-                        <tr>
-                          <th>Document Title</th>
-                          <th>Type</th>
-                          <th>Date</th>
-                          <th>Uploaded By</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(selectedPatient.records || []).map((rec, i) => (
-                          <tr key={i}>
-                            <td><strong>{rec.title}</strong></td>
-                            <td>{rec.type}</td>
-                            <td>{rec.date}</td>
-                            <td>{rec.by}</td>
-                            <td>
-                              <button
-                                type="button"
-                                className="btn-outline btn-sm"
-                                onClick={() => setPreviewDoc({ ...rec, patient: selectedPatient.name })}
-                              >
-                                View
-                              </button>
-                            </td>
+            {/* Tab 3: Medical Records & OCR Documents */}
+            {activeTab === 'records' && (() => {
+              const pRecords = (records || []).filter(r =>
+                selectedPatient && (
+                  String(r.patientId) === String(selectedPatient.id) ||
+                  String(r.patientId) === String(selectedPatient.customId) ||
+                  String(r.patientId) === String(selectedPatient.reportId)
+                )
+              );
+              const displayRecords = pRecords.length > 0 ? pRecords : (selectedPatient.records || []);
+
+              return (
+                <div className="tab-pane active" id="paneRecords" role="tabpanel">
+                  <div className="table-card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #E2E8F0' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#0F172A', fontWeight: 700 }}>
+                          Patient Medical Records & Document Repository
+                        </h3>
+                        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748B' }}>
+                          Physical and digital files uploaded by patient, kiosk check-in, or clinical laboratories. Click any document or photo to view the visual file and AI OCR extraction.
+                        </p>
+                      </div>
+                      <span style={{ fontSize: '0.8rem', color: '#334155', fontWeight: 600 }}>
+                        Total: {displayRecords.length} Document(s)
+                      </span>
+                    </div>
+
+                    <div className="table-responsive">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th style={{ width: '60px' }}>Preview</th>
+                            <th>Document Title</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th>Facility / Doctor</th>
+                            <th>OCR Status</th>
+                            <th style={{ textAlign: 'right' }}>Actions</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {displayRecords.length === 0 ? (
+                            <tr>
+                              <td colSpan="7" style={{ textAlign: 'center', padding: '36px', color: '#64748B' }}>
+                                <i className="fa-solid fa-folder-open" style={{ fontSize: '2.4rem', color: '#94A3B8', marginBottom: '10px', display: 'block' }}></i>
+                                No medical records or document scans uploaded for this patient yet.
+                              </td>
+                            </tr>
+                          ) : (
+                            displayRecords.map((rec, i) => {
+                              const docUrl = rec.imageData || rec.fileUrl || rec.previewUrl;
+                              const isImg = Boolean(
+                                rec.imageData ||
+                                rec.mimeType?.startsWith('image/') ||
+                                (rec.file && /\.(png|jpg|jpeg|webp)$/i.test(rec.file))
+                              );
+
+                              return (
+                                <tr key={rec.id || i} style={{ cursor: 'pointer' }} onClick={() => setPreviewDoc({ ...rec, patient: selectedPatient.name })}>
+                                  <td onClick={(e) => e.stopPropagation()}>
+                                    <div
+                                      onClick={() => setPreviewDoc({ ...rec, patient: selectedPatient.name })}
+                                      style={{
+                                        width: '44px',
+                                        height: '44px',
+                                        borderRadius: '8px',
+                                        overflow: 'hidden',
+                                        background: '#F1F5F9',
+                                        border: '1px solid #CBD5E1',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        cursor: 'pointer'
+                                      }}
+                                    >
+                                      {isImg && docUrl ? (
+                                        <img
+                                          src={docUrl}
+                                          alt="thumb"
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                        />
+                                      ) : (
+                                        <i className={`fa-solid ${rec.mimeType?.includes('pdf') || (rec.file && rec.file.endsWith('.pdf')) ? 'fa-file-pdf text-danger' : 'fa-file-medical text-primary'}`} style={{ fontSize: '1.25rem' }}></i>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td>
+                                    <strong>{rec.title}</strong>
+                                    {rec.file && <small style={{ display: 'block', color: '#64748B' }}>{rec.file} · {rec.size || 'Digital'}</small>}
+                                  </td>
+                                  <td>
+                                    <span style={{
+                                      background: '#F1F5F9',
+                                      color: '#334155',
+                                      padding: '3px 8px',
+                                      borderRadius: '6px',
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600
+                                    }}>
+                                      {rec.type || 'Medical Document'}
+                                    </span>
+                                  </td>
+                                  <td>{rec.date}</td>
+                                  <td>{rec.hospital || rec.doctor || rec.by || 'SMS Hospital Diagnostics'}</td>
+                                  <td>
+                                    {rec.ocrData?.status === 'PROCESSED' || rec.aiSummary ? (
+                                      <span style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        background: '#F0FDF4',
+                                        color: '#16A34A',
+                                        padding: '3px 8px',
+                                        borderRadius: '12px',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 600
+                                      }}>
+                                        <i className="fa-solid fa-circle-check"></i> OCR Ready
+                                      </span>
+                                    ) : (
+                                      <span style={{
+                                        background: '#EFF6FF',
+                                        color: '#2563EB',
+                                        padding: '3px 8px',
+                                        borderRadius: '12px',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 600
+                                      }}>
+                                        Cataloged
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td style={{ textAlign: 'right' }} onClick={(e) => e.stopPropagation()}>
+                                    <div style={{ display: 'inline-flex', gap: '6px' }}>
+                                      <button
+                                        type="button"
+                                        className="btn-primary btn-sm"
+                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                                        onClick={() => setPreviewDoc({ ...rec, patient: selectedPatient.name })}
+                                      >
+                                        <i className="fa-solid fa-eye"></i> View & OCR
+                                      </button>
+                                      {docUrl && (
+                                        <a
+                                          href={docUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="btn-outline btn-sm"
+                                          style={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none' }}
+                                          title="Open original file"
+                                        >
+                                          <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                                        </a>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* Tab 4: Prescriptions */}
             {activeTab === 'prescriptions' && (

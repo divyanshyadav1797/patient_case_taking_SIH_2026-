@@ -439,7 +439,7 @@ class ClinicalRepository {
   }
 
   async createRecord(recordData) {
-    const customId = recordData.id || recordData.customId || `REC-${Math.floor(10 + Math.random() * 90)}`;
+    const customId = recordData.id || recordData.customId || `REC-${Math.floor(1000 + Math.random() * 9000)}`;
     const newRec = {
       customId,
       id: customId,
@@ -450,6 +450,11 @@ class ClinicalRepository {
       date: recordData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       type: recordData.type || 'Lab Report',
       file: recordData.file || 'report.pdf',
+      fileUrl: recordData.fileUrl || (recordData.file ? `/uploads/documents/${recordData.file}` : ''),
+      previewUrl: recordData.previewUrl || recordData.fileUrl || '',
+      mimeType: recordData.mimeType || 'application/pdf',
+      imageData: recordData.imageData || '',
+      aiSummary: recordData.aiSummary || '',
       size: recordData.size || '1.2 MB',
       ocrData: recordData.ocrData || {}
     };
