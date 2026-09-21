@@ -18,8 +18,9 @@ import {
     ocrResponseSchema
 } from './ocrSchema.js';
 
-const rawModel = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim().toLowerCase().replace(/\s+/g, '-');
-const MODEL = rawModel.includes('gemini') ? rawModel : 'gemini-3.5-flash-lite';
+const MODEL =
+    process.env.GEMINI_MODEL ||
+    'Gemini 3.5 Flash Lite';
 
 export async function analyzeDocument({
     buffer,
