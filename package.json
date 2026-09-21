@@ -6,6 +6,7 @@
   "scripts": {
     "install:all": "npm install --prefix Backend && npm install --prefix Frontend && npm install --prefix ai-service",
     "build": "npm --prefix Frontend run build",
+    "build:render": "npm install --prefix Backend && npm install --prefix Frontend && npm run build --prefix Frontend",
     "start": "node Backend/server.js",
     "start:backend": "node Backend/server.js",
     "start:ai": "node ai-service/src/server.js",

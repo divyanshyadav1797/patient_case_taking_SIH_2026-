@@ -4,8 +4,8 @@ services:
     name: quantum-care-web
     runtime: node
     plan: free
-    buildCommand: npm install --prefix Backend && npm install --prefix Frontend && npm run build --prefix Frontend
-    startCommand: node Backend/server.js
+    buildCommand: npm run build:render
+    startCommand: npm start
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV
@@ -44,7 +44,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm install --prefix ai-service
-    startCommand: node ai-service/src/server.js
+    startCommand: npm run start:ai
     healthCheckPath: /health
     envVars:
       - key: NODE_ENV

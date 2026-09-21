@@ -204,13 +204,18 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 async function startServer() {
-  await connectDB();
-  if (process.env.SEED_DEMO_DATA === 'true') {
-    await userRepository.seedDefaultUsers();
-    await clinicalRepository.seedDefaults();
-    console.log('[Seed] Default verification accounts seeded in MongoDB');
-  } else {
-    console.log('[Database] Clean database mode (set SEED_DEMO_DATA=true to seed demo accounts)');
+  try {
+    await connectDB();
+    if (process.env.SEED_DEMO_DATA === 'true') {
+      await userRepository.seedDefaultUsers();
+      await clinicalRepository.seedDefaults();
+      console.log('[Seed] Default verification accounts seeded in MongoDB');
+    } else {
+      console.log('[Database] Clean database mode (set SEED_DEMO_DATA=true to seed demo accounts)');
+    }
+  } catch (err) {
+    console.error('[Database] MongoDB connection warning:', err.message);
+    console.warn('[Database] Server started in standby mode. Verify MONGODB_URI to enable database persistence.');
   }
 
   const server = app.listen(PORT, () => {
