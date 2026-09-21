@@ -74,7 +74,14 @@ const T = {
     seconds: 'seconds',
     back: 'Back',
     help: 'Need help? Touch the screen or approach the hospital reception desk.',
-    logout: 'Exit Kiosk'
+    logout: 'Exit Kiosk',
+    quickReg: 'Quick Patient Registration',
+    quickRegSub: 'Aadhaar and PIN verified. Enter your Full Name to complete registration fast.',
+    fullName: 'Full Name',
+    enterName: 'Enter patient full name',
+    registerProceed: 'Register & Proceed',
+    verifying: 'Verifying with Database...',
+    welcomeBack: 'Welcome back'
   },
   hi: {
     tag: 'आपका स्वास्थ्य, हमारा सहयोग',
@@ -144,7 +151,14 @@ const T = {
     seconds: 'सेकंड',
     back: 'वापस',
     help: 'सहायता के लिए स्क्रीन को स्पर्श करें या अस्पताल रिसेप्शन से संपर्क करें।',
-    logout: 'बाहर निकलें'
+    logout: 'बाहर निकलें',
+    quickReg: 'त्वरित मरीज पंजीकरण',
+    quickRegSub: 'आधार और पिन सत्यापित। त्वरित पंजीकरण के लिए केवल अपना पूरा नाम दर्ज करें।',
+    fullName: 'पूरा नाम',
+    enterName: 'मरीज का पूरा नाम दर्ज करें',
+    registerProceed: 'पंजीकरण करें और आगे बढ़ें',
+    verifying: 'डेटाबेस से सत्यापन हो रहा है...',
+    welcomeBack: 'स्वागत है'
   }
 };
 
@@ -171,7 +185,14 @@ T.mr = {
   tokenGenerated: 'तुमचा टोकन तयार झाला!',
   receipt: 'पावती आपोआप प्रिंट झाली',
   redirect: 'नवीन रुग्ण नोंदणीवर जात आहे',
-  logout: 'बाहेर पडा'
+  logout: 'बाहेर पडा',
+  quickReg: 'जलद रुग्ण नोंदणी',
+  quickRegSub: 'आधार आणि पिन सत्यापित. जलद नोंदणीसाठी तुमचे पूर्ण नाव प्रविष्ट करा.',
+  fullName: 'पूर्ण नाव',
+  enterName: 'रुग्णाचे पूर्ण नाव प्रविष्ट करा',
+  registerProceed: 'नोंदणी करा आणि पुढे जा',
+  verifying: 'डेटाबेस तपासत आहे...',
+  welcomeBack: 'स्वागत आहे'
 };
 
 T.gu = {
@@ -191,7 +212,14 @@ T.gu = {
   tokenGenerated: 'તમારો ટોકન બની ગયો છે!',
   receipt: 'રસીદ આપમેળે પ્રિન્ટ થઈ',
   redirect: 'નવા દર્દીની નોંધણી પર જઈ રહ્યું છે',
-  logout: 'બહાર નીકળો'
+  logout: 'બહાર નીકળો',
+  quickReg: 'ઝડપી દર્દી નોંધણી',
+  quickRegSub: 'આધાર અને પિન ચકાસાયેલ છે. નોંધણી પૂર્ણ કરવા માટે તમારું પૂરું નામ દાખલ કરો.',
+  fullName: 'પૂરું નામ',
+  enterName: 'દર્દીનું પૂરું નામ દાખલ કરો',
+  registerProceed: 'નોંધણી કરો અને આગળ વધો',
+  verifying: 'ડેટાબેઝ ચકાસી રહ્યું છે...',
+  welcomeBack: 'સ્વાગત છે'
 };
 
 /* ─── Doctor lists by department ───────────────────── */
@@ -215,6 +243,9 @@ export default function KioskPage() {
   const [aad, setAad] = useState('');
   const [pin, setPin] = useState('');
   const [newP, setNewP] = useState(false);
+  const [patient, setPatient] = useState(null);
+  const [regName, setRegName] = useState('');
+  const [isAuthLoading, setIsAuthLoading] = useState(false);
   const [issue, setIssue] = useState('');
   const [dept, setDept] = useState('');
   const [doctor, setDoctor] = useState('');
@@ -293,6 +324,9 @@ export default function KioskPage() {
     setAad('');
     setPin('');
     setNewP(false);
+    setPatient(null);
+    setRegName('');
+    setIsAuthLoading(false);
     setIssue('');
     setDept('');
     setDoctor('');
@@ -307,6 +341,73 @@ export default function KioskPage() {
     setScreen('aadhaar');
   };
 
+  const handlePinSubmit = async () => {
+    if (pin.length !== 4) return notify(L.pinSub || 'PIN must contain exactly 4 digits.');
+    setIsAuthLoading(true);
+    try {
+      const res = await api.kioskPatientAuth(aad, pin);
+      // Case 1: Patient exists and authenticated
+      if (res && res.authenticated && res.user) {
+        setPatient(res.user);
+        notify(`${L.welcomeBack || 'Welcome back'}, ${res.user.name || 'Patient'}!`);
+        setScreen('concern');
+        return;
+      }
+
+      // Case 2: Patient not registered in database
+      if (res && res.found === false) {
+        notify('Patient profile not found. Quick registration required.');
+        setScreen('fastRegister');
+        return;
+      }
+
+      // Case 3: Found but incorrect PIN
+      notify('Invalid 4-digit security PIN. Please try again.');
+      setPin('');
+    } catch (err) {
+      const msg = (err.message || '').toLowerCase();
+      if (msg.includes('not found') || msg.includes('no registered') || msg.includes('does not exist')) {
+        notify('Patient profile not found. Quick registration required.');
+        setScreen('fastRegister');
+      } else if (msg.includes('pin') || msg.includes('password') || msg.includes('credential')) {
+        notify('Invalid 4-digit security PIN. Please try again.');
+        setPin('');
+      } else {
+        notify('Patient not found with this Aadhaar. Quick registration required.');
+        setScreen('fastRegister');
+      }
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
+  const handleFastRegister = async () => {
+    if (!regName || regName.trim().length < 2) {
+      return notify('Please enter your full name (minimum 2 characters).');
+    }
+    setIsAuthLoading(true);
+    try {
+      const res = await api.kioskFastRegister({
+        fullName: regName.trim(),
+        aadhaar: aad,
+        pin: pin
+      });
+      if (res && res.user) {
+        setPatient(res.user);
+        notify(`Registration successful! Welcome, ${res.user.name}!`);
+        setScreen('concern');
+      } else {
+        setPatient({ name: regName.trim(), aadhaar: aad });
+        setScreen('concern');
+      }
+    } catch (err) {
+      console.warn('[Kiosk] Fast register error:', err.message);
+      notify(err.message || 'Registration failed. Please try again.');
+    } finally {
+      setIsAuthLoading(false);
+    }
+  };
+
   const startAiIntake = async (selectedConcern) => {
     setIssue(selectedConcern);
     setIsAiLoading(true);
@@ -319,11 +420,12 @@ export default function KioskPage() {
 
     try {
       const res = await api.startAiIntake({
-        patientId: aad ? `P-${aad.replace(/\s+/g, '').slice(-5)}` : 'P-KIOSK',
-        patientName: newP ? 'Walk-in Patient' : 'Registered Patient',
+        patientId: patient?.customId || (aad ? `P-${aad.replace(/\s+/g, '').slice(-5)}` : 'P-KIOSK'),
+        patientName: patient?.name || (newP ? 'Walk-in Patient' : 'Registered Patient'),
         chiefComplaint,
         language: lang,
-        source: 'kiosk'
+        source: 'kiosk',
+        patientProfile: patient?.patientDetails || {}
       });
       if (res && res.sessionId) {
         setIntakeSessionId(res.sessionId);
@@ -378,7 +480,7 @@ export default function KioskPage() {
 
   const notify = (m) => {
     setToast(m);
-    setTimeout(() => setToast(''), 2000);
+    setTimeout(() => setToast(''), 2500);
   };
 
   const press = (n) => {
@@ -388,13 +490,12 @@ export default function KioskPage() {
 
   const next = () => {
     if (screen === 'aadhaar') {
-      if (aad.length !== 12) return notify('Please enter a 12-digit Aadhaar number.');
-      setScreen(newP ? 'register' : 'pin');
-    } else if (screen === 'register') {
-      setScreen('concern');
+      if (aad.length !== 12) return notify(L.aadhaarSub || 'Please enter a 12-digit Aadhaar number.');
+      setScreen('pin');
     } else if (screen === 'pin') {
-      if (pin.length !== 4) return notify('PIN must contain exactly 4 digits.');
-      setScreen('concern');
+      handlePinSubmit();
+    } else if (screen === 'register' || screen === 'fastRegister') {
+      handleFastRegister();
     }
   };
 
@@ -510,8 +611,8 @@ export default function KioskPage() {
             </div>
           )}
 
-          {/* Aadhaar / PIN / Register Screen */}
-          {(screen === 'aadhaar' || screen === 'pin' || screen === 'register') && (
+          {/* Aadhaar / PIN Screen */}
+          {(screen === 'aadhaar' || screen === 'pin') && (
             <div className="view auth">
               <button
                 className="back"
@@ -521,8 +622,8 @@ export default function KioskPage() {
                 ← {L.back}
               </button>
               <div className="authIcon">{screen === 'pin' ? '●●●●' : '▦'}</div>
-              <h2>{screen === 'pin' ? L.pin : screen === 'register' ? L.register : L.aadhaar}</h2>
-              <p>{screen === 'pin' ? L.pinSub : screen === 'register' ? L.registerSub : L.aadhaarSub}</p>
+              <h2>{screen === 'pin' ? L.pin : (newP ? `${L.newPatient} · ${L.aadhaar}` : L.aadhaar)}</h2>
+              <p>{screen === 'pin' ? L.pinSub : (newP ? 'Enter 12-digit Aadhaar to create your patient profile' : L.aadhaarSub)}</p>
               <div className="display">
                 {screen === 'pin'
                   ? pin
@@ -531,13 +632,7 @@ export default function KioskPage() {
                   : fmt(aad) || '— — — — — — — — — — — —'}
               </div>
 
-              {screen !== 'register' ? (
-                keypad(screen === 'pin' ? L.login : L.next)
-              ) : (
-                <button className="primary wide" type="button" onClick={next}>
-                  {L.continue} →
-                </button>
-              )}
+              {keypad(isAuthLoading ? (L.verifying || 'Checking...') : (screen === 'pin' ? L.login : L.next))}
 
               {screen === 'aadhaar' && (
                 <button
@@ -546,12 +641,95 @@ export default function KioskPage() {
                   onClick={() => {
                     setNewP(true);
                     setAad('');
+                    notify('Enter 12-digit Aadhaar to start quick registration');
                   }}
                 >
                   ＋ {L.newPatient}
                 </button>
               )}
               <div className="secure">✓ {L.secureText}</div>
+            </div>
+          )}
+
+          {/* Quick In-Kiosk Fast Registration Screen */}
+          {screen === 'fastRegister' && (
+            <div className="view auth" style={{ maxWidth: '540px' }}>
+              <button
+                className="back"
+                type="button"
+                onClick={() => setScreen('pin')}
+              >
+                ← {L.back}
+              </button>
+              <div className="authIcon" style={{ background: '#EFF6FF', color: '#2563EB', fontSize: '28px' }}>
+                👤
+              </div>
+              <h2>{L.quickReg || 'Quick Patient Registration'}</h2>
+              <p>{L.quickRegSub || 'Enter your full name to quickly create your profile. Other details can be filled later.'}</p>
+
+              <div style={{
+                background: '#F8FAFC',
+                border: '1px solid #E2E8F0',
+                borderRadius: '16px',
+                padding: '1.25rem',
+                textAlign: 'left',
+                margin: '1.25rem auto',
+                width: '100%',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 600 }}>Aadhaar Number:</span>
+                  <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: 700, letterSpacing: '1px' }}>
+                    {fmt(aad)} <span style={{ color: '#16A34A', fontSize: '0.75rem', fontWeight: 800 }}>✓ Verified</span>
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#64748B', fontWeight: 600 }}>4-Digit Security PIN:</span>
+                  <span style={{ fontSize: '0.95rem', color: '#0F172A', fontWeight: 700, letterSpacing: '2px' }}>
+                    ● ● ● ● <span style={{ color: '#16A34A', fontSize: '0.75rem', fontWeight: 800 }}>✓ Secured</span>
+                  </span>
+                </div>
+
+                <div style={{ borderTop: '1px dashed #CBD5E1', paddingTop: '12px' }}>
+                  <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: 700, color: '#1E293B', marginBottom: '6px' }}>
+                    {L.fullName || 'Full Name'} <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder={L.enterName || 'Enter patient full name'}
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleFastRegister();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '14px 16px',
+                      borderRadius: '10px',
+                      border: '2px solid #087fc9',
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      outline: 'none',
+                      boxSizing: 'border-box',
+                      boxShadow: '0 0 0 3px rgba(8, 127, 201, 0.12)'
+                    }}
+                  />
+                  <small style={{ display: 'block', color: '#64748B', fontSize: '0.75rem', marginTop: '6px', lineHeight: 1.4 }}>
+                    ⓘ Age, Gender & Address will be synced from official Aadhaar e-KYC. Additional details (Email) can be updated later on the web portal.
+                  </small>
+                </div>
+              </div>
+
+              <button
+                className="primary wide"
+                type="button"
+                disabled={isAuthLoading}
+                onClick={handleFastRegister}
+                style={{ fontSize: '1.15rem', padding: '16px', cursor: isAuthLoading ? 'wait' : 'pointer' }}
+              >
+                {isAuthLoading ? (L.verifying || 'Creating Profile...') : `${L.registerProceed || 'Register & Proceed'} →`}
+              </button>
             </div>
           )}
 
@@ -666,21 +844,39 @@ export default function KioskPage() {
           {/* AI Report Review Screen */}
           {screen === 'aiReportReview' && (
             <div className="view wide ai-intake-container">
-              <div className="ai-header-badge" style={{ background: '#F0FDF4', color: '#166534', borderColor: '#BBF7D0' }}>
-                <span>✓</span> AI Clinical Report Synthesized
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '0.85rem' }}>
+                <div className="ai-header-badge" style={{ background: '#F0FDF4', color: '#166534', borderColor: '#BBF7D0', margin: 0 }}>
+                  <i className="fa-solid fa-clipboard-check" style={{ marginRight: '6px' }}></i> Clinical Intake Encounter Synthesized
+                </div>
+                <span className={clinicalReport?.urgentReview ? 'ai-acuity-pill-urgent' : 'ai-acuity-pill-standard'}>
+                  <i className={`fa-solid ${clinicalReport?.urgentReview ? 'fa-triangle-exclamation' : 'fa-circle-check'}`}></i>
+                  {clinicalReport?.triageLevel ? `Triage: ${clinicalReport.triageLevel}` : (clinicalReport?.urgentReview ? 'Urgent Review' : 'Standard Priority')}
+                </span>
               </div>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F172A', margin: '0.5rem 0' }}>
+
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F172A', margin: '0.25rem 0' }}>
                 Preliminary Case Summary Ready
               </h2>
-              <p style={{ color: '#64748B', fontSize: '1.05rem', marginBottom: '1.25rem' }}>
-                Your symptoms have been structured into a quick-readable clinical summary and saved to the hospital system for the doctor.
+              <p style={{ color: '#64748B', fontSize: '1.05rem', marginBottom: '1rem' }}>
+                Your symptoms have been structured into a high-visibility clinical intake brief and securely transmitted to the hospital OPD.
               </p>
 
               <div className="ai-summary-card">
-                <div className="ai-summary-headline">Chief Complaint: {clinicalReport?.chiefComplaint}</div>
-                <div className="ai-summary-body">{clinicalReport?.summaryForDoctor}</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                  <div className="ai-summary-headline">Chief Complaint: {clinicalReport?.chiefComplaint || 'General OPD Consultation'}</div>
+                  {clinicalReport?.recommendedSpecialty && (
+                    <span style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '4px 12px', borderRadius: '16px', fontSize: '0.85rem', fontWeight: 700 }}>
+                      Specialty: {clinicalReport.recommendedSpecialty}
+                    </span>
+                  )}
+                </div>
+
+                <div className="ai-summary-body" style={{ fontSize: '1.2rem', lineHeight: 1.75, color: '#14532D', fontWeight: 500 }}>
+                  {clinicalReport?.summaryForDoctor}
+                </div>
+
                 {clinicalReport?.reportedSymptoms && clinicalReport.reportedSymptoms.length > 0 && (
-                  <div className="ai-chip-list">
+                  <div className="ai-chip-list" style={{ marginTop: '16px' }}>
                     {clinicalReport.reportedSymptoms.map((sym, idx) => (
                       <span key={idx} className="ai-symptom-tag">● {sym}</span>
                     ))}
@@ -918,8 +1114,9 @@ export default function KioskPage() {
                   setScreen('token');
                   try {
                     const res = await api.createKioskToken({
-                      patientName: newP ? 'Walk-in Patient' : (aad ? `Patient (${aad.slice(-4)})` : 'Registered Patient'),
+                      patientName: patient?.name || (newP ? 'Walk-in Patient' : (aad ? `Patient (${aad.slice(-4)})` : 'Registered Patient')),
                       aadhaar: aad,
+                      patientId: patient?.customId || undefined,
                       department: L[dept] || dept || 'General OPD',
                       doctor: doctor || 'Duty Doctor',
                       doctorId: selectedDoctorId || undefined,

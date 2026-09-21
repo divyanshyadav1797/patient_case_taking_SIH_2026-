@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDoctor } from '../../context/DoctorContext';
 import api from '../../services/api';
 
 export default function PatientsPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const {
     patients,
     selectedPatient,
@@ -13,10 +14,12 @@ export default function PatientsPage() {
     setPreviewDoc,
     setIsCreateRxOpen,
     setActiveChatId,
-    saveDoctorNotes
+    saveDoctorNotes,
+    completeConsultation,
+    orderInvestigation
   } = useDoctor();
 
-  const [isViewingProfile, setIsViewingProfile] = useState(false);
+  const [isViewingProfile, setIsViewingProfile] = useState(Boolean(location.state?.viewProfile));
   const [activeTab, setActiveTab] = useState('overview');
   const [patientFilter, setPatientFilter] = useState('all');
   const [tableSearch, setTableSearch] = useState('');
@@ -24,8 +27,20 @@ export default function PatientsPage() {
   const [editImpression, setEditImpression] = useState('');
   const [timelineItems, setTimelineItems] = useState([]);
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [isCompletingConsultation, setIsCompletingConsultation] = useState(false);
   const [aiHistorySummary, setAiHistorySummary] = useState(null);
   const [loadingAiSummary, setLoadingAiSummary] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.viewProfile) {
+      if (location.state?.patientId && patients.length > 0) {
+        const found = patients.find(p => p.id === location.state.patientId);
+        if (found) setSelectedPatient(found);
+      }
+      setIsViewingProfile(true);
+      setActiveTab('overview');
+    }
+  }, [location, patients, setSelectedPatient]);
 
   useEffect(() => {
     if (selectedPatient) {
@@ -75,6 +90,32 @@ export default function PatientsPage() {
     } finally {
       setIsSavingNotes(false);
     }
+  };
+
+  const handleCompleteConsultation = async () => {
+    if (!selectedPatient) return;
+    setIsCompletingConsultation(true);
+    try {
+      await completeConsultation({
+        patientId: selectedPatient.id,
+        appointmentId: selectedPatient.appointmentId || selectedPatient.aptId,
+        reportId: selectedPatient.reportId,
+        finalDiagnosis: editImpression || selectedPatient.diagnosticImpression,
+        doctorNotes: editNotes || selectedPatient.clinicalNotes
+      });
+    } finally {
+      setIsCompletingConsultation(false);
+    }
+  };
+
+  const handleOrderInvestigation = async (testName) => {
+    if (!selectedPatient) return;
+    await orderInvestigation({
+      patientId: selectedPatient.id,
+      patientName: selectedPatient.name,
+      testName,
+      category: 'Diagnostic Order'
+    });
   };
 
   const currentSearch = globalSearch || tableSearch;
@@ -245,23 +286,93 @@ export default function PatientsPage() {
                   <span className="profile-chip" id="profileAgeChip">Age: {selectedPatient.age}</span>
                   <span className="profile-chip" id="profileGenderChip">Gender: {selectedPatient.gender}</span>
                   <span className="profile-chip" id="profilePhoneChip">Phone: {selectedPatient.phone}</span>
-                  <span className="badge-active" id="profileStatusBadge">{selectedPatient.status}</span>
+                  <span className={selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? 'badge-completed' : 'badge-active'} id="profileStatusBadge" style={selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? { background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC' } : {}}>
+                    {selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? 'Consultation Completed' : (selectedPatient.status || 'Active')}
+                  </span>
                 </div>
               </div>
             </div>
-            <div className="profile-hero-actions">
+            <div className="profile-hero-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? (
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled
+                  style={{
+                    background: '#ECFDF5',
+                    color: '#065F46',
+                    border: '1.5px solid #6EE7B7',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                    padding: '9px 18px',
+                    borderRadius: '8px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <i className="fa-solid fa-check"></i>
+                  Encounter Completed
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={handleCompleteConsultation}
+                  disabled={isCompletingConsultation}
+                  style={{
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    border: '1px solid #047857',
+                    color: '#FFFFFF',
+                    fontWeight: 700,
+                    fontSize: '0.875rem',
+                    padding: '9px 18px',
+                    borderRadius: '8px',
+                    cursor: isCompletingConsultation ? 'wait' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)'
+                  }}
+                >
+                  <i className={`fa-solid ${isCompletingConsultation ? 'fa-spinner fa-spin' : 'fa-clipboard-check'}`}></i>
+                  {isCompletingConsultation ? 'Finalizing...' : 'Complete Consultation'}
+                </button>
+              )}
+
               <button
                 type="button"
                 className="btn-secondary"
                 onClick={() => setIsCreateRxOpen(true)}
+                style={{
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
               >
+                <i className="fa-solid fa-file-prescription"></i>
                 New Prescription
               </button>
+
               <button
                 type="button"
-                className="btn-primary"
+                className="btn-secondary"
                 onClick={() => handleSendMessage(selectedPatient.id)}
+                style={{
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
               >
+                <i className="fa-solid fa-comment-medical"></i>
                 Send Message
               </button>
             </div>
@@ -326,28 +437,197 @@ export default function PatientsPage() {
               <div className="tab-pane active" id="paneOverview" role="tabpanel">
                 <div className="overview-grid">
                   {selectedPatient.summaryForDoctor && (
-                    <div className="overview-item-card" style={{ gridColumn: '1 / -1', background: '#F8FAFC', border: '1px solid #CBD5E1' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span className="overview-label" style={{ color: '#0F766E', fontWeight: 700, fontSize: '0.875rem' }}>
-                          ⚡ AI Clinical Intake Summary
-                        </span>
+                    <div className={`overview-item-card ai-summary-glass-container ${selectedPatient.urgentReview ? 'urgent-alert' : ''}`} style={{ gridColumn: '1 / -1' }}>
+                      {/* Top Header Bar - Formal EHR Header */}
+                      <div className="ai-summary-header">
+                        <div className="ai-summary-title-badge">
+                          <div className="ai-summary-icon">
+                            <i className="fa-solid fa-file-waveform"></i>
+                          </div>
+                          <div>
+                            <span style={{ textTransform: 'uppercase', letterSpacing: '0.5px', fontSize: '1.2rem' }}>
+                              Clinical Intake Encounter Brief & Decision Support
+                            </span>
+                            <small style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: selectedPatient.urgentReview ? '#991B1B' : '#065F46', letterSpacing: '0.3px', textTransform: 'uppercase' }}>
+                              Electronic Health Record · Structured Clinical Triage
+                            </small>
+                          </div>
+                        </div>
+
                         {selectedPatient.urgentReview ? (
-                          <span style={{ background: '#FEE2E2', color: '#DC2626', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
-                            ⚠️ Urgent Review Advised
+                          <span className="ai-acuity-pill-urgent">
+                            <i className="fa-solid fa-triangle-exclamation"></i>
+                            PRIORITY 1 · IMMEDIATE PHYSICIAN EVALUATION
                           </span>
                         ) : (
-                          <span style={{ background: '#DCFCE7', color: '#16A34A', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600 }}>
-                            ✓ Standard Triage
+                          <span className="ai-acuity-pill-standard">
+                            <i className="fa-solid fa-circle-check"></i>
+                            PRIORITY 3 · STANDARD AMBULATORY CONSULTATION
                           </span>
                         )}
                       </div>
-                      <p style={{ color: '#1E293B', fontSize: '0.95rem', lineHeight: 1.6, margin: 0 }}>
-                        {selectedPatient.summaryForDoctor}
-                      </p>
+
+                      {/* Prominent Chief Complaint Banner */}
+                      <div style={{
+                        background: selectedPatient.urgentReview ? 'rgba(254, 226, 226, 0.75)' : 'rgba(236, 253, 245, 0.85)',
+                        border: selectedPatient.urgentReview ? '1.5px solid rgba(239, 68, 68, 0.4)' : '1.5px solid rgba(16, 185, 129, 0.4)',
+                        borderRadius: '16px',
+                        padding: '18px 24px',
+                        marginBottom: '18px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '12px'
+                      }}>
+                        <div>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.6px', color: selectedPatient.urgentReview ? '#991B1B' : '#065F46', display: 'block', marginBottom: '4px' }}>
+                            Chief Presenting Concern & Reason for Visit:
+                          </span>
+                          <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0F172A', margin: 0 }}>
+                            {selectedPatient.chiefComplaint || 'Outpatient Clinical Consultation'}
+                          </h3>
+                        </div>
+
+                        <span style={{
+                          background: 'rgba(37, 99, 235, 0.12)',
+                          color: '#1D4ED8',
+                          border: '1.5px solid rgba(37, 99, 235, 0.35)',
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          letterSpacing: '0.3px'
+                        }}>
+                          <i className="fa-solid fa-hospital-user" style={{ marginRight: '6px' }}></i>
+                          Department: {selectedPatient.recommendedSpecialty || 'General Medicine'}
+                        </span>
+                      </div>
+
+                      {/* Main Structured Clinical Encounter Matrix */}
+                      <div style={{ marginBottom: '20px' }}>
+                        <strong style={{ fontSize: '0.85rem', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'block', marginBottom: '10px' }}>
+                          Intake Case-Taking Assessment Matrix:
+                        </strong>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {(selectedPatient.summaryForDoctor || '').split('\n').filter(Boolean).map((line, idx) => {
+                            if (line.includes(':')) {
+                              const colonIdx = line.indexOf(':');
+                              const label = line.substring(0, colonIdx).trim().replace(/^\[|\]$/g, '');
+                              const val = line.substring(colonIdx + 1).trim();
+                              return (
+                                <div key={idx} style={{
+                                  display: 'grid',
+                                  gridTemplateColumns: 'minmax(180px, 260px) 1fr',
+                                  gap: '12px',
+                                  alignItems: 'baseline',
+                                  padding: '10px 14px',
+                                  background: 'rgba(255, 255, 255, 0.75)',
+                                  borderRadius: '10px',
+                                  border: '1px solid rgba(226, 232, 240, 0.85)'
+                                }}>
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                    {label}:
+                                  </span>
+                                  <span style={{ fontSize: '1.05rem', color: '#0F172A', fontWeight: 600, lineHeight: 1.5 }}>
+                                    {val}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <div key={idx} style={{ padding: '6px 12px', fontSize: '1.05rem', color: '#1E293B', lineHeight: 1.6, fontWeight: 500 }}>
+                                {line}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* History of Present Illness (HPI) Formal Callout */}
                       {selectedPatient.historyOfPresentIllness && (
-                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #CBD5E1' }}>
-                          <strong style={{ fontSize: '0.85rem', color: '#475569' }}>History of Present Illness:</strong>
-                          <p style={{ margin: '4px 0 0', fontSize: '0.875rem', color: '#334155', lineHeight: 1.5 }}>{selectedPatient.historyOfPresentIllness}</p>
+                        <div className="ai-hpi-callout" style={{ margin: '20px 0' }}>
+                          <div className="ai-hpi-callout-title">
+                            <i className="fa-solid fa-stethoscope"></i> History of Present Illness (HPI Clinical Narrative)
+                          </div>
+                          <p className="ai-hpi-callout-text" style={{ fontSize: '1.1rem', lineHeight: 1.8, color: '#0F172A', whiteSpace: 'pre-line' }}>
+                            {selectedPatient.historyOfPresentIllness}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Diagnostic Differentials & Investigations Grid with Functional Order Buttons */}
+                      {(selectedPatient.diagnosticImpression || (selectedPatient.suggestedScans && selectedPatient.suggestedScans.length > 0)) && (
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                          gap: '18px',
+                          marginTop: '20px',
+                          paddingTop: '20px',
+                          borderTop: '1.5px dashed rgba(16, 185, 129, 0.35)'
+                        }}>
+                          {selectedPatient.diagnosticImpression && (
+                            <div style={{ background: 'rgba(255, 255, 255, 0.88)', padding: '18px 22px', borderRadius: '16px', border: '1.5px solid rgba(99, 102, 241, 0.25)', boxShadow: '0 4px 14px rgba(99, 102, 241, 0.06)' }}>
+                              <strong style={{ fontSize: '0.85rem', color: '#3730A3', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', letterSpacing: '0.5px' }}>
+                                <i className="fa-solid fa-list-check"></i>
+                                Working Differential Hypotheses (Ranked)
+                              </strong>
+                              <div style={{ whiteSpace: 'pre-line', fontSize: '1.05rem', fontWeight: 600, color: '#1E1B4B', lineHeight: 1.7 }}>
+                                {selectedPatient.diagnosticImpression}
+                              </div>
+                            </div>
+                          )}
+
+                          {selectedPatient.suggestedScans && selectedPatient.suggestedScans.length > 0 && (
+                            <div style={{ background: 'rgba(255, 255, 255, 0.88)', padding: '18px 22px', borderRadius: '16px', border: '1.5px solid rgba(16, 185, 129, 0.25)', boxShadow: '0 4px 14px rgba(16, 185, 129, 0.06)' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <strong style={{ fontSize: '0.85rem', color: '#065F46', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '0.5px' }}>
+                                  <i className="fa-solid fa-flask-vial"></i>
+                                  Suggested Diagnostic Workup & Labs
+                                </strong>
+                                <small style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600 }}>Click to Order</small>
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {selectedPatient.suggestedScans.map((scan, sIdx) => (
+                                  <div
+                                    key={sIdx}
+                                    style={{
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      padding: '8px 12px',
+                                      background: 'rgba(240, 253, 244, 0.8)',
+                                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                                      borderRadius: '10px'
+                                    }}
+                                  >
+                                    <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#065F46' }}>
+                                      ● {scan}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOrderInvestigation(scan)}
+                                      style={{
+                                        background: '#059669',
+                                        color: '#FFFFFF',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        padding: '4px 10px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 700,
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      <i className="fa-solid fa-plus"></i> Order Lab
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -355,35 +635,33 @@ export default function PatientsPage() {
 
                   {/* AI Longitudinal Medical History Summary (Synthesized from previous reports) */}
                   {aiHistorySummary && (
-                    <div className="overview-item-card" style={{ gridColumn: '1 / -1', background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: '8px', padding: '16px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '1.2rem' }}>🧠</span>
-                          <span className="overview-label" style={{ color: '#166534', fontWeight: 700, fontSize: '0.9rem', textTransform: 'none', margin: 0 }}>
-                            AI Longitudinal Medical History Summary (Past Reports Synthesis)
-                          </span>
+                    <div className="overview-item-card ai-longitudinal-glass-card" style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div className="ai-longitudinal-title">
+                          <i className="fa-solid fa-clock-rotate-left" style={{ fontSize: '1.3rem', color: '#6D28D9' }}></i>
+                          <span>Longitudinal Institutional Medical History Synthesis</span>
                         </div>
-                        <span style={{ background: '#DCFCE7', color: '#15803D', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700, border: '1px solid #BBF7D0' }}>
+                        <span style={{ background: 'rgba(124, 58, 237, 0.12)', color: '#6D28D9', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 800, border: '1px solid rgba(124, 58, 237, 0.25)' }}>
                           {aiHistorySummary.previousReportsCount > 0 
-                            ? `✓ Synthesized from ${aiHistorySummary.previousReportsCount} Past Report(s)`
-                            : 'Baseline Encounter (0 Past Reports)'}
+                            ? `Synthesized from ${aiHistorySummary.previousReportsCount} Past Encounter(s)`
+                            : 'Baseline Encounter (0 Past Encounters on Record)'}
                         </span>
                       </div>
 
-                      <p style={{ color: '#14532D', fontSize: '0.925rem', lineHeight: 1.6, margin: '0 0 12px 0', fontWeight: 500 }}>
+                      <p className="ai-longitudinal-summary-text">
                         {aiHistorySummary.executiveSummary}
                       </p>
 
                       {/* Structured breakdown for Doctor review */}
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #86EFAC' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginTop: '16px', paddingTop: '16px', borderTop: '1px dashed rgba(139, 92, 246, 0.35)' }}>
                         {Array.isArray(aiHistorySummary.keyPastDiagnoses) && aiHistorySummary.keyPastDiagnoses.length > 0 && (
-                          <div style={{ background: '#FFFFFF', padding: '8px 12px', borderRadius: '6px', border: '1px solid #DCFCE7' }}>
-                            <strong style={{ fontSize: '0.75rem', color: '#166534', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                          <div style={{ background: 'rgba(255, 255, 255, 0.85)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(167, 139, 250, 0.35)' }}>
+                            <strong style={{ fontSize: '0.8rem', color: '#5B21B6', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.5px' }}>
                               Past Diagnoses on Record
                             </strong>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                               {aiHistorySummary.keyPastDiagnoses.map((dx, i) => (
-                                <span key={i} style={{ background: '#F3F4F6', color: '#1F2937', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>
+                                <span key={i} style={{ background: '#EDE9FE', color: '#4C1D95', padding: '4px 10px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600 }}>
                                   {dx}
                                 </span>
                               ))}
@@ -392,13 +670,13 @@ export default function PatientsPage() {
                         )}
 
                         {Array.isArray(aiHistorySummary.chronicConditions) && aiHistorySummary.chronicConditions.length > 0 && (
-                          <div style={{ background: '#FFFFFF', padding: '8px 12px', borderRadius: '6px', border: '1px solid #DCFCE7' }}>
-                            <strong style={{ fontSize: '0.75rem', color: '#166534', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                          <div style={{ background: 'rgba(255, 255, 255, 0.85)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(251, 191, 36, 0.35)' }}>
+                            <strong style={{ fontSize: '0.8rem', color: '#92400E', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.5px' }}>
                               Recurring / Chronic Patterns
                             </strong>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                               {aiHistorySummary.chronicConditions.map((cond, i) => (
-                                <span key={i} style={{ background: '#FEF3C7', color: '#92400E', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>
+                                <span key={i} style={{ background: '#FEF3C7', color: '#92400E', padding: '4px 10px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600 }}>
                                   {cond}
                                 </span>
                               ))}
@@ -407,13 +685,13 @@ export default function PatientsPage() {
                         )}
 
                         {Array.isArray(aiHistorySummary.recentPrescriptions) && aiHistorySummary.recentPrescriptions.length > 0 && (
-                          <div style={{ background: '#FFFFFF', padding: '8px 12px', borderRadius: '6px', border: '1px solid #DCFCE7' }}>
-                            <strong style={{ fontSize: '0.75rem', color: '#166534', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
+                          <div style={{ background: 'rgba(255, 255, 255, 0.85)', padding: '14px 18px', borderRadius: '14px', border: '1px solid rgba(99, 102, 241, 0.35)' }}>
+                            <strong style={{ fontSize: '0.8rem', color: '#3730A3', textTransform: 'uppercase', display: 'block', marginBottom: '8px', letterSpacing: '0.5px' }}>
                               Historical Medication Regimen
                             </strong>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                               {aiHistorySummary.recentPrescriptions.map((rx, i) => (
-                                <span key={i} style={{ background: '#E0E7FF', color: '#3730A3', padding: '2px 6px', borderRadius: '4px', fontSize: '0.75rem' }}>
+                                <span key={i} style={{ background: '#E0E7FF', color: '#3730A3', padding: '4px 10px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600 }}>
                                   {rx}
                                 </span>
                               ))}
@@ -424,20 +702,20 @@ export default function PatientsPage() {
 
                       {/* Previous Reports Timeline Breakdown */}
                       {Array.isArray(aiHistorySummary.previousReportsTimeline) && aiHistorySummary.previousReportsTimeline.length > 0 && (
-                        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #86EFAC' }}>
-                          <strong style={{ fontSize: '0.8rem', color: '#166534', display: 'block', marginBottom: '6px' }}>
+                        <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px dashed rgba(139, 92, 246, 0.35)' }}>
+                          <strong style={{ fontSize: '0.85rem', color: '#5B21B6', display: 'block', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                             Chronological Summary of Previous Reports:
                           </strong>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {aiHistorySummary.previousReportsTimeline.map((item, idx) => (
-                              <div key={idx} style={{ background: '#FFFFFF', padding: '8px 12px', borderRadius: '6px', border: '1px solid #E2E8F0', fontSize: '0.825rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                                  <span style={{ fontWeight: 600, color: '#0F172A' }}>{item.date} · {item.chiefComplaint}</span>
-                                  <span style={{ color: '#64748B', fontSize: '0.75rem' }}>ID: {item.reportId}</span>
+                              <div key={idx} style={{ background: 'rgba(255, 255, 255, 0.9)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(139, 92, 246, 0.2)', fontSize: '0.95rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                                  <span style={{ fontWeight: 700, color: '#0F172A' }}>{item.date} · {item.chiefComplaint}</span>
+                                  <span style={{ color: '#6D28D9', fontSize: '0.8rem', fontWeight: 600 }}>ID: {item.reportId}</span>
                                 </div>
-                                <p style={{ margin: 0, color: '#334155', fontSize: '0.8rem' }}>{item.summary}</p>
+                                <p style={{ margin: 0, color: '#334155', fontSize: '0.9rem', lineHeight: 1.5 }}>{item.summary}</p>
                                 {item.diagnosticImpression && (
-                                  <span style={{ color: '#0369A1', fontSize: '0.75rem', display: 'block', marginTop: '2px' }}>
+                                  <span style={{ color: '#0369A1', fontSize: '0.85rem', fontWeight: 600, display: 'block', marginTop: '4px' }}>
                                     Doctor Finding: {item.diagnosticImpression}
                                   </span>
                                 )}
@@ -473,73 +751,205 @@ export default function PatientsPage() {
               </div>
             )}
 
-            {/* Tab 2: Case History */}
+            {/* Tab 2: Case History & Diagnosis Workspace */}
             {activeTab === 'caseHistory' && (
               <div className="tab-pane active" id="paneCaseHistory" role="tabpanel">
-                <div className="table-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div className="table-card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                  
+                  {/* Encounter Status & Complete Consultation Card */}
+                  <div style={{
+                    background: selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? '#ECFDF5' : 'linear-gradient(135deg, #F8FAFC 0%, #EFF6FF 100%)',
+                    border: selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? '1.5px solid #6EE7B7' : '1.5px solid #BFDBFE',
+                    borderRadius: '16px',
+                    padding: '18px 22px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: '14px'
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className={`fa-solid ${selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? 'fa-circle-check' : 'fa-stethoscope'}`} style={{ color: selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? '#059669' : '#2563EB', fontSize: '1.2rem' }}></i>
+                        <strong style={{ fontSize: '1rem', color: selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? '#065F46' : '#1E3A8A' }}>
+                          {selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? 'Consultation Encounter Finalized' : 'Active Patient Consultation Encounter'}
+                        </strong>
+                      </div>
+                      <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: selectedPatient.status === 'Completed' || selectedPatient.isCompleted ? '#047857' : '#475569' }}>
+                        {selectedPatient.status === 'Completed' || selectedPatient.isCompleted
+                          ? `Encounter concluded and saved to hospital EHR on ${selectedPatient.completedAt || 'today'}.`
+                          : 'Review clinical intake brief, record your diagnostic impressions, issue prescriptions, and conclude the encounter.'}
+                      </p>
+                    </div>
+
+                    {selectedPatient.status !== 'Completed' && !selectedPatient.isCompleted ? (
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={handleCompleteConsultation}
+                        disabled={isCompletingConsultation}
+                        style={{
+                          background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                          border: '1px solid #047857',
+                          color: '#FFFFFF',
+                          padding: '12px 24px',
+                          fontSize: '0.95rem',
+                          fontWeight: 700,
+                          borderRadius: '10px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: isCompletingConsultation ? 'wait' : 'pointer',
+                          boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)'
+                        }}
+                      >
+                        <i className={`fa-solid ${isCompletingConsultation ? 'fa-spinner fa-spin' : 'fa-clipboard-check'}`}></i>
+                        {isCompletingConsultation ? 'Saving Encounter...' : 'Complete Consultation & Finalize'}
+                      </button>
+                    ) : (
+                      <span style={{ background: '#DCFCE7', color: '#166534', border: '1px solid #86EFAC', padding: '6px 14px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 700 }}>
+                        ✓ Finalized & Archived
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Diagnostic Impression Section */}
                   <div>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-dark)' }}>
-                      Clinical Observation Notes
-                    </h3>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '12px' }}>
-                      Update your diagnostic impression and notes directly for this patient record.
-                    </p>
-                    <textarea
-                      rows={4}
-                      value={editNotes}
-                      onChange={(e) => setEditNotes(e.target.value)}
-                      placeholder="Enter clinical examination notes, differential diagnosis, and recommended care plan..."
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <label style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className="fa-solid fa-bullseye" style={{ color: '#2563EB' }}></i>
+                        Attending Physician Final Diagnostic Impression
+                      </label>
+                      {selectedPatient.diagnosticImpression && (
+                        <small style={{ color: '#64748B', fontWeight: 600 }}>ICD Clinical Target</small>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={editImpression}
+                      onChange={(e) => setEditImpression(e.target.value)}
+                      placeholder="e.g. Acute bacterial sinusitis with tension headache / Essential hypertension"
                       style={{
                         width: '100%',
-                        padding: '12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--border-color)',
+                        padding: '12px 14px',
+                        borderRadius: '8px',
+                        border: '1.5px solid var(--border-color)',
                         fontFamily: 'inherit',
-                        fontSize: '0.9rem',
-                        lineHeight: 1.5,
+                        fontSize: '0.95rem',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  {/* Clinical Examination Notes & Care Plan */}
+                  <div>
+                    <label style={{ display: 'block', fontWeight: 700, fontSize: '0.95rem', marginBottom: '8px', color: 'var(--text-dark)' }}>
+                      <i className="fa-solid fa-notes-medical" style={{ color: '#2563EB', marginRight: '6px' }}></i>
+                      Clinical Examination Notes, Findings & Management Plan
+                    </label>
+                    <textarea
+                      rows={5}
+                      value={editNotes}
+                      onChange={(e) => setEditNotes(e.target.value)}
+                      placeholder="Document physical examination findings, vitals correlation, treatment plan, patient counseling, and follow-up timeline..."
+                      style={{
+                        width: '100%',
+                        padding: '14px',
+                        borderRadius: '8px',
+                        border: '1.5px solid var(--border-color)',
+                        fontFamily: 'inherit',
+                        fontSize: '0.95rem',
+                        lineHeight: 1.6,
                         resize: 'vertical',
                         boxSizing: 'border-box'
                       }}
                     />
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontWeight: 600, fontSize: '0.875rem', marginBottom: '6px', color: 'var(--text-dark)' }}>
-                      Diagnostic Impression
-                    </label>
-                    <input
-                      type="text"
-                      value={editImpression}
-                      onChange={(e) => setEditImpression(e.target.value)}
-                      placeholder="e.g. Acute bacterial sinusitis with tension headache"
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--border-color)',
-                        fontFamily: 'inherit',
-                        fontSize: '0.9rem',
-                        boxSizing: 'border-box'
-                      }}
-                    />
-                  </div>
-
-                  <div>
+                  {/* Clinical Action Buttons */}
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <button
                       type="button"
                       className="btn-primary"
                       onClick={handleSaveNotes}
                       disabled={isSavingNotes}
+                      style={{ padding: '10px 20px', fontSize: '0.9rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     >
-                      {isSavingNotes ? 'Saving to Database...' : 'Save Clinical Notes'}
+                      <i className={`fa-solid ${isSavingNotes ? 'fa-spinner fa-spin' : 'fa-floppy-disk'}`}></i>
+                      {isSavingNotes ? 'Saving to Database...' : 'Save Clinical Notes & Diagnosis'}
+                    </button>
+
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      onClick={() => setIsCreateRxOpen(true)}
+                      style={{ padding: '10px 18px', fontSize: '0.9rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <i className="fa-solid fa-file-prescription"></i>
+                      Issue Prescription for this Case
                     </button>
                   </div>
 
-                  {/* AI Intake Interview Transcript if available */}
+                  {/* Diagnostic Lab Ordering Section */}
+                  {selectedPatient.suggestedScans && selectedPatient.suggestedScans.length > 0 && (
+                    <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '16px', marginTop: '6px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <strong style={{ fontSize: '0.9rem', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <i className="fa-solid fa-flask-vial" style={{ color: '#059669' }}></i>
+                          Recommended Diagnostic Investigations & Lab Workup
+                        </strong>
+                        <small style={{ color: '#64748B' }}>Direct Hospital Lab Dispatch</small>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
+                        {selectedPatient.suggestedScans.map((scan, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              background: '#FFFFFF',
+                              border: '1px solid #CBD5E1',
+                              borderRadius: '8px',
+                              padding: '10px 14px'
+                            }}
+                          >
+                            <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155' }}>
+                              {scan}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleOrderInvestigation(scan)}
+                              style={{
+                                background: '#2563EB',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '5px 12px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <i className="fa-solid fa-paper-plane"></i> Order
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* AI Intake Interview Transcript */}
                   {Array.isArray(selectedPatient.conversation) && selectedPatient.conversation.length > 0 && (
                     <div style={{ marginTop: '16px', borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-                      <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '12px', color: 'var(--text-dark)' }}>
-                        AI Intake Interview Transcript ({selectedPatient.conversation.length} Questions)
+                      <h4 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '12px', color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className="fa-solid fa-comments" style={{ color: '#64748B' }}></i>
+                        Patient AI Intake Interview Record ({selectedPatient.conversation.length} Clinical Questions)
                       </h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                         {selectedPatient.conversation.map((qa, idx) => (
@@ -548,17 +958,17 @@ export default function PatientsPage() {
                             style={{
                               backgroundColor: '#F8FAFC',
                               border: '1px solid #E2E8F0',
-                              borderRadius: '8px',
-                              padding: '12px 16px'
+                              borderRadius: '10px',
+                              padding: '14px 18px'
                             }}
                           >
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '6px' }}>
-                              <span style={{ background: '#2563EB', color: '#FFF', borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700 }}>Q</span>
-                              <strong style={{ color: '#1E293B', fontSize: '0.875rem' }}>{qa.question}</strong>
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '8px' }}>
+                              <span style={{ background: '#2563EB', color: '#FFF', borderRadius: '4px', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 800, height: 'fit-content' }}>Q{idx + 1}</span>
+                              <strong style={{ color: '#0F172A', fontSize: '0.95rem' }}>{qa.question}</strong>
                             </div>
-                            <div style={{ display: 'flex', gap: '8px', paddingLeft: '28px' }}>
-                              <span style={{ color: '#64748B', fontSize: '0.85rem' }}>Patient response:</span>
-                              <span style={{ color: '#0F172A', fontSize: '0.85rem', fontWeight: 500 }}>"{qa.answer}"</span>
+                            <div style={{ display: 'flex', gap: '10px', paddingLeft: '32px', alignItems: 'baseline' }}>
+                              <span style={{ color: '#64748B', fontSize: '0.85rem', fontWeight: 600, textTransform: 'uppercase' }}>Response:</span>
+                              <span style={{ color: '#1E293B', fontSize: '0.95rem', fontWeight: 700 }}>"{qa.answer}"</span>
                             </div>
                           </div>
                         ))}

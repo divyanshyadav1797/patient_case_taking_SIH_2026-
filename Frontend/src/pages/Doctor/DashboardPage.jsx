@@ -29,7 +29,7 @@ export default function DashboardPage() {
     if (p) {
       setSelectedPatient(p);
     }
-    navigate('/doctor/patients');
+    navigate('/doctor/patients', { state: { viewProfile: true, patientId, patientName } });
   };
 
   return (

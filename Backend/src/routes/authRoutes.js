@@ -33,6 +33,10 @@ router.post('/register/request-otp', validateOtpRequest, (req, res, next) => aut
 router.post('/register/verify-otp', validateOtpVerify, (req, res, next) => authController.verifyOtp(req, res, next));
 router.post('/register/complete', (req, res, next) => authController.completeOtpRegistration(req, res, next));
 
+// Kiosk Patient Verification & Fast In-Kiosk Registration
+router.post('/kiosk/patient-auth', (req, res, next) => authController.kioskPatientAuth(req, res, next));
+router.post('/kiosk/fast-register', (req, res, next) => authController.kioskFastRegister(req, res, next));
+
 // Session Termination -> Revokes and blacklists active JWT Token
 router.post('/logout', (req, res, next) => authController.logout(req, res, next));
 

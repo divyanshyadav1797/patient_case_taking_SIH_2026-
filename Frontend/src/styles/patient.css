@@ -14,13 +14,13 @@
     --primary: #2563EB;
     --primary-light: #DBEAFE;
 
-    --background: #F8FAFC;
-    --white: #FFFFFF;
+    --background: transparent;
+    --white: rgba(255, 255, 255, 0.78);
 
     --text: #172033;
     --secondary-text: #64748B;
 
-    --border: #E2E8F0;
+    --border: rgba(226, 232, 240, 0.7);
 
     --green: #16A34A;
     --green-light: #DCFCE7;

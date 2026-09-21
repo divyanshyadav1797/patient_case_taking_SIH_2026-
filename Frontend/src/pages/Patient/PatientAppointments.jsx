@@ -132,7 +132,7 @@ export default function PatientAppointments() {
             <button
               type="button"
               className="primary-btn"
-              onClick={() => navigate('/patient/doctors')}
+              onClick={() => navigate('/patient/doctors?mode=book')}
             >
               <i className="fa-solid fa-plus" style={{ marginRight: '8px' }}></i>
               Book New Appointment

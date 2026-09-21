@@ -60,7 +60,7 @@ class ClinicalController {
     try {
       const hospitalName = req.body.hospitalName || req.user?.name || req.user?.hospitalDetails?.hospitalName;
       const hospitalId = req.body.hospitalId || req.user?.customId || req.user?._id?.toString();
-      
+
       const doctor = await clinicalRepository.createDoctor({
         ...req.body,
         hospitalName,
@@ -231,6 +231,145 @@ class ClinicalController {
     try {
       const stats = await clinicalRepository.getHospitalStats();
       return formatSuccess(res, stats, 'Hospital stats retrieved successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+  async uploadAndProcessRecord(req, res, next) {
+    try {
+      if (!req.file) {
+        return formatError(
+          res,
+          'Medical document is required.',
+          400
+        );
+      }
+
+      const patientId =
+        req.user?.customId ||
+        req.user?._id?.toString();
+
+      if (!patientId) {
+        return formatError(
+          res,
+          'Authenticated patient could not be identified.',
+          401
+        );
+      }
+
+      const ocrService =
+        require('../services/ocrService');
+
+      const MedicalRecord =
+        require('../models/MedicalRecord');
+
+      const {
+        title,
+        type
+      } = req.body;
+
+      // Create record immediately so we have a database record
+      // even while OCR is processing.
+      const record = await MedicalRecord.create({
+        customId:
+          `MR-${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2, 7)}`,
+
+        patientId,
+
+        title:
+          title ||
+          req.file.originalname,
+
+        type:
+          type ||
+          'Medical Document',
+
+        date:
+          new Date().toISOString()
+            .split('T')[0],
+
+        file:
+          req.file.originalname,
+
+        size:
+          `${Math.round(req.file.size / 1024)} KB`,
+
+        ocrData: {
+          status: 'PROCESSING'
+        }
+      });
+
+      try {
+        const result =
+          await ocrService.processDocument(
+            req.file
+          );
+
+        record.ocrData = {
+          rawText:
+            result.rawText || '',
+
+          documentType:
+            result.documentType || 'unknown',
+
+          summary:
+            result.summary || '',
+
+          parsedValues:
+            result.extracted || {},
+
+          diagnoses:
+            result.extracted?.diagnoses ||
+            [],
+
+          medications:
+            result.extracted?.medications ||
+            [],
+
+          investigations:
+            result.extracted?.investigations ||
+            [],
+
+          warnings:
+            result.warnings || [],
+
+          status:
+            result.warnings?.length
+              ? 'REVIEW_REQUIRED'
+              : 'PROCESSED',
+
+          scannedAt: new Date()
+        };
+
+        await record.save();
+
+      } catch (ocrError) {
+        record.ocrData.status = 'FAILED';
+
+        record.ocrData.warnings = [
+          ocrError.message
+        ];
+
+        await record.save();
+
+        throw ocrError;
+      }
+
+      return formatSuccess(
+        res,
+        {
+          recordId:
+            record.customId ||
+            record._id.toString(),
+
+          record
+        },
+        'Medical document processed successfully',
+        201
+      );
+
     } catch (err) {
       next(err);
     }

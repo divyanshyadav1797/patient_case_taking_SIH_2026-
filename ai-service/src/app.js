@@ -3,6 +3,7 @@ import cors from "cors";
 
 import healthRoutes from "./routes/health.routes.js";
 import intakeRoutes from "./routes/intake.routes.js";
+import ocrRoutes from "./routes/ocr.routes.js";
 
 const app = express();
 
@@ -32,5 +33,10 @@ app.use((err, req, res, next) => {
         error: "Internal server error."
     });
 });
+
+app.use(
+    "/internal/ai/v1/ocr",
+    ocrRoutes
+);
 
 export default app;

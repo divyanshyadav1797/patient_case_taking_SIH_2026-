@@ -72,7 +72,7 @@ export default function PatientDashboard() {
         <button
           type="button"
           className="action-card green"
-          onClick={() => navigate('/patient/appointments')}
+          onClick={() => navigate('/patient/doctors?mode=book')}
         >
           <div className="action-icon">
             <i className="fa-regular fa-calendar-days"></i>

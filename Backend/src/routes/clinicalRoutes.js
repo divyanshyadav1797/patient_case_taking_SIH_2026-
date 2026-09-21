@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const clinicalController = require('../controllers/clinicalController');
+const {
+    authenticateToken
+} = require('../middleware/authMiddleware');
 
 // ── Appointments ──
 router.get('/appointments', (req, res, next) => clinicalController.getAppointments(req, res, next));
@@ -48,5 +51,23 @@ router.get('/kiosk/queue', (req, res, next) => clinicalController.getKioskQueue(
 
 // ── Hospital Stats ──
 router.get('/hospital/stats', (req, res, next) => clinicalController.getHospitalStats(req, res, next));
+
+const upload =
+    require('../middleware/ocrUpload');
+
+router.post(
+    '/records/upload',
+
+    authenticateToken,
+
+    upload.single('document'),
+
+    (req, res, next) =>
+        clinicalController.uploadAndProcessRecord(
+            req,
+            res,
+            next
+        )
+);
 
 module.exports = router;

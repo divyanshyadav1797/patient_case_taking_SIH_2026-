@@ -910,40 +910,47 @@
 }
 
 .kiosk-terminal .ai-summary-card {
-  background: #F0FDF4;
-  border: 2px solid #86EFAC;
-  border-radius: 20px;
-  padding: 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(240, 253, 244, 0.88) 100%);
+  backdrop-filter: blur(20px) saturate(190%);
+  -webkit-backdrop-filter: blur(20px) saturate(190%);
+  border: 2px solid rgba(16, 185, 129, 0.45);
+  box-shadow: 0 16px 40px rgba(16, 185, 129, 0.12), inset 0 1px 2px rgba(255, 255, 255, 1);
+  border-radius: 22px;
+  padding: 28px;
   margin: 1rem 0 1.5rem 0;
   text-align: left;
 }
 
 .kiosk-terminal .ai-summary-headline {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  color: #166534;
+  color: #065F46;
   margin-bottom: 0.5rem;
 }
 
 .kiosk-terminal .ai-summary-body {
-  font-size: 1.1rem;
-  color: #15803D;
-  line-height: 1.55;
+  font-size: 1.25rem;
+  color: #0F172A;
+  line-height: 1.75;
+  font-weight: 500;
 }
 
 .kiosk-terminal .ai-chip-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .kiosk-terminal .ai-symptom-tag {
-  background: #DCFCE7;
-  color: #166534;
+  background: rgba(220, 252, 231, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #065F46;
   font-weight: 700;
-  font-size: 0.85rem;
-  padding: 6px 14px;
+  font-size: 0.95rem;
+  padding: 6px 16px;
   border-radius: 20px;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);
 }
 

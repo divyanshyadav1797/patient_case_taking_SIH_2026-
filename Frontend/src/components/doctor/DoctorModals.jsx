@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDoctor } from '../../context/DoctorContext';
 import api from '../../services/api';
 
-export default function Modals() {
+export default function DoctorModals() {
   const navigate = useNavigate();
   const {
     isCreateRxOpen,
@@ -19,14 +19,15 @@ export default function Modals() {
     isSupportModalOpen,
     setIsSupportModalOpen,
     patients,
+    selectedPatient,
     setSelectedPatient,
     showToast
   } = useDoctor();
 
   // Create Prescription Form state
   const [rxForm, setRxForm] = useState({
-    patient: 'Rahul Mehta',
-    patientId: 'P1001',
+    patient: '',
+    patientId: '',
     medicine: '',
     dosage: '',
     frequency: 'Twice daily',
@@ -35,7 +36,7 @@ export default function Modals() {
   });
 
   // Reschedule Form state
-  const [reschedDate, setReschedDate] = useState('2026-09-13');
+  const [reschedDate, setReschedDate] = useState('2026-09-22');
   const [reschedTime, setReschedTime] = useState('09:30 AM');
 
   // Support Form state
@@ -44,6 +45,33 @@ export default function Modals() {
 
   // AI Medical History Summary for active appointment consultation
   const [aptAiSummary, setAptAiSummary] = useState(null);
+
+  // Sync default patient into prescription form when opened
+  useEffect(() => {
+    if (isCreateRxOpen) {
+      const activePatient = selectedPatient || (patients && patients.length > 0 ? patients[0] : null);
+      setRxForm((prev) => ({
+        ...prev,
+        patient: activePatient?.name || prev.patient || 'Patient',
+        patientId: activePatient?.id || prev.patientId || 'P1001'
+      }));
+    }
+  }, [isCreateRxOpen, selectedPatient, patients]);
+
+  // Global ESC key listener to close active modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsCreateRxOpen(false);
+        setRescheduleData(null);
+        setPreviewDoc(null);
+        setAptDetail(null);
+        setIsSupportModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setIsCreateRxOpen, setRescheduleData, setPreviewDoc, setAptDetail, setIsSupportModalOpen]);
 
   useEffect(() => {
     if (aptDetail && (aptDetail.patientId || aptDetail.patient)) {
@@ -69,26 +97,34 @@ export default function Modals() {
     const patientObj = patients.find((p) => p.name === rxForm.patient);
     addPrescription({
       patient: rxForm.patient,
-      patientId: patientObj ? patientObj.id : 'P1001',
-      diagnosis: 'Clinical Consultation',
-      medicines: `${rxForm.medicine} (${rxForm.dosage}) - ${rxForm.frequency} (${rxForm.duration})`
+      patientName: rxForm.patient,
+      patientId: patientObj ? patientObj.id : (rxForm.patientId || selectedPatient?.id || 'P-10249'),
+      diagnosis: selectedPatient?.diagnosticImpression || selectedPatient?.chiefComplaint || 'Clinical Consultation',
+      medicine: rxForm.medicine,
+      dosage: rxForm.dosage,
+      frequency: rxForm.frequency,
+      duration: rxForm.duration,
+      instructions: rxForm.instructions
     });
 
     setRxForm({
-      patient: 'Rahul Mehta',
-      patientId: 'P1001',
+      patient: selectedPatient?.name || (patients[0]?.name || ''),
+      patientId: selectedPatient?.id || (patients[0]?.id || ''),
       medicine: '',
       dosage: '',
       frequency: 'Twice daily',
       duration: '',
       instructions: ''
     });
+
+    setIsCreateRxOpen(false);
   };
 
   const handleRescheduleSubmit = (e) => {
     e.preventDefault();
     if (rescheduleData) {
       rescheduleAppointment(rescheduleData.appointmentId, reschedDate, reschedTime);
+      setRescheduleData(null);
     }
   };
 
@@ -104,15 +140,50 @@ export default function Modals() {
     setIsSupportModalOpen(false);
   };
 
+  // Shared inline style for bulletproof modal overlays
+  const backdropOverlayStyle = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 9999,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backdropFilter: 'blur(4px)',
+    WebkitBackdropFilter: 'blur(4px)',
+    opacity: 1,
+    pointerEvents: 'auto',
+    padding: '20px'
+  };
+
   return (
     <>
       {/* 1. Modal: Create Prescription */}
       {isCreateRxOpen && (
-        <div className="modal-backdrop open" id="modalCreatePrescription" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalCreatePrescription"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsCreateRxOpen(false);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalPrescriptionTitle">Create Prescription</h3>
-              <button type="button" className="modal-close-btn" onClick={() => setIsCreateRxOpen(false)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsCreateRxOpen(false)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <form onSubmit={handleCreateRxSubmit}>
               <div className="modal-body">
@@ -122,7 +193,14 @@ export default function Modals() {
                     id="rxPatientSelect"
                     className="form-control"
                     value={rxForm.patient}
-                    onChange={(e) => setRxForm({ ...rxForm, patient: e.target.value })}
+                    onChange={(e) => {
+                      const selectedP = patients.find((p) => p.name === e.target.value);
+                      setRxForm({
+                        ...rxForm,
+                        patient: e.target.value,
+                        patientId: selectedP ? selectedP.id : rxForm.patientId
+                      });
+                    }}
                     required
                   >
                     {patients.map((p) => (
@@ -207,11 +285,30 @@ export default function Modals() {
 
       {/* 2. Modal: Reschedule Appointment */}
       {rescheduleData && (
-        <div className="modal-backdrop open" id="modalReschedule" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalReschedule"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setRescheduleData(null);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalRescheduleTitle">Reschedule Appointment</h3>
-              <button type="button" className="modal-close-btn" onClick={() => setRescheduleData(null)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setRescheduleData(null)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <form onSubmit={handleRescheduleSubmit}>
               <div className="modal-body">
@@ -259,11 +356,30 @@ export default function Modals() {
 
       {/* 3. Modal: Document Preview */}
       {previewDoc && (
-        <div className="modal-backdrop open" id="modalDocPreview" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalDocPreview"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPreviewDoc(null);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalDocTitle">Document Preview</h3>
-              <button type="button" className="modal-close-btn" onClick={() => setPreviewDoc(null)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setPreviewDoc(null)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <div className="modal-body">
               <div style={{ backgroundColor: '#F8FAFC', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)', padding: '32px', textAlign: 'center' }}>
@@ -300,13 +416,32 @@ export default function Modals() {
 
       {/* 4. Modal: Appointment / OT Details */}
       {aptDetail && (
-        <div className="modal-backdrop open" id="modalAptDetails" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalAptDetails"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAptDetail(null);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalAptTitle">
                 {aptDetail.category === 'operation' ? 'Surgical Procedure Details' : 'Appointment Details'}
               </h3>
-              <button type="button" className="modal-close-btn" onClick={() => setAptDetail(null)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setAptDetail(null)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <div className="modal-body">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -381,7 +516,7 @@ export default function Modals() {
                   const p = patients.find((pat) => pat.id === aptDetail.patientId || pat.name === aptDetail.patient);
                   if (p) setSelectedPatient(p);
                   setAptDetail(null);
-                  navigate('/patients');
+                  navigate('/doctor/patients', { state: { viewProfile: true, patientId: aptDetail.patientId } });
                 }}
               >
                 View Patient Profile
@@ -392,7 +527,10 @@ export default function Modals() {
                   className="btn-primary"
                   onClick={() => {
                     showToast(`Consultation started with ${aptDetail.patient}`);
+                    const p = patients.find((pat) => pat.id === aptDetail.patientId || pat.name === aptDetail.patient);
+                    if (p) setSelectedPatient(p);
                     setAptDetail(null);
+                    navigate('/doctor/patients', { state: { viewProfile: true, patientId: aptDetail.patientId } });
                   }}
                 >
                   Start Consultation
@@ -405,11 +543,30 @@ export default function Modals() {
 
       {/* 5. Modal: Contact Support */}
       {isSupportModalOpen && (
-        <div className="modal-backdrop open" id="modalContactSupport" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalContactSupport"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsSupportModalOpen(false);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalSupportTitle">Contact Support Desk</h3>
-              <button type="button" className="modal-close-btn" onClick={() => setIsSupportModalOpen(false)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsSupportModalOpen(false)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <form onSubmit={handleSupportSubmit}>
               <div className="modal-body">

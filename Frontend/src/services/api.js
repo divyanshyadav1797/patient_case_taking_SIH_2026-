@@ -166,6 +166,20 @@ export const api = {
   },
 
   // ── Kiosk ──
+  async kioskPatientAuth(aadhaar, pin) {
+    return request('/auth/kiosk/patient-auth', {
+      method: 'POST',
+      body: JSON.stringify({ aadhaar, pin })
+    });
+  },
+
+  async kioskFastRegister(data) {
+    return request('/auth/kiosk/fast-register', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
   async createKioskToken(tokenData) {
     return request('/kiosk/token', {
       method: 'POST',
@@ -180,7 +194,78 @@ export const api = {
   // ── Hospital ──
   async getHospitalStats() {
     return request('/hospital/stats');
+  },
+
+  async uploadMedicalDocument(
+    file,
+    metadata = {}
+  ) {
+    const session =
+      JSON.parse(
+        localStorage.getItem(
+          STORAGE_KEY
+        ) || '{}'
+      );
+
+    const form =
+      new FormData();
+
+    form.append(
+      'document',
+      file
+    );
+
+    if (metadata.title) {
+      form.append(
+        'title',
+        metadata.title
+      );
+    }
+
+    if (metadata.type) {
+      form.append(
+        'type',
+        metadata.type
+      );
+    }
+
+    const headers = {};
+
+    if (session.token) {
+      headers.Authorization =
+        `Bearer ${session.token}`;
+    }
+
+    const response =
+      await fetch(
+        `${BASE_URL}/records/upload`,
+        {
+          method: 'POST',
+
+          headers,
+
+          body: form
+        }
+      );
+
+    const json =
+      await response.json();
+
+    if (!response.ok ||
+      json.success === false) {
+      throw new Error(
+        json.message ||
+        json.error?.message ||
+        `API error ${response.status}`
+      );
+    }
+
+    return json.data !== undefined
+      ? json.data
+      : json;
   }
 };
+
+
 
 export default api;

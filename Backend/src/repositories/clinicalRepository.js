@@ -8,7 +8,7 @@ const User = require('../models/User');
 const DEFAULT_DOCTORS = [
   {
     name: "Dr. Sarah Jenkins",
-    specialty: "Chief Cardiologist",
+    specialty: "Cardiology",
     department: "Cardiology",
     experience: "14 yrs exp",
     rating: "4.9",
@@ -30,8 +30,8 @@ const DEFAULT_DOCTORS = [
     available: "Next slot: Tomorrow",
     fee: "₹1,000",
     image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300",
-    hospital: "SMS Hospital Jaipur",
-    email: "dr.chang@medicare.org",
+    hospital: "Fortis Escorts Hospital",
+    email: "dr.chang@fortis.org",
     phone: "9829012346"
   },
   {
@@ -44,8 +44,8 @@ const DEFAULT_DOCTORS = [
     available: "Available Today",
     fee: "₹500",
     image: "https://images.unsplash.com/photo-1594824813581-9b16866b1a20?auto=format&fit=crop&q=80&w=300",
-    hospital: "SMS Hospital Jaipur",
-    email: "dr.patel@medicare.org",
+    hospital: "Apex Hospital Mansarovar",
+    email: "dr.patel@apex.org",
     phone: "9829012347"
   },
   {
@@ -58,8 +58,8 @@ const DEFAULT_DOCTORS = [
     available: "Available Today",
     fee: "₹900",
     image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300",
-    hospital: "SMS Hospital Jaipur",
-    email: "dr.gupta@medicare.org",
+    hospital: "Narayana Multispeciality Hospital",
+    email: "dr.gupta@narayana.org",
     phone: "9829012348"
   },
   {
@@ -72,35 +72,93 @@ const DEFAULT_DOCTORS = [
     available: "Next slot: Monday",
     fee: "₹600",
     image: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300",
-    hospital: "SMS Hospital Jaipur",
-    email: "dr.roy@medicare.org",
+    hospital: "EHCC Hospital Jaipur",
+    email: "dr.roy@ehcc.org",
     phone: "9829012349"
+  },
+  {
+    name: "Dr. Vikram Malhotra",
+    specialty: "Pulmonology",
+    department: "Pulmonology",
+    experience: "15 yrs exp",
+    rating: "4.9",
+    reviews: 164,
+    available: "Available Today",
+    fee: "₹850",
+    image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300",
+    hospital: "SMS Hospital Jaipur",
+    email: "dr.malhotra@sms.org",
+    phone: "9829012350"
+  },
+  {
+    name: "Dr. Sunita Meena",
+    specialty: "Gastroenterology",
+    department: "Gastroenterology",
+    experience: "11 yrs exp",
+    rating: "4.8",
+    reviews: 112,
+    available: "Available Today",
+    fee: "₹950",
+    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+    hospital: "Apex Hospital Mansarovar",
+    email: "dr.meena@apex.org",
+    phone: "9829012351"
+  },
+  {
+    name: "Dr. Rohan Verma",
+    specialty: "ENT Specialist",
+    department: "ENT",
+    experience: "10 yrs exp",
+    rating: "4.7",
+    reviews: 130,
+    available: "Tomorrow, 10:00 AM",
+    fee: "₹700",
+    image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300",
+    hospital: "Fortis Escorts Hospital",
+    email: "dr.verma@fortis.org",
+    phone: "9829012352"
   }
 ];
 
 class ClinicalRepository {
   async seedDefaults() {
     try {
-      const docCount = await User.countDocuments({ role: 'doctor' });
-      if (docCount < DEFAULT_DOCTORS.length) {
-        for (const doc of DEFAULT_DOCTORS) {
-          const exists = await User.findOne({ email: doc.email.toLowerCase() });
-          if (!exists) {
-            await User.create({
-              name: doc.name,
-              email: doc.email.toLowerCase(),
-              phone: doc.phone,
-              passwordHash: '$2a$10$wTfZ7eZfZh5vM3kO6W.gYe8Y8w0d8Z9X2P1h1k0k4l1j4h8e2g3a', // doctor123
-              pinHash: '$2a$10$wTfZ7eZfZh5vM3kO6W.gYe8Y8w0d8Z9X2P1h1k0k4l1j4h8e2g3a',
-              role: 'doctor',
-              status: 'ACTIVE',
-              doctorDetails: {
-                specialty: doc.specialty,
-                department: doc.department,
-                hospitalName: doc.hospital
-              }
-            });
-          }
+      for (const doc of DEFAULT_DOCTORS) {
+        const exists = await User.findOne({ email: doc.email.toLowerCase() });
+        if (!exists) {
+          await User.create({
+            customId: `DOC-${Math.floor(1000 + Math.random() * 9000)}`,
+            name: doc.name,
+            email: doc.email.toLowerCase(),
+            phone: doc.phone,
+            passwordHash: '$2a$10$wTfZ7eZfZh5vM3kO6W.gYe8Y8w0d8Z9X2P1h1k0k4l1j4h8e2g3a', // doctor123
+            pinHash: '$2a$10$wTfZ7eZfZh5vM3kO6W.gYe8Y8w0d8Z9X2P1h1k0k4l1j4h8e2g3a',
+            role: 'doctor',
+            status: 'ACTIVE',
+            doctorDetails: {
+              specialty: doc.specialty,
+              department: doc.department,
+              hospitalName: doc.hospital,
+              experience: doc.experience,
+              rating: doc.rating,
+              fee: doc.fee,
+              available: doc.available,
+              image: doc.image
+            }
+          });
+        } else if (!exists.doctorDetails?.hospitalName || exists.doctorDetails?.hospitalName === 'SMS Hospital Jaipur') {
+          // Ensure hospital matches diversified hospital name
+          exists.doctorDetails = {
+            ...exists.doctorDetails,
+            hospitalName: doc.hospital,
+            specialty: doc.specialty,
+            department: doc.department,
+            fee: doc.fee,
+            available: doc.available,
+            experience: doc.experience,
+            image: doc.image
+          };
+          await exists.save();
         }
       }
     } catch (e) {
@@ -521,6 +579,8 @@ class ClinicalRepository {
       pastHistoryMentioned: reportData.pastHistoryMentioned || [],
       pastMedicalHistorySummary: reportData.pastMedicalHistorySummary || {},
       urgentReview: Boolean(reportData.urgentReview),
+      triageLevel: reportData.triageLevel || 'STANDARD_CONSULTATION',
+      recommendedSpecialty: reportData.recommendedSpecialty || 'General Physician',
       importantUnknowns: reportData.importantUnknowns || [],
       conversation: reportData.conversation || [],
       doctorNotes: reportData.doctorNotes || '',

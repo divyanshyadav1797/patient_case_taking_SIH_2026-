@@ -36,6 +36,8 @@ const ClinicalReportSchema = new mongoose.Schema({
   allergiesMentioned: [{ type: String }],
   pastHistoryMentioned: [{ type: String }],
   urgentReview: { type: Boolean, default: false, index: true },
+  triageLevel: { type: String, default: 'STANDARD_CONSULTATION' },
+  recommendedSpecialty: { type: String, default: 'General Physician' },
   importantUnknowns: [{ type: String }],
   
   // Longitudinal AI Medical History Summary (Synthesized from previous reports)

@@ -202,6 +202,8 @@ class AiIntakeService {
         pastHistoryMentioned: clinicalReport.pastHistoryMentioned,
         pastMedicalHistorySummary: clinicalReport.pastMedicalHistorySummary,
         urgentReview: clinicalReport.urgentReview,
+        triageLevel: clinicalReport.triageLevel,
+        recommendedSpecialty: clinicalReport.recommendedSpecialty,
         importantUnknowns: clinicalReport.importantUnknowns,
         conversation: session.conversation,
         doctorNotes: '',
@@ -269,52 +271,187 @@ class AiIntakeService {
 
   /**
    * Synthesize Clinical Report from Conversation and incorporate previous reports summary
+   * Generates a high-yield, structured Clinical Assistant Brief to save the doctor time.
    */
   async synthesizeReport(session) {
     const conv = session.conversation || [];
+    const complaint = session.chiefComplaint || 'Clinical Consultation';
+    const cat = getCategoryFromComplaint(complaint);
     const answersText = conv.map(c => `Q: ${c.question} -> A: ${c.answer}`).join('; ');
-    const isChest = getCategoryFromComplaint(session.chiefComplaint) === 'chest';
-    const hasSeverePain = answersText.toLowerCase().includes('severe') || answersText.toLowerCase().includes('spread') || answersText.toLowerCase().includes('sweating');
+    const lowerAnswers = answersText.toLowerCase();
 
-    // Extract symptoms mentioned in answers
-    const symptoms = [session.chiefComplaint];
+    // 1. Determine Clinical Specialty
+    let recommendedSpecialty = 'General Physician';
+    if (cat === 'chest' || lowerAnswers.includes('chest') || lowerAnswers.includes('heart') || lowerAnswers.includes('palpitat')) {
+      recommendedSpecialty = 'Cardiology';
+    } else if (cat === 'headache' || lowerAnswers.includes('migrain') || lowerAnswers.includes('throbbing') || lowerAnswers.includes('seizure') || lowerAnswers.includes('numbness')) {
+      recommendedSpecialty = 'Neurology';
+    } else if (cat === 'cough' || lowerAnswers.includes('wheez') || lowerAnswers.includes('phlegm') || lowerAnswers.includes('asthma') || lowerAnswers.includes('shortness of breath')) {
+      recommendedSpecialty = 'Pulmonology';
+    } else if (cat === 'stomach' || lowerAnswers.includes('abdom') || lowerAnswers.includes('vomit') || lowerAnswers.includes('diarrh') || lowerAnswers.includes('acid reflux') || lowerAnswers.includes('digest')) {
+      recommendedSpecialty = 'Gastroenterology';
+    } else if (lowerAnswers.includes('joint') || lowerAnswers.includes('bone') || lowerAnswers.includes('fracture') || lowerAnswers.includes('back pain') || lowerAnswers.includes('knee')) {
+      recommendedSpecialty = 'Orthopedics';
+    } else if (lowerAnswers.includes('skin') || lowerAnswers.includes('rash') || lowerAnswers.includes('itch') || lowerAnswers.includes('dermat')) {
+      recommendedSpecialty = 'Dermatology';
+    } else if (lowerAnswers.includes('eye') || lowerAnswers.includes('vision') || lowerAnswers.includes('blur')) {
+      recommendedSpecialty = 'Ophthalmology';
+    } else if (lowerAnswers.includes('tooth') || lowerAnswers.includes('teeth') || lowerAnswers.includes('dental') || lowerAnswers.includes('gum')) {
+      recommendedSpecialty = 'Dentistry';
+    } else if (lowerAnswers.includes('ear') || lowerAnswers.includes('throat') || lowerAnswers.includes('tonsil') || lowerAnswers.includes('sinus')) {
+      recommendedSpecialty = 'ENT';
+    } else if (cat === 'fever' && !lowerAnswers.includes('high grade')) {
+      recommendedSpecialty = 'General Physician';
+    }
+
+    // 2. Acuity & Triage Analysis
+    const hasChestRedFlag = cat === 'chest' && (lowerAnswers.includes('spread') || lowerAnswers.includes('pressure') || lowerAnswers.includes('sweating') || lowerAnswers.includes('shortness of breath'));
+    const hasRespRedFlag = lowerAnswers.includes('shortness of breath even at rest') || lowerAnswers.includes('blood-tinged');
+    const hasHighFever = lowerAnswers.includes('> 102') || lowerAnswers.includes('more than 5 days');
+    const hasSeverePain = lowerAnswers.includes('severe (7-10)') || lowerAnswers.includes('hard to bear') || lowerAnswers.includes('incapacitating');
+    const isUrgent = hasChestRedFlag || hasRespRedFlag || (cat === 'headache' && lowerAnswers.includes('neck stiffness')) || (cat === 'stomach' && lowerAnswers.includes('lower right abdomen'));
+
+    const triageLevel = isUrgent ? 'HIGH_ACUITY' : (hasSeverePain || hasHighFever ? 'PRIORITY_EVALUATION' : 'STANDARD_CONSULTATION');
+
+    // 3. Extract Affirmative Symptoms vs Pertinent Negatives
+    const affirmedSymptoms = [complaint];
+    const pertinentNegatives = [];
+
     conv.forEach(item => {
-      if (item.answer && !item.answer.toLowerCase().includes('none') && !item.answer.toLowerCase().includes('other')) {
-        symptoms.push(item.answer);
+      const ans = String(item.answer || '').trim();
+      const ansLower = ans.toLowerCase();
+      if (!ans || ansLower.includes('other') || ansLower === 'no') return;
+
+      if (ansLower.includes('none') || ansLower.includes('no ') || ansLower.includes('denies') || ansLower.includes('not experienced')) {
+        pertinentNegatives.push(`Denies ${ans.replace(/none of these|no /gi, '').trim()}`);
+      } else {
+        affirmedSymptoms.push(ans);
       }
     });
 
-    const isUrgent = isChest || hasSeverePain || answersText.toLowerCase().includes('> 102') || answersText.toLowerCase().includes('shortness of breath');
+    if (cat === 'chest' && !lowerAnswers.includes('spreads to')) pertinentNegatives.push('Denies pain radiation to left upper extremity or jaw');
+    if (cat === 'cough' && !lowerAnswers.includes('shortness of breath')) pertinentNegatives.push('No acute resting respiratory distress reported');
+    if (cat === 'headache' && !lowerAnswers.includes('neck stiffness')) pertinentNegatives.push('No neck rigidity or photophobia described');
+    if (cat === 'stomach' && !lowerAnswers.includes('vomit')) pertinentNegatives.push('No active emesis or hematemesis reported');
 
-    // Synthesize longitudinal summary of ALL previous reports for this patient
+    // 4. Longitudinal Past Medical Summary from Database
     const pastHistorySummary = await this.generateMedicalHistorySummary(session.patientId, session.chiefComplaint);
+    const pastVisitsCount = pastHistorySummary.previousReportsCount || 0;
+    const chronicFlags = pastHistorySummary.chronicConditions && pastHistorySummary.chronicConditions.length > 0
+      ? pastHistorySummary.chronicConditions.join(', ')
+      : 'No prior chronic conditions recorded';
 
-    const pastHistoryMentioned = [];
-    if (session.patientProfile?.medicalHistory) {
-      pastHistoryMentioned.push(session.patientProfile.medicalHistory);
-    }
-    if (pastHistorySummary.previousReportsCount > 0) {
-      pastHistoryMentioned.push(`${pastHistorySummary.previousReportsCount} prior report(s) on file. Diagnoses: ${pastHistorySummary.keyPastDiagnoses.join(', ') || 'Under evaluation'}`);
+    // 5. Differential Diagnoses & Suggested Scans based on clinical syndrome
+    let differentials = [];
+    let suggestedScans = [];
+    let unknownVitals = ['Blood Pressure (Systolic / Diastolic)', 'Resting Heart Rate & Pulse Rhythm', 'Pulse Oximetry (SpO2 on Room Air)', 'Temperature'];
+
+    if (cat === 'chest') {
+      differentials = [
+        '1. Acute Coronary Syndrome rule-out (Angina pectoris vs. NSTEMI)',
+        '2. Gastroesophageal Reflux Disease / Esophageal Spasm',
+        '3. Costochondritis / Musculoskeletal Anterior Chest Wall Discomfort'
+      ];
+      suggestedScans = ['12-Lead Electrocardiogram (ECG)', 'Serum Cardiac Troponin I / hs-cTnI', 'Chest Radiograph (CXR PA View)'];
+      unknownVitals.push('Serial ECG monitoring', 'Orthostatic vitals');
+    } else if (cat === 'fever') {
+      differentials = [
+        '1. Acute Febrile Syndrome (Viral illness vs. Upper Respiratory Tract Infection)',
+        '2. Vector-borne / Seasonal Febrile Infection (Dengue / Malaria rule-out)',
+        '3. Bacterial Pharyngitis / Tonsillitis'
+      ];
+      suggestedScans = ['Complete Blood Count (CBC) with Platelet Indices', 'C-Reactive Protein (CRP)', 'Peripheral Blood Smear / Rapid Malarial Antigen'];
+    } else if (cat === 'stomach') {
+      differentials = [
+        '1. Acute Gastroduodenitis / Acid Peptic Disease',
+        '2. Acute Gastroenteritis / Enteric Infection',
+        '3. Biliary Colic / Early Appendicitis (if lower right pain)'
+      ];
+      suggestedScans = ['Abdominal Ultrasonography (USG Whole Abdomen)', 'Serum Amylase & Lipase', 'Complete Blood Count & Liver Function Tests (LFT)'];
+    } else if (cat === 'headache') {
+      differentials = [
+        '1. Migraine with/without Aura vs. Tension-Type Headache',
+        '2. Cervicogenic Cephalea',
+        '3. Secondary Headache (Rule out elevated intracranial pressure / Sinusitis)'
+      ];
+      suggestedScans = ['Non-contrast Brain CT / MRI (if red flags present)', 'Fundoscopic Examination', 'Blood Pressure profile'];
+    } else if (cat === 'cough') {
+      differentials = [
+        '1. Acute Bronchitis / Bronchial Hyperreactivity',
+        '2. Community-Acquired Respiratory Infection',
+        '3. Allergic Rhinosinusitis with Post-Nasal Drip'
+      ];
+      suggestedScans = ['Chest Radiograph (PA View)', 'Peak Expiratory Flow Rate (PEFR)', 'CBC with Absolute Eosinophil Count'];
     } else {
-      pastHistoryMentioned.push('First recorded clinical encounter');
+      differentials = [
+        `1. Primary evaluation for ${complaint}`,
+        '2. Secondary physiological / metabolic strain',
+        '3. Musculoskeletal or non-specific clinical presentation'
+      ];
+      suggestedScans = ['Routine Complete Blood Count (CBC)', 'Random Blood Glucose (RBG)', 'General Clinical Chemistry Panel'];
     }
 
-    const historyPrefix = pastHistorySummary.previousReportsCount > 0 
-      ? `[Prior History: ${pastHistorySummary.previousReportsCount} visit(s) - ${pastHistorySummary.chronicConditions.slice(0, 2).join(', ')}] ` 
-      : '';
+    // 6. Clinical Assistant Executive Summary for Doctor
+    const patientName = session.patientName || 'Patient';
+    const patientAge = session.patientProfile?.age || 'Adult';
+    const patientGender = session.patientProfile?.gender || '';
+    const demoStr = `${patientAge}${patientGender ? ` (${patientGender})` : ''}`;
+
+    const acuityLabel = isUrgent 
+      ? 'PRIORITY 1 - HIGH ACUITY (URGENT PHYSICIAN REVIEW REQUIRED)' 
+      : (hasSeverePain || hasHighFever ? 'PRIORITY 2 - PRIORITY AMBULATORY EVALUATION' : 'PRIORITY 3 - ROUTINE AMBULATORY CONSULTATION');
+
+    const summaryForDoctor = `CLINICAL INTAKE ENCOUNTER SUMMARY\n` +
+      `PATIENT: ${patientName} | DEMOGRAPHICS: ${demoStr}\n` +
+      `CHIEF COMPLAINT: ${complaint}\n` +
+      `CLINICAL SYMPTOM PROFILE: ${affirmedSymptoms.join(', ')}\n` +
+      `PERTINENT RULE-OUTS: ${pertinentNegatives.length > 0 ? pertinentNegatives.join('; ') : 'No acute contraindications or red-flag negatives reported'}\n` +
+      `TRIAGE RISK STRATIFICATION: ${acuityLabel}\n` +
+      `LONGITUDINAL MEDICAL CONTEXT: ${pastVisitsCount > 0 ? `${pastVisitsCount} prior institutional encounter(s) on file. Chronic conditions: ${chronicFlags}` : 'Baseline admission encounter; no prior adverse clinical records on file'}\n` +
+      `RECOMMENDED CLINICAL SPECIALTY: Department of ${recommendedSpecialty}\n` +
+      `PRIMARY DIFFERENTIAL IMPRESSION: ${differentials[0] || 'Clinical correlation indicated'}`;
+
+    const historyOfPresentIllness = `PATIENT PRESENTATION:\n` +
+      `${patientName} (${demoStr}) presents for outpatient clinical evaluation regarding ${complaint}. ` +
+      `The patient reports symptom onset and clinical presentation characterized by ${affirmedSymptoms.join(', ')}. ` +
+      `${pertinentNegatives.length > 0 ? 'Diagnostic inquiry elicited pertinent negative findings: ' + pertinentNegatives.join('; ') + '. ' : ''}` +
+      `Review of electronic health records reflects ${pastVisitsCount > 0 ? pastVisitsCount + ' previous outpatient encounters on record with: ' + chronicFlags : 'no prior chronic diagnoses or hospitalizations on file'}. ` +
+      `Objective triage stratification classifies this case under ${acuityLabel}. Attending physician clinical evaluation and targeted diagnostic workup advised.`;
+
+    // 7. Medication & Allergy Extraction
+    const medicationsMentioned = [];
+    if (lowerAnswers.includes('paracetamol')) medicationsMentioned.push('Paracetamol (reported by patient)');
+    if (lowerAnswers.includes('inhaler') || lowerAnswers.includes('asthma')) medicationsMentioned.push('Bronchodilator / Inhaler');
+    if (lowerAnswers.includes('antacid') || lowerAnswers.includes('pantoprazole')) medicationsMentioned.push('Antacid / PPI');
+
+    const allergiesMentioned = [];
+    if (lowerAnswers.includes('allergy') || lowerAnswers.includes('allergic')) {
+      allergiesMentioned.push('Patient reported environmental or drug sensitivity');
+    } else {
+      allergiesMentioned.push('No acute drug allergies flagged during clinical intake');
+    }
+
+    const pastHistoryMentioned = [
+      pastVisitsCount > 0 ? `${pastVisitsCount} prior visit(s) documented. Known conditions: ${chronicFlags}` : 'First recorded hospital visit',
+      session.patientProfile?.medicalHistory || 'No additional personal history noted'
+    ];
 
     return {
-      chiefComplaint: session.chiefComplaint,
-      summaryForDoctor: `${historyPrefix}Patient presented with ${session.chiefComplaint}. Intake notes: ${conv.map(c => c.answer).join('. ')}. ${isUrgent ? 'URGENT evaluation recommended.' : 'Stable for standard consultation.'}`,
-      historyOfPresentIllness: `Episode described: ${session.chiefComplaint}. Patient responses during intake: ${answersText}.`,
-      reportedSymptoms: symptoms,
-      medicationsMentioned: answersText.toLowerCase().includes('paracetamol') ? ['Paracetamol (reported by patient)'] : [],
-      allergiesMentioned: answersText.toLowerCase().includes('allergy') || answersText.toLowerCase().includes('allergies') ? ['Patient mentioned drug sensitivity'] : ['None reported during intake'],
+      chiefComplaint: complaint,
+      recommendedSpecialty,
+      triageLevel,
+      summaryForDoctor,
+      historyOfPresentIllness,
+      reportedSymptoms: affirmedSymptoms,
+      pertinentNegatives,
+      medicationsMentioned: medicationsMentioned.length > 0 ? medicationsMentioned : ['None reported during intake'],
+      allergiesMentioned,
       pastHistoryMentioned,
       pastMedicalHistorySummary: pastHistorySummary,
       urgentReview: isUrgent,
-      importantUnknowns: ['Baseline vital parameters (BP, SpO2, Pulse)', 'Confirmation of current prescription compliance'],
-      diagnosticImpression: `Preliminary intake assessment: ${session.chiefComplaint}. Awaiting physical examination and clinical correlation.`
+      importantUnknowns: unknownVitals,
+      suggestedScans,
+      diagnosticImpression: differentials.join('\n')
     };
   }
 
