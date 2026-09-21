@@ -68,11 +68,15 @@ app.use('/uploads', (req, res, next) => {
   }
   next();
 }, express.static(uploadsPath, {
-  setHeaders: (res) => {
+  setHeaders: (res, filePath) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('Content-Security-Policy', "default-src 'none'");
-    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    if (filePath && filePath.toLowerCase().endsWith('.pdf')) {
+      res.setHeader('Content-Security-Policy', "default-src 'self' blob:; object-src 'self' blob:; style-src 'unsafe-inline'");
+    } else {
+      res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self' data:; style-src 'unsafe-inline'");
+    }
   }
 }));
 
