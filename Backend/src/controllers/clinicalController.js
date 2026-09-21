@@ -431,7 +431,8 @@ class ClinicalController {
 
       const fileUrl = `/uploads/documents/${safeFilename}`;
       const isImage = req.file.mimetype ? req.file.mimetype.startsWith('image/') : !fileExt.includes('pdf');
-      const imageData = isImage ? `data:${req.file.mimetype || 'image/jpeg'};base64,${req.file.buffer.toString('base64')}` : null;
+      const mime = req.file.mimetype || (fileExt.toLowerCase().includes('pdf') ? 'application/pdf' : 'image/jpeg');
+      const imageData = `data:${mime};base64,${req.file.buffer.toString('base64')}`;
 
       const {
         title,

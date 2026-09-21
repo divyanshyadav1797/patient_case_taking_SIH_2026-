@@ -59,13 +59,45 @@ const uploadsPath = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
 }
-app.use('/uploads', (req, res, next) => {
+app.use('/uploads', async (req, res, next) => {
   // Disallow any execution or script files in uploaded media
   const blockedExts = ['.exe', '.sh', '.bat', '.cmd', '.js', '.mjs', '.php', '.phtml', '.py', '.html', '.htm', '.svg'];
   const ext = path.extname(req.path).toLowerCase();
   if (blockedExts.includes(ext)) {
     return res.status(403).json({ success: false, message: 'Access to executable file types is prohibited.' });
   }
+
+  // Cloud Ephemeral Storage Recovery: If file is missing from local disk (container restart), restore from MongoDB
+  const localFilePath = path.join(uploadsPath, req.path.replace(/^\//, ''));
+  if (!fs.existsSync(localFilePath)) {
+    try {
+      const MedicalRecord = require('./src/models/MedicalRecord');
+      const filename = path.basename(req.path);
+      const record = await MedicalRecord.findOne({
+        $or: [
+          { fileUrl: req.originalUrl },
+          { fileUrl: `/uploads/${req.path.replace(/^\//, '')}` },
+          { previewUrl: req.originalUrl },
+          { file: filename }
+        ]
+      }).lean();
+
+      if (record && record.imageData && record.imageData.startsWith('data:')) {
+        const matches = record.imageData.match(/^data:([^;]+);base64,(.+)$/);
+        if (matches) {
+          const buffer = Buffer.from(matches[2], 'base64');
+          const fileDir = path.dirname(localFilePath);
+          if (!fs.existsSync(fileDir)) {
+            fs.mkdirSync(fileDir, { recursive: true });
+          }
+          fs.writeFileSync(localFilePath, buffer);
+        }
+      }
+    } catch (e) {
+      // Continue to next handler if DB unavailable
+    }
+  }
+
   next();
 }, express.static(uploadsPath, {
   setHeaders: (res, filePath) => {
