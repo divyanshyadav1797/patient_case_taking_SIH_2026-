@@ -258,6 +258,14 @@ async function startServer() {
   return server;
 }
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Process] Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[Process] Uncaught Exception:', err);
+});
+
 if (require.main === module) {
   startServer().catch((err) => {
     console.error('Fatal startup error:', err);

@@ -16,7 +16,7 @@ const OcrDataSchema = new mongoose.Schema({
 }, { _id: false });
 
 const ClinicalReportSchema = new mongoose.Schema({
-  customId: { type: String, unique: true, index: true },
+  customId: { type: String, unique: true, sparse: true, index: true },
   patientId: { type: String, required: true, index: true },
   patientName: { type: String, required: true },
   doctorId: { type: String, index: true },

@@ -202,11 +202,14 @@ class ClinicalRepository {
   }
 
   async createAppointment(aptData) {
-    const customId = aptData.id || aptData.customId || `APT-${Math.floor(100 + Math.random() * 900)}`;
+    let customId = aptData.id || aptData.customId;
+    if (!customId) {
+      customId = `APT-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
     const newApt = {
       customId,
       id: customId,
-      patientId: aptData.patientId || `WALKIN-${Math.floor(1000 + Math.random() * 9000)}`,
+      patientId: aptData.patientId || `WALKIN-${Date.now().toString(36).toUpperCase()}`,
       patientName: aptData.patientName || 'Walk-in Patient',
       doctorId: aptData.doctorId,
       doctorName: aptData.doctorName || 'Attending Physician',
@@ -221,14 +224,23 @@ class ClinicalRepository {
       notes: aptData.notes
     };
 
-    try {
-      const created = await Appointment.create(newApt);
-      const obj = created.toObject();
-      obj.id = obj.customId || obj._id.toString();
-      return obj;
-    } catch (e) {
-      console.error('[ClinicalRepo] createAppointment error:', e.message);
-      throw e;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        const created = await Appointment.create(newApt);
+        const obj = created.toObject();
+        obj.id = obj.customId || obj._id.toString();
+        return obj;
+      } catch (e) {
+        if (e.code === 11000 && attempts < 2) {
+          attempts++;
+          newApt.customId = `APT-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          newApt.id = newApt.customId;
+          continue;
+        }
+        console.error('[ClinicalRepo] createAppointment error:', e.message);
+        throw e;
+      }
     }
   }
 
@@ -348,7 +360,7 @@ class ClinicalRepository {
     const secret = password || pin || 'doctor123';
     const passwordHash = await bcrypt.hash(secret, 10);
     const pinHash = pin ? await bcrypt.hash(pin, 10) : passwordHash;
-    const customId = `DOC-${Math.floor(1000 + Math.random() * 9000)}`;
+    const customId = `DOC-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const conflictConditions = [];
     if (email) conflictConditions.push({ email: email.toLowerCase().trim() });
@@ -520,11 +532,14 @@ class ClinicalRepository {
   }
 
   async createRecord(recordData) {
-    const customId = recordData.id || recordData.customId || `REC-${Math.floor(1000 + Math.random() * 9000)}`;
+    let customId = recordData.id || recordData.customId;
+    if (!customId) {
+      customId = `REC-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
     const newRec = {
       customId,
       id: customId,
-      patientId: recordData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      patientId: recordData.patientId || `PAT-${Date.now().toString(36).toUpperCase()}`,
       title: recordData.title || 'Clinical Diagnostic Report',
       doctor: recordData.doctor || 'Attending Physician',
       hospital: recordData.hospital || 'Hospital Clinical Diagnostics',
@@ -540,14 +555,23 @@ class ClinicalRepository {
       ocrData: recordData.ocrData || {}
     };
 
-    try {
-      const created = await MedicalRecord.create(newRec);
-      const obj = created.toObject();
-      obj.id = obj.customId || obj._id.toString();
-      return obj;
-    } catch (e) {
-      console.error('[ClinicalRepo] createRecord error:', e.message);
-      throw e;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        const created = await MedicalRecord.create(newRec);
+        const obj = created.toObject();
+        obj.id = obj.customId || obj._id.toString();
+        return obj;
+      } catch (e) {
+        if (e.code === 11000 && attempts < 2) {
+          attempts++;
+          newRec.customId = `REC-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          newRec.id = newRec.customId;
+          continue;
+        }
+        console.error('[ClinicalRepo] createRecord error:', e.message);
+        throw e;
+      }
     }
   }
 
@@ -615,12 +639,15 @@ class ClinicalRepository {
   }
 
   async createPrescription(rxData) {
-    const customId = rxData.id || rxData.customId || `RX-${Math.floor(100 + Math.random() * 900)}`;
+    let customId = rxData.id || rxData.customId;
+    if (!customId) {
+      customId = `RX-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
     const newRx = {
       customId,
       id: customId,
       patient: rxData.patient || 'Patient',
-      patientId: rxData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      patientId: rxData.patientId || `PAT-${Date.now().toString(36).toUpperCase()}`,
       doctorName: rxData.doctorName || 'Attending Physician',
       doctorId: rxData.doctorId,
       date: rxData.date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -630,14 +657,23 @@ class ClinicalRepository {
       instructions: rxData.instructions || ''
     };
 
-    try {
-      const created = await Prescription.create(newRx);
-      const obj = created.toObject();
-      obj.id = obj.customId || obj._id.toString();
-      return obj;
-    } catch (e) {
-      console.error('[ClinicalRepo] createPrescription error:', e.message);
-      throw e;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        const created = await Prescription.create(newRx);
+        const obj = created.toObject();
+        obj.id = obj.customId || obj._id.toString();
+        return obj;
+      } catch (e) {
+        if (e.code === 11000 && attempts < 2) {
+          attempts++;
+          newRx.customId = `RX-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          newRx.id = newRx.customId;
+          continue;
+        }
+        console.error('[ClinicalRepo] createPrescription error:', e.message);
+        throw e;
+      }
     }
   }
 
@@ -685,11 +721,14 @@ class ClinicalRepository {
   }
 
   async createClinicalReport(reportData) {
-    const customId = reportData.id || reportData.customId || `REP-${Math.floor(100 + Math.random() * 900)}`;
+    let customId = reportData.id || reportData.customId;
+    if (!customId) {
+      customId = `REP-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    }
     const newReport = {
       customId,
       id: customId,
-      patientId: reportData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      patientId: reportData.patientId || `PAT-${Date.now().toString(36).toUpperCase()}`,
       patientName: reportData.patientName || 'Patient',
       doctorId: reportData.doctorId,
       doctorName: reportData.doctorName || 'Attending Physician',
@@ -719,14 +758,23 @@ class ClinicalRepository {
       status: reportData.status || 'COMPLETED'
     };
 
-    try {
-      const created = await ClinicalReport.create(newReport);
-      const obj = created.toObject();
-      obj.id = obj.customId || obj._id.toString();
-      return obj;
-    } catch (e) {
-      console.error('[ClinicalRepo] createClinicalReport error:', e.message);
-      throw e;
+    let attempts = 0;
+    while (attempts < 3) {
+      try {
+        const created = await ClinicalReport.create(newReport);
+        const obj = created.toObject();
+        obj.id = obj.customId || obj._id.toString();
+        return obj;
+      } catch (e) {
+        if (e.code === 11000 && attempts < 2) {
+          attempts++;
+          newReport.customId = `REP-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
+          newReport.id = newReport.customId;
+          continue;
+        }
+        console.error('[ClinicalRepo] createClinicalReport error:', e.message);
+        throw e;
+      }
     }
   }
 
@@ -836,8 +884,8 @@ class ClinicalRepository {
   async createKioskToken(tokenData) {
     try {
       const queueCount = (await KioskToken.countDocuments()) + 1;
-      const padNum = String(queueCount).padStart(3, '0');
-      const tokenNumber = `TK-${padNum}`;
+      const tokenNumber = `TK-${String(queueCount).padStart(3, '0')}`;
+      const apptSuffix = `${String(queueCount).padStart(3, '0')}-${Date.now().toString(36).toUpperCase().slice(-4)}`;
       const hospitalName = tokenData.hospitalName || tokenData.hospital || 'SMS Hospital Jaipur';
       const hospitalId = tokenData.hospitalId || null;
       const doctorId = tokenData.doctorId || null;
@@ -861,8 +909,8 @@ class ClinicalRepository {
 
       // Auto-create appointment in MongoDB for doctor visibility
       await Appointment.create({
-        customId: `APT-K${padNum}`,
-        id: `APT-K${padNum}`,
+        customId: `APT-K${apptSuffix}`,
+        id: `APT-K${apptSuffix}`,
         patientId: tokenData.patientId || (tokenData.aadhaar ? `P-${String(tokenData.aadhaar).replace(/\D/g, '').slice(-5)}` : 'P-KIOSK'),
         patientName: newToken.patientName,
         doctorId,

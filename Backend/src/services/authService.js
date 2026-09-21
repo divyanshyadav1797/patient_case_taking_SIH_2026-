@@ -161,7 +161,7 @@ class AuthService {
     const pinHash = pin ? await bcrypt.hash(pin, 10) : passwordHash;
 
     const customIdPrefix = role.slice(0, 3).toUpperCase();
-    const customId = `${customIdPrefix}-${Math.floor(10000 + Math.random() * 90000)}`;
+    const customId = `${customIdPrefix}-${Date.now().toString(36).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const newUserPayload = {
       customId,
