@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import PushToTalkButton from '../../components/Voice/PushToTalkButton';
 import '../../styles/kiosk.css';
 
 /* ─── Complete Multilingual Dictionary ─────────────────────────────── */
@@ -478,6 +479,93 @@ export default function KioskPage() {
     }
   };
 
+  const handleVoiceAnswerQuestion = async (audioBlob, liveTranscript = '') => {
+    if (!audioBlob && !liveTranscript) return;
+    setIsAiLoading(true);
+
+    try {
+      let spokenAnswer = (liveTranscript || '').trim();
+
+      if (!spokenAnswer && audioBlob) {
+        const transRes = await api.transcribeVoice(audioBlob, lang);
+        spokenAnswer = (transRes?.transcript || transRes?.englishTranslation || '').trim();
+      }
+
+      if (!spokenAnswer) {
+        notify(lang === 'hi' ? 'आवाज़ नहीं समझी जा सकी, कृपया पुनः बोलें।' : 'Could not understand audio, please try again.');
+        return;
+      }
+
+      // Populate customAnswer so patient sees the voice converted to text
+      setCustomAnswer(spokenAnswer);
+      notify(`🎤 Voice converted to text: "${spokenAnswer}"`);
+
+      if (intakeSessionId && intakeSessionId.startsWith('LOCAL-')) {
+        handleAnswerQuestion(spokenAnswer);
+        return;
+      }
+
+      const res = await api.answerAiIntake(
+        intakeSessionId,
+        spokenAnswer,
+        lang,
+        patient?.customId || ''
+      );
+
+      if (res && res.complete) {
+        setClinicalReport(res.report);
+        setClinicalReportId(res.reportId || res.report?.id || res.report?.customId);
+        setScreen('aiReportReview');
+      } else if (res && res.question) {
+        setCurrentQuestion(res.question);
+        setQuestionNumber((n) => n + 1);
+        setCustomAnswer('');
+      }
+    } catch (err) {
+      console.warn('[Kiosk] Voice answer error, trying transcribe fallback:', err.message);
+      try {
+        if (audioBlob) {
+          const transRes = await api.transcribeVoice(audioBlob, lang);
+          if (transRes && (transRes.englishTranslation || transRes.transcript)) {
+            const txt = transRes.transcript || transRes.englishTranslation;
+            setCustomAnswer(txt);
+            notify(`🎤 Voice converted to text: "${txt}"`);
+            handleAnswerQuestion(txt);
+            return;
+          }
+        }
+      } catch (e2) {
+        // ignore
+      }
+      notify(lang === 'hi' ? 'आवाज़ नहीं समझी जा सकी, कृपया पुनः बोलें।' : 'Could not understand audio, please try again.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleVoiceConcern = async (audioBlob, liveTranscript = '') => {
+    if (!audioBlob && !liveTranscript) return;
+    setIsAiLoading(true);
+    try {
+      let text = (liveTranscript || '').trim();
+      if (!text && audioBlob) {
+        const res = await api.transcribeVoice(audioBlob, lang);
+        text = (res?.transcript || res?.englishTranslation || '').trim();
+      }
+      if (text) {
+        setMainConcern(text);
+        notify(`🎤 Voice converted to text: "${text}"`);
+      } else {
+        notify('Speech unclear, please try again.');
+      }
+    } catch (err) {
+      console.warn('[Kiosk] Voice concern error:', err.message);
+      notify(lang === 'hi' ? 'आवाज़ पहचानी नहीं जा सकी।' : 'Voice transcription failed.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   const notify = (m) => {
     setToast(m);
     setTimeout(() => setToast(''), 2500);
@@ -760,18 +848,18 @@ export default function KioskPage() {
                   </button>
                 ))}
               </div>
-              <button
-                className="voice"
-                type="button"
-                onClick={() => startAiIntake('other')}
-              >
-                🎙{' '}
-                <div>
-                  <b>{L.voice}</b>
-                  <small>{L.voiceSub}</small>
+              <div style={{ marginTop: '1.25rem', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#F8FAFC', padding: '16px', borderRadius: '16px', border: '2px dashed #93C5FD' }}>
+                <div style={{ marginBottom: '10px', fontSize: '0.95rem', fontWeight: 700, color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>🎙️</span> {lang === 'hi' ? 'अपनी भाषा में बोलें (Push to Talk):' : 'Speak in your language (Push to Talk):'}
                 </div>
-                →
-              </button>
+                <PushToTalkButton
+                  onAudioReady={handleVoiceConcern}
+                  isProcessing={isAiLoading}
+                  language={lang}
+                  label={L.voice || 'बोलने के लिए दबाएं (Hold to Talk)'}
+                />
+                <small style={{ marginTop: '6px', color: '#64748B', fontSize: '0.85rem' }}>{L.voiceSub}</small>
+              </div>
             </div>
           )}
 
@@ -802,6 +890,22 @@ export default function KioskPage() {
                 <div>
                   <h2 className="ai-question-title">{currentQuestion.question}</h2>
 
+                  {/* Dedicated Push-to-Talk Voice Bar for AI Interview Turn */}
+                  <div style={{ margin: '1.25rem 0', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#EFF6FF', padding: '18px 20px', borderRadius: '16px', border: '2px dashed #60A5FA', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.08)' }}>
+                    <div style={{ marginBottom: '10px', fontWeight: 700, color: '#1E40AF', fontSize: '1.05rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span>🎙️</span> {lang === 'hi' ? 'बोलकर उत्तर दें (Push to Talk - हिंदी):' : 'Answer with Voice (Push to Talk):'}
+                    </div>
+                    <PushToTalkButton
+                      onAudioReady={handleVoiceAnswerQuestion}
+                      isProcessing={isAiLoading}
+                      language={lang}
+                      label={lang === 'hi' ? 'बोलने के लिए दबाकर रखें (Hold or Tap to Talk)' : 'Hold or Tap to Speak'}
+                    />
+                    <small style={{ marginTop: '8px', color: '#475569', fontSize: '0.85rem', fontWeight: 500 }}>
+                      {lang === 'hi' ? 'दबाकर बोलें और छोड़ दें, AI आपकी आवाज़ सुनकर अगला प्रश्न पूछेगा' : 'Hold to speak and release, AI processes your answer instantly'}
+                    </small>
+                  </div>
+
                   <div className="ai-options-grid">
                     {(currentQuestion.options || []).map((opt) => (
                       <button
@@ -816,21 +920,48 @@ export default function KioskPage() {
                     ))}
                   </div>
 
-                  <div className="ai-custom-input-row">
+                  <div className="ai-custom-input-row" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input
                       type="text"
                       className="ai-input-field"
-                      placeholder="Or enter custom answer..."
+                      placeholder={lang === 'hi' ? 'या उत्तर टाइप करें...' : 'Or enter custom answer...'}
                       value={customAnswer}
                       onChange={(e) => setCustomAnswer(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') handleAnswerQuestion(customAnswer);
                       }}
+                      style={{ flex: 1 }}
+                    />
+                    <PushToTalkButton
+                      onAudioReady={async (audioBlob, liveTranscript = '') => {
+                        try {
+                          setIsAiLoading(true);
+                          let text = (liveTranscript || '').trim();
+                          if (!text && audioBlob) {
+                            const trans = await api.transcribeVoice(audioBlob, lang);
+                            text = (trans?.transcript || trans?.englishTranslation || '').trim();
+                          }
+                          if (text) {
+                            setCustomAnswer(text);
+                            notify(`🎤 Voice converted to text: "${text}"`);
+                          } else {
+                            notify(lang === 'hi' ? 'आवाज़ नहीं समझी जा सकी' : 'Could not convert voice to text');
+                          }
+                        } catch (e) {
+                          notify(lang === 'hi' ? 'आवाज़ नहीं समझी जा सकी' : 'Voice transcription error');
+                        } finally {
+                          setIsAiLoading(false);
+                        }
+                      }}
+                      isProcessing={isAiLoading}
+                      language={lang}
+                      compact={true}
+                      label="🎙️"
                     />
                     <button
                       type="button"
                       className="primary"
-                      style={{ padding: '0 2rem', fontSize: '1.1rem' }}
+                      style={{ padding: '0 1.5rem', fontSize: '1.05rem' }}
                       onClick={() => handleAnswerQuestion(customAnswer)}
                     >
                       Answer →

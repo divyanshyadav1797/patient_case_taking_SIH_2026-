@@ -8,11 +8,14 @@ const allowedMimeTypes = [
     'audio/mp4',
     'audio/mpeg',
     'audio/wav',
-    'audio/x-m4a'
+    'audio/x-m4a',
+    'audio/x-wav',
+    'audio/aac'
 ];
 
 const fileFilter = (req, file, cb) => {
-    if (!allowedMimeTypes.includes(file.mimetype)) {
+    const baseMime = (file.mimetype || '').split(';')[0].trim().toLowerCase();
+    if (!allowedMimeTypes.includes(baseMime)) {
         return cb(
             new Error(
                 `Unsupported audio format: ${file.mimetype}`

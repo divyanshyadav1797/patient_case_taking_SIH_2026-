@@ -2,9 +2,30 @@ import ai from "./geminiClient.js";
 import { voiceResponseSchema }
     from "./schemas/voiceSchema.js";
 
-const MODEL =
-    process.env.VOICE_MODEL ||
-    "Gemini 3.5 Flash Lite";
+const rawModel = (process.env.VOICE_MODEL || process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite').trim().toLowerCase().replace(/\s+/g, '-');
+const MODEL = rawModel.includes('gemini') ? rawModel : 'gemini-3.1-flash-lite';
+
+const CANDIDATE_MODELS = [
+    MODEL,
+    'gemini-3.1-flash-lite',
+    'gemini-3.1-flash-lite-preview',
+    'gemini-3-flash-preview',
+    'gemini-3.6-flash'
+].filter((v, i, a) => v && a.indexOf(v) === i);
+
+function isAudioSilent(buf) {
+    if (!buf || buf.length < 100) return true;
+    let dataOffset = 0;
+    if (buf.length > 44 && buf.toString('ascii', 0, 4) === 'RIFF') {
+        dataOffset = 44;
+    }
+    let nonZeroCount = 0;
+    const end = Math.min(buf.length, dataOffset + 20000);
+    for (let i = dataOffset; i < end; i++) {
+        if (buf[i] !== 0 && buf[i] !== 128) nonZeroCount++;
+    }
+    return nonZeroCount < 20;
+}
 
 export async function transcribeVoice({
     buffer,
@@ -15,8 +36,19 @@ export async function transcribeVoice({
         throw new Error("Audio buffer is empty.");
     }
 
-    const base64Audio =
-        buffer.toString("base64");
+    if (isAudioSilent(buffer)) {
+        return {
+            transcript: "",
+            englishTranslation: "",
+            detectedLanguage: languageHint || "hi"
+        };
+    }
+
+    let cleanMimeType = (mimeType || "audio/webm").split(";")[0].trim().toLowerCase();
+    if (cleanMimeType === 'audio/x-wav' || cleanMimeType === 'audio/vnd.wave') {
+        cleanMimeType = 'audio/wav';
+    }
+    const base64Audio = buffer.toString("base64");
 
     const languageInstruction =
         languageHint
@@ -24,8 +56,7 @@ export async function transcribeVoice({
             : "Automatically detect the spoken language.";
 
     const prompt = `
-You are the speech transcription component
-of a healthcare patient intake system.
+You are the speech transcription component of a healthcare patient intake system.
 
 ${languageInstruction}
 
@@ -34,63 +65,72 @@ Process ONLY the patient's spoken answer.
 Return:
 
 1. transcript
-   - Exact or near-exact transcription
+   - Exact or near-exact transcription in original language script (e.g. Devanagari Hindi)
    - Preserve medical terms
    - Preserve the patient's meaning
+   - If audio is silent or contains no speech, return empty string ""
 
 2. englishTranslation
    - Translate the answer into English
    - Do not add medical information
    - Do not diagnose
    - Do not interpret beyond what was spoken
+   - If audio is silent or contains no speech, return empty string ""
 
 3. detectedLanguage
-   - Return the detected language using BCP-47
-     where possible.
+   - Return the detected language code (e.g. 'hi', 'en', 'mr').
 
 Important rules:
-
 - Do not invent missing words.
 - Do not guess unreadable or unclear speech.
-- If a medical word is uncertain, preserve the
-  uncertainty rather than inventing a diagnosis.
+- If a medical word is uncertain, preserve the uncertainty rather than inventing a diagnosis.
 - Do not answer the medical question yourself.
 - Do not provide treatment advice.
 `;
 
-    const response =
-        await ai.models.generateContent({
-            model: MODEL,
-
-            contents: [
-                {
-                    text: prompt
-                },
-
-                {
-                    inlineData: {
-                        mimeType,
-                        data: base64Audio
+    let lastError = null;
+    for (const modelName of CANDIDATE_MODELS) {
+        try {
+            const response = await ai.models.generateContent({
+                model: modelName,
+                contents: [
+                    { text: prompt },
+                    {
+                        inlineData: {
+                            mimeType: cleanMimeType,
+                            data: base64Audio
+                        }
                     }
+                ],
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: voiceResponseSchema,
+                    temperature: 0
                 }
-            ],
+            });
 
-            config: {
-                responseMimeType:
-                    "application/json",
-
-                responseSchema:
-                    voiceResponseSchema,
-
-                temperature: 0
+            if (response && response.text) {
+                try {
+                    return JSON.parse(response.text);
+                } catch {
+                    return {
+                        transcript: response.text.trim(),
+                        englishTranslation: response.text.trim(),
+                        detectedLanguage: languageHint || "en"
+                    };
+                }
             }
-        });
-
-    if (!response.text) {
-        throw new Error(
-            "Gemini returned an empty transcription response."
-        );
+        } catch (err) {
+            lastError = err;
+            console.warn(`[VoiceAI] Model ${modelName} notice: ${err.message}, attempting next candidate...`);
+        }
     }
 
-    return JSON.parse(response.text);
+    console.warn("[VoiceAI] All Gemini candidate models failed:", lastError?.message);
+    // Return graceful fallback with empty transcript if audio was silent or unreachable
+    return {
+        transcript: "",
+        englishTranslation: "",
+        detectedLanguage: languageHint || "en"
+    };
 }

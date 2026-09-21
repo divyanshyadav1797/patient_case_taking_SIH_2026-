@@ -165,8 +165,8 @@ class AiIntakeService {
 
     const session = {
       sessionId,
-      patientId: patientId || 'P-10249',
-      patientName: resolvedName,
+      patientId: patientId || `WALKIN-${sessionId.slice(-6).toUpperCase()}`,
+      patientName: resolvedName || 'Walk-in Patient',
       chiefComplaint: chiefComplaint.trim(),
       language,
       source,

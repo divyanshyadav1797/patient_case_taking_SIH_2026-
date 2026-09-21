@@ -10,11 +10,33 @@ const authRoutes = require('./src/routes/authRoutes');
 const clinicalRoutes = require('./src/routes/clinicalRoutes');
 const { errorHandler } = require('./src/middleware/errorHandler');
 
+const {
+  securityHeaders,
+  apiLimiter,
+  noSqlSanitizer,
+  xssSanitizer
+} = require('./src/middleware/securityMiddleware');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// ── Security Headers & Hardening ──
+app.use(securityHeaders);
+
+// ── Strict CORS Policy ──
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+  : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'];
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || process.env.CORS_ORIGIN || '*',
+  origin: (origin, callback) => {
+    // Allow server-to-server or non-browser agents, whitelisted origins, or development mode
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    return callback(new Error('Blocked by CORS policy'));
+  },
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
@@ -22,26 +44,45 @@ app.use(cors({
 app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
-// Serve uploaded medical documents, lab reports, and prescription photos statically
+// ── Sanitization Middleware ──
+app.use(noSqlSanitizer);
+app.use(xssSanitizer);
+
+// ── Global API Rate Limiter ──
+app.use('/api', apiLimiter);
+
+// ── Secure Static Uploads Storage ──
 const uploadsPath = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsPath, {
+app.use('/uploads', (req, res, next) => {
+  // Disallow any execution or script files in uploaded media
+  const blockedExts = ['.exe', '.sh', '.bat', '.cmd', '.js', '.mjs', '.php', '.phtml', '.py', '.html', '.htm', '.svg'];
+  const ext = path.extname(req.path).toLowerCase();
+  if (blockedExts.includes(ext)) {
+    return res.status(403).json({ success: false, message: 'Access to executable file types is prohibited.' });
+  }
+  next();
+}, express.static(uploadsPath, {
   setHeaders: (res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Content-Security-Policy', "default-src 'none'");
+    res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   }
 }));
 
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - start;
-    console.log(`[HTTP] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
+if (process.env.DEBUG_HTTP === 'true') {
+  app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      console.log(`[HTTP] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${duration}ms)`);
+    });
+    next();
   });
-  next();
-});
+}
 
 app.get('/', (req, res) => {
   const dbStatus = getStatus();
@@ -118,12 +159,12 @@ app.use(errorHandler);
 
 async function startServer() {
   await connectDB();
-  if (process.env.SEED_DEMO_DATA !== 'false') {
+  if (process.env.SEED_DEMO_DATA === 'true') {
     await userRepository.seedDefaultUsers();
     await clinicalRepository.seedDefaults();
-    console.log('[Seed] Default verification accounts verified in MongoDB (Doctors, Hospital, Kiosk, Patient)');
+    console.log('[Seed] Default verification accounts seeded in MongoDB');
   } else {
-    console.log('[Database] Running in strict clean mode (SEED_DEMO_DATA=false)');
+    console.log('[Database] Clean database mode (set SEED_DEMO_DATA=true to seed demo accounts)');
   }
 
   const server = app.listen(PORT, () => {

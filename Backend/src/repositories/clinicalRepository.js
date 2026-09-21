@@ -206,12 +206,12 @@ class ClinicalRepository {
     const newApt = {
       customId,
       id: customId,
-      patientId: aptData.patientId || 'P-10249',
-      patientName: aptData.patientName || 'Rahul Sharma',
+      patientId: aptData.patientId || `WALKIN-${Math.floor(1000 + Math.random() * 9000)}`,
+      patientName: aptData.patientName || 'Walk-in Patient',
       doctorId: aptData.doctorId,
-      doctorName: aptData.doctorName || 'Dr. Sarah Jenkins',
+      doctorName: aptData.doctorName || 'Attending Physician',
       specialty: aptData.specialty || 'General Consultation',
-      hospital: aptData.hospital || 'SMS Hospital Jaipur',
+      hospital: aptData.hospital || 'Clinical Facility',
       date: aptData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       time: aptData.time || '11:00 AM',
       status: aptData.status || 'Upcoming',
@@ -272,6 +272,20 @@ class ClinicalRepository {
     } catch (e) {
       console.error('[ClinicalRepo] deleteAppointment error:', e.message);
       return false;
+    }
+  }
+
+  async getAppointmentById(id) {
+    if (!id) return null;
+    try {
+      const conditions = [{ customId: id }, { id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+      return await Appointment.findOne({ $or: conditions }).lean();
+    } catch (e) {
+      console.error('[ClinicalRepo] getAppointmentById error:', e.message);
+      return null;
     }
   }
 
@@ -407,13 +421,80 @@ class ClinicalRepository {
         name: d.name,
         specialty: d.doctorDetails?.specialty || 'General Physician',
         department: d.doctorDetails?.department || 'General Medicine',
+        available: d.doctorDetails?.available || 'Available Today',
+        fee: d.doctorDetails?.fee || '₹600',
         hospital: d.doctorDetails?.hospitalName || 'SMS Hospital Jaipur',
+        hospitalId: d.doctorDetails?.hospitalId || null,
         email: d.email,
         phone: d.phone
       };
     } catch (e) {
       console.error('[ClinicalRepo] getDoctorById error:', e.message);
       return null;
+    }
+  }
+
+  async updateDoctor(id, updates) {
+    if (!id) return null;
+    try {
+      const conditions = [{ customId: id }, { 'doctorDetails.nmcId': id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+
+      const updateFields = {};
+      if (updates.name) updateFields.name = updates.name.trim();
+      if (updates.email) updateFields.email = updates.email.trim().toLowerCase();
+      if (updates.phone) updateFields.phone = updates.phone.trim();
+
+      if (updates.available) updateFields['doctorDetails.available'] = updates.available;
+      if (updates.fee) updateFields['doctorDetails.fee'] = updates.fee;
+      if (updates.specialty) updateFields['doctorDetails.specialty'] = updates.specialty;
+      if (updates.department) updateFields['doctorDetails.department'] = updates.department;
+
+      if (updates.password || updates.pin) {
+        const bcrypt = require('bcryptjs');
+        const secret = updates.password || updates.pin;
+        updateFields.passwordHash = await bcrypt.hash(secret, 10);
+        if (updates.pin) updateFields.pinHash = await bcrypt.hash(updates.pin, 10);
+      }
+
+      const updated = await User.findOneAndUpdate(
+        { role: 'doctor', $or: conditions },
+        { $set: updateFields },
+        { new: true }
+      ).lean();
+
+      if (!updated) return null;
+      return {
+        id: updated.customId || updated._id.toString(),
+        name: updated.name,
+        specialty: updated.doctorDetails?.specialty || 'General Physician',
+        department: updated.doctorDetails?.department || 'General Medicine',
+        available: updated.doctorDetails?.available || 'Available Today',
+        fee: updated.doctorDetails?.fee || '₹600',
+        hospital: updated.doctorDetails?.hospitalName || 'SMS Hospital Jaipur',
+        email: updated.email,
+        phone: updated.phone
+      };
+    } catch (e) {
+      console.error('[ClinicalRepo] updateDoctor error:', e.message);
+      throw e;
+    }
+  }
+
+  async deleteDoctor(id) {
+    if (!id) return false;
+    try {
+      const conditions = [{ customId: id }, { 'doctorDetails.nmcId': id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+      const res = await User.findOneAndDelete({ role: 'doctor', $or: conditions });
+      return !!res;
+    } catch (e) {
+      console.error('[ClinicalRepo] deleteDoctor error:', e.message);
+      return false;
     }
   }
 
@@ -443,10 +524,10 @@ class ClinicalRepository {
     const newRec = {
       customId,
       id: customId,
-      patientId: recordData.patientId || 'P-10249',
+      patientId: recordData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
       title: recordData.title || 'Clinical Diagnostic Report',
-      doctor: recordData.doctor || 'Dr. Sarah Jenkins',
-      hospital: recordData.hospital || 'SMS Hospital Jaipur',
+      doctor: recordData.doctor || 'Attending Physician',
+      hospital: recordData.hospital || 'Hospital Clinical Diagnostics',
       date: recordData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       type: recordData.type || 'Lab Report',
       file: recordData.file || 'report.pdf',
@@ -467,6 +548,48 @@ class ClinicalRepository {
     } catch (e) {
       console.error('[ClinicalRepo] createRecord error:', e.message);
       throw e;
+    }
+  }
+
+  async updateRecord(id, updateData) {
+    if (!id) return null;
+    try {
+      const conditions = [{ customId: id }, { id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+
+      const updated = await MedicalRecord.findOneAndUpdate(
+        { $or: conditions },
+        { $set: updateData },
+        { new: true }
+      ).lean();
+
+      if (updated) {
+        return {
+          ...updated,
+          id: updated.customId || updated.id || updated._id.toString()
+        };
+      }
+      return null;
+    } catch (e) {
+      console.error('[ClinicalRepo] updateRecord error:', e.message);
+      return null;
+    }
+  }
+
+  async deleteRecord(id) {
+    if (!id) return false;
+    try {
+      const conditions = [{ customId: id }, { id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+      const res = await MedicalRecord.findOneAndDelete({ $or: conditions });
+      return !!res;
+    } catch (e) {
+      console.error('[ClinicalRepo] deleteRecord error:', e.message);
+      return false;
     }
   }
 
@@ -496,9 +619,9 @@ class ClinicalRepository {
     const newRx = {
       customId,
       id: customId,
-      patient: rxData.patient || 'Rahul Sharma',
-      patientId: rxData.patientId || 'P-10249',
-      doctorName: rxData.doctorName || 'Dr. Sarah Jenkins',
+      patient: rxData.patient || 'Patient',
+      patientId: rxData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      doctorName: rxData.doctorName || 'Attending Physician',
       doctorId: rxData.doctorId,
       date: rxData.date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       diagnosis: rxData.diagnosis || 'Clinical Follow-up',
@@ -566,12 +689,12 @@ class ClinicalRepository {
     const newReport = {
       customId,
       id: customId,
-      patientId: reportData.patientId || 'P-10249',
-      patientName: reportData.patientName || 'Rahul Sharma',
+      patientId: reportData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      patientName: reportData.patientName || 'Patient',
       doctorId: reportData.doctorId,
-      doctorName: reportData.doctorName || 'Dr. Sarah Jenkins',
+      doctorName: reportData.doctorName || 'Attending Physician',
       hospitalId: reportData.hospitalId,
-      hospitalName: reportData.hospitalName || 'SMS Hospital Jaipur',
+      hospitalName: reportData.hospitalName || 'Clinical Facility',
       appointmentId: reportData.appointmentId,
       source: reportData.source || 'webapp',
       language: reportData.language || 'en',

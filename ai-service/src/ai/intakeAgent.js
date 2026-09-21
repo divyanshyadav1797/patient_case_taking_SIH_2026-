@@ -2,8 +2,16 @@ import ai from "./geminiClient.js";
 import { INTAKE_SYSTEM_PROMPT } from "./prompts/intakePrompt.js";
 import { intakeResponseSchema } from "./schemas/intakeSchema.js";
 
-const rawModel = (process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite').trim().toLowerCase().replace(/\s+/g, '-');
-const MODEL = rawModel.includes('gemini') ? rawModel : 'gemini-3.5-flash-lite';
+const rawModel = (process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite').trim().toLowerCase().replace(/\s+/g, '-');
+const MODEL = rawModel.includes('gemini') ? rawModel : 'gemini-3.1-flash-lite';
+
+const CANDIDATE_MODELS = [
+    MODEL,
+    'gemini-3.1-flash-lite',
+    'gemini-3.1-flash-lite-preview',
+    'gemini-3-flash-preview',
+    'gemini-3.6-flash'
+].filter((v, i, a) => v && a.indexOf(v) === i);
 
 function normalizeQuestionResponse(result) {
     const options = Array.isArray(result.options)
@@ -67,23 +75,28 @@ INSTRUCTIONS FOR THIS TURN:
 - Always include "Other" as the last option.
 `;
 
-    const response = await ai.models.generateContent({
-        model: MODEL,
+    let lastError = null;
+    for (const modelName of CANDIDATE_MODELS) {
+        try {
+            const response = await ai.models.generateContent({
+                model: modelName,
+                contents: prompt,
+                config: {
+                    responseMimeType: "application/json",
+                    responseSchema: intakeResponseSchema,
+                    temperature: 0.3
+                }
+            });
 
-        contents: prompt,
-
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: intakeResponseSchema,
-            temperature: 0.3
+            if (response && response.text) {
+                const parsed = JSON.parse(response.text);
+                return normalizeQuestionResponse(parsed);
+            }
+        } catch (err) {
+            lastError = err;
+            console.warn(`[IntakeAI] Model ${modelName} notice: ${err.message}, attempting next candidate...`);
         }
-    });
-
-    if (!response.text) {
-        throw new Error("Gemini returned an empty response.");
     }
 
-    const parsed = JSON.parse(response.text);
-
-    return normalizeQuestionResponse(parsed);
+    throw new Error(`All Gemini candidate models failed: ${lastError?.message}`);
 }

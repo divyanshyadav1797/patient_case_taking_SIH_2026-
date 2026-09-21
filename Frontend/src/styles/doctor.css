@@ -83,6 +83,26 @@
   --transition-normal: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme='dark'],
+.dark,
+body[data-theme='dark'],
+body.dark {
+  --bg-app: #0E0D12;
+  --bg-card: #17151D;
+  --bg-card-hover: #211D29;
+  --bg-input: #211D29;
+  --border-color: #302B37;
+  --border-color-hover: #453E4E;
+  --text-dark: #F7F4FA;
+  --text-secondary: #AAA4B4;
+  --text-muted: #857F8F;
+  --status-completed-bg: rgba(16, 185, 129, 0.2);
+  --status-upcoming-bg: rgba(59, 130, 246, 0.2);
+  --status-attention-bg: rgba(245, 158, 11, 0.15);
+  --status-attention-border: #78350F;
+  --status-attention-text: #FDE68A;
+}
+
 /* --------------------------------------------------------------------------
    2. GLOBAL RESETS & BASE TYPOGRAPHY
    -------------------------------------------------------------------------- */
@@ -2560,4 +2580,106 @@ input:checked + .slider:before {
     width: 100%;
   }
 }
+
+/* --------------------------------------------------------------------------
+   12. AI SUMMARY CLINICAL ENCOUNTER CARD & RESPONSIVE STYLES
+   -------------------------------------------------------------------------- */
+.ai-summary-glass-container {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(226, 232, 240, 0.9);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+}
+
+.ai-summary-glass-container.urgent-alert {
+  border-color: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.1);
+}
+
+.ai-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1.5px solid rgba(226, 232, 240, 0.8);
+}
+
+.ai-summary-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-summary-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(37, 99, 235, 0.12);
+  color: #2563EB;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+}
+
+.ai-acuity-pill-urgent {
+  background: #FEE2E2;
+  color: #991B1B;
+  border: 1.5px solid #F87171;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-acuity-pill-standard {
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1.5px solid #34D399;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-hpi-callout {
+  background: #F8FAFC;
+  border-left: 4px solid #2563EB;
+  border-radius: 0 12px 12px 0;
+  padding: 16px 20px;
+}
+
+.ai-hpi-callout-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #1E40AF;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 650px) {
+  .ai-summary-glass-container {
+    padding: 16px;
+  }
+  .ai-summary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+}
+
 

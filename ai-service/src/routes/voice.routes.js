@@ -25,10 +25,13 @@ const upload = multer({
             "audio/mp4",
             "audio/mpeg",
             "audio/wav",
-            "audio/x-m4a"
+            "audio/x-m4a",
+            "audio/x-wav",
+            "audio/aac"
         ];
 
-        if (!allowed.includes(file.mimetype)) {
+        const baseMime = (file.mimetype || "").split(";")[0].trim().toLowerCase();
+        if (!allowed.includes(baseMime)) {
             return cb(
                 new Error(
                     `Unsupported audio format: ${file.mimetype}`

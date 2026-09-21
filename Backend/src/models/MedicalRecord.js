@@ -65,6 +65,8 @@ const MedicalRecordSchema = new mongoose.Schema({
         'PROCESSING',
         'PROCESSED',
         'REVIEW_REQUIRED',
+        'RED_FLAG_REVIEW',
+        'FLAGGED',
         'CONFIRMED',
         'FAILED'
       ],

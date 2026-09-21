@@ -79,7 +79,26 @@ async function authenticateOptionalToken(req, res, next) {
   next();
 }
 
+/**
+ * Role-Based Access Control Middleware
+ * Ensures req.user exists and possesses one of the allowed roles
+ */
+function requireRole(...allowedRoles) {
+  const normalized = allowedRoles.map(r => String(r).trim().toLowerCase());
+  return (req, res, next) => {
+    if (!req.user) {
+      return errorResponse(res, 'Authentication required to access this protected route', 401);
+    }
+    const currentRole = (req.user.role || '').toLowerCase();
+    if (!normalized.includes(currentRole)) {
+      return errorResponse(res, `Access forbidden: Role '${req.user.role}' does not have permission for this resource`, 403);
+    }
+    next();
+  };
+}
+
 module.exports = {
   authenticateToken,
-  authenticateOptionalToken
+  authenticateOptionalToken,
+  requireRole
 };

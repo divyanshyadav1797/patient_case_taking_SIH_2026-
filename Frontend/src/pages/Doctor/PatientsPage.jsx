@@ -31,6 +31,52 @@ export default function PatientsPage() {
   const [isCompletingConsultation, setIsCompletingConsultation] = useState(false);
   const [aiHistorySummary, setAiHistorySummary] = useState(null);
   const [loadingAiSummary, setLoadingAiSummary] = useState(false);
+  const [copiedBrief, setCopiedBrief] = useState(false);
+
+  // Physical Consultation Slip & Suggested Scans state
+  const [isPrintSlipOpen, setIsPrintSlipOpen] = useState(false);
+  const [selectedScans, setSelectedScans] = useState([
+    'Chest X-Ray (PA View)',
+    'Complete Blood Count (CBC)'
+  ]);
+  const [customScanText, setCustomScanText] = useState('');
+  const [slipDoctorAdvice, setSlipDoctorAdvice] = useState('Maintain adequate hydration, rest, and review with scan reports.');
+
+  const handleCopyBrief = () => {
+    if (!selectedPatient) return;
+    const brief = `[PATIENT CLINICAL INTAKE BRIEF]
+Patient: ${selectedPatient.name} | ID: ${selectedPatient.id || selectedPatient.customId || 'N/A'}
+Chief Complaint: ${selectedPatient.chiefComplaint || 'N/A'}
+Acuity Level: ${selectedPatient.urgentReview ? 'HIGH PRIORITY (Triage Level 1)' : 'STANDARD AMBULATORY (Triage Level 3)'}
+
+ASSESSMENT SUMMARY:
+${selectedPatient.summaryForDoctor || ''}
+
+HISTORY OF PRESENT ILLNESS (HPI):
+${selectedPatient.historyOfPresentIllness || 'None recorded'}
+
+DIAGNOSTIC IMPRESSION / DIFFERENTIALS:
+${selectedPatient.diagnosticImpression || 'Pending physician review'}
+`;
+    navigator.clipboard.writeText(brief).then(() => {
+      setCopiedBrief(true);
+      setTimeout(() => setCopiedBrief(false), 2500);
+    });
+  };
+
+  const handleInsertIntoNotes = () => {
+    if (!selectedPatient) return;
+    const snippet = `\n[AI INTAKE IMPORT · ${new Date().toLocaleTimeString()}]:
+Chief Concern: ${selectedPatient.chiefComplaint}
+${selectedPatient.summaryForDoctor || ''}
+Impression: ${selectedPatient.diagnosticImpression || 'Clinical evaluation in progress'}\n`;
+    setEditNotes(prev => (prev ? prev + '\n' + snippet : snippet));
+    setActiveTab('notes');
+  };
+
+  const handlePrintBrief = () => {
+    window.print();
+  };
 
   useEffect(() => {
     if (location.state?.viewProfile) {
@@ -376,6 +422,27 @@ export default function PatientsPage() {
                 <i className="fa-solid fa-comment-medical"></i>
                 Send Message
               </button>
+
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setIsPrintSlipOpen(true)}
+                style={{
+                  fontWeight: 600,
+                  fontSize: '0.875rem',
+                  padding: '9px 16px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: '#F0FDF4',
+                  border: '1px solid #BBF7D0',
+                  color: '#16A34A'
+                }}
+              >
+                <i className="fa-solid fa-print"></i>
+                Physical Consultation Slip
+              </button>
             </div>
           </div>
 
@@ -440,7 +507,7 @@ export default function PatientsPage() {
                   {selectedPatient.summaryForDoctor && (
                     <div className={`overview-item-card ai-summary-glass-container ${selectedPatient.urgentReview ? 'urgent-alert' : ''}`} style={{ gridColumn: '1 / -1' }}>
                       {/* Top Header Bar - Formal EHR Header */}
-                      <div className="ai-summary-header">
+                      <div className="ai-summary-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                         <div className="ai-summary-title-badge">
                           <div className="ai-summary-icon">
                             <i className="fa-solid fa-file-waveform"></i>
@@ -455,17 +522,87 @@ export default function PatientsPage() {
                           </div>
                         </div>
 
-                        {selectedPatient.urgentReview ? (
-                          <span className="ai-acuity-pill-urgent">
-                            <i className="fa-solid fa-triangle-exclamation"></i>
-                            PRIORITY 1 · IMMEDIATE PHYSICIAN EVALUATION
-                          </span>
-                        ) : (
-                          <span className="ai-acuity-pill-standard">
-                            <i className="fa-solid fa-circle-check"></i>
-                            PRIORITY 3 · STANDARD AMBULATORY CONSULTATION
-                          </span>
-                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          {selectedPatient.urgentReview ? (
+                            <span className="ai-acuity-pill-urgent">
+                              <i className="fa-solid fa-triangle-exclamation"></i>
+                              PRIORITY 1 · IMMEDIATE PHYSICIAN EVALUATION
+                            </span>
+                          ) : (
+                            <span className="ai-acuity-pill-standard">
+                              <i className="fa-solid fa-circle-check"></i>
+                              PRIORITY 3 · STANDARD AMBULATORY CONSULTATION
+                            </span>
+                          )}
+
+                          {/* Action Toolbar for Doctors: 1-Click Copy, Insert to Notes, Print */}
+                          <button
+                            type="button"
+                            onClick={handleCopyBrief}
+                            title="Copy clinical summary to clipboard"
+                            style={{
+                              background: copiedBrief ? '#10B981' : '#FFFFFF',
+                              color: copiedBrief ? '#FFFFFF' : '#1E293B',
+                              border: '1.5px solid #CBD5E1',
+                              borderRadius: '8px',
+                              padding: '6px 12px',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <i className={`fa-solid ${copiedBrief ? 'fa-check' : 'fa-copy'}`}></i>
+                            {copiedBrief ? 'Copied!' : 'Copy Brief'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleInsertIntoNotes}
+                            title="Insert structured brief into Doctor Consultation Notes"
+                            style={{
+                              background: '#FFFFFF',
+                              color: '#2563EB',
+                              border: '1.5px solid #93C5FD',
+                              borderRadius: '8px',
+                              padding: '6px 12px',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <i className="fa-solid fa-file-signature"></i>
+                            Store in Notes
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handlePrintBrief}
+                            title="Print clinical intake brief"
+                            style={{
+                              background: '#FFFFFF',
+                              color: '#475569',
+                              border: '1.5px solid #CBD5E1',
+                              borderRadius: '8px',
+                              padding: '6px 10px',
+                              fontSize: '0.82rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <i className="fa-solid fa-print"></i>
+                          </button>
+                        </div>
                       </div>
 
                       {/* Prominent Chief Complaint Banner */}
@@ -516,6 +653,23 @@ export default function PatientsPage() {
                               const colonIdx = line.indexOf(':');
                               const label = line.substring(0, colonIdx).trim().replace(/^\[|\]$/g, '');
                               const val = line.substring(colonIdx + 1).trim();
+
+                              // Semantic triage color accents for clinical badges
+                              let badgeBg = '#F1F5F9';
+                              let badgeColor = '#334155';
+                              const lUpper = label.toUpperCase();
+                              if (lUpper.includes('RED FLAG') || lUpper.includes('URGENT') || lUpper.includes('ALERT')) {
+                                badgeBg = '#FEE2E2'; badgeColor = '#991B1B';
+                              } else if (lUpper.includes('PRIMARY') || lUpper.includes('AFFIRMED') || lUpper.includes('SYMPTOM')) {
+                                badgeBg = '#DBEAFE'; badgeColor = '#1E40AF';
+                              } else if (lUpper.includes('RULE-OUT') || lUpper.includes('DENIED') || lUpper.includes('NEGATIVE')) {
+                                badgeBg = '#FEF3C7'; badgeColor = '#92400E';
+                              } else if (lUpper.includes('VITAL') || lUpper.includes('NORMAL')) {
+                                badgeBg = '#D1FAE5'; badgeColor = '#065F46';
+                              } else if (lUpper.includes('DIFFERENTIAL') || lUpper.includes('IMPRESSION')) {
+                                badgeBg = '#EDE9FE'; badgeColor = '#5B21B6';
+                              }
+
                               return (
                                 <div key={idx} style={{
                                   display: 'grid',
@@ -527,17 +681,27 @@ export default function PatientsPage() {
                                   borderRadius: '10px',
                                   border: '1px solid rgba(226, 232, 240, 0.85)'
                                 }}>
-                                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#334155', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                  <span style={{
+                                    fontSize: '0.78rem',
+                                    fontWeight: 800,
+                                    color: badgeColor,
+                                    background: badgeBg,
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    display: 'inline-block',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px'
+                                  }}>
                                     {label}:
                                   </span>
-                                  <span style={{ fontSize: '1.05rem', color: '#0F172A', fontWeight: 600, lineHeight: 1.5 }}>
+                                  <span style={{ fontSize: '1.02rem', color: '#0F172A', fontWeight: 600, lineHeight: 1.5 }}>
                                     {val}
                                   </span>
                                 </div>
                               );
                             }
                             return (
-                              <div key={idx} style={{ padding: '6px 12px', fontSize: '1.05rem', color: '#1E293B', lineHeight: 1.6, fontWeight: 500 }}>
+                              <div key={idx} style={{ padding: '6px 12px', fontSize: '1.02rem', color: '#1E293B', lineHeight: 1.6, fontWeight: 500 }}>
                                 {line}
                               </div>
                             );
@@ -1336,6 +1500,428 @@ export default function PatientsPage() {
             )}
           </div>
         </section>
+      )}
+
+      {/* =========================================================================
+          PHYSICAL CONSULTATION SLIP & SUGGESTED SCANS MODAL
+          (Conforms to context.txt requirement for physical reports & scan orders)
+          ========================================================================= */}
+      {isPrintSlipOpen && selectedPatient && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="consultationSlipTitle"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(15, 23, 42, 0.75)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            overflowY: 'auto'
+          }}
+          onClick={() => setIsPrintSlipOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '16px',
+              maxWidth: '820px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+              border: '1px solid #CBD5E1',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Controls Bar (Hidden during print) */}
+            <div
+              className="no-print"
+              style={{
+                padding: '1rem 1.5rem',
+                background: '#F8FAFC',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <i className="fa-solid fa-print" style={{ color: '#059669', fontSize: '1.2rem' }}></i>
+                <div>
+                  <h3 id="consultationSlipTitle" style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: '#0F172A' }}>
+                    Physical Consultation Slip & Scan Requisition
+                  </h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.75rem', color: '#64748B' }}>
+                    Standard physical medical stationery for patient handover
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  style={{
+                    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    border: 'none',
+                    color: '#FFFFFF',
+                    padding: '7px 16px',
+                    borderRadius: '8px',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.3)'
+                  }}
+                >
+                  <i className="fa-solid fa-print"></i> Print Slip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPrintSlipOpen(false)}
+                  style={{
+                    background: '#F1F5F9',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '8px',
+                    padding: '7px 12px',
+                    color: '#475569',
+                    fontWeight: 600,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+
+            {/* Scan Selection Customizer (Hidden during print) */}
+            <div
+              className="no-print"
+              style={{
+                background: '#EFF6FF',
+                borderBottom: '1px solid #BFDBFE',
+                padding: '1rem 1.5rem'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <strong style={{ fontSize: '0.85rem', color: '#1E40AF', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <i className="fa-solid fa-microscope"></i> Configure Suggested Scans & Diagnostic Tests:
+                </strong>
+                <span style={{ fontSize: '0.75rem', color: '#3B82F6' }}>
+                  {selectedScans.length} tests included on slip
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                {[
+                  'Chest X-Ray (PA View)',
+                  'Complete Blood Count (CBC)',
+                  'Ultrasound Whole Abdomen',
+                  'HRCT Thorax',
+                  'ECG 12-Lead',
+                  'Fasting Blood Sugar + HbA1c',
+                  'Liver Function Test (LFT)',
+                  'Renal Function Test (KFT)',
+                  'MRI Spine / Brain'
+                ].map((scan) => {
+                  const isChecked = selectedScans.includes(scan);
+                  return (
+                    <button
+                      key={scan}
+                      type="button"
+                      onClick={() => {
+                        setSelectedScans((prev) =>
+                          isChecked ? prev.filter((s) => s !== scan) : [...prev, scan]
+                        );
+                      }}
+                      style={{
+                        background: isChecked ? '#2563EB' : '#FFFFFF',
+                        color: isChecked ? '#FFFFFF' : '#334155',
+                        border: isChecked ? '1px solid #1D4ED8' : '1px solid #CBD5E1',
+                        borderRadius: '20px',
+                        padding: '4px 10px',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                    >
+                      <i className={`fa-solid ${isChecked ? 'fa-check' : 'fa-plus'}`}></i>
+                      {scan}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <input
+                  type="text"
+                  placeholder="Add custom scan (e.g. 2D Echocardiogram, Serum Ferritin)..."
+                  value={customScanText}
+                  onChange={(e) => setCustomScanText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && customScanText.trim()) {
+                      e.preventDefault();
+                      if (!selectedScans.includes(customScanText.trim())) {
+                        setSelectedScans([...selectedScans, customScanText.trim()]);
+                      }
+                      setCustomScanText('');
+                    }
+                  }}
+                  style={{
+                    flex: 1,
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid #CBD5E1',
+                    fontSize: '0.8rem',
+                    outline: 'none'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customScanText.trim() && !selectedScans.includes(customScanText.trim())) {
+                      setSelectedScans([...selectedScans, customScanText.trim()]);
+                      setCustomScanText('');
+                    }
+                  }}
+                  style={{
+                    background: '#1D4ED8',
+                    color: '#fff',
+                    border: 'none',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* ===================================================================
+                PRINTABLE SLIP CANVAS (A4 FORMAL MEDICAL STATIONERY)
+                =================================================================== */}
+            <div
+              id="physical-consultation-slip-print"
+              style={{
+                padding: '2.5rem',
+                backgroundColor: '#FFFFFF',
+                color: '#0F172A',
+                fontFamily: 'Inter, Arial, sans-serif'
+              }}
+            >
+              {/* Slip Clinic Letterhead */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2.5px solid #0F172A', paddingBottom: '1.25rem', marginBottom: '1.25rem' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: '#0F172A', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.3rem' }}>
+                      QC
+                    </div>
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#0F172A' }}>
+                        QUANTUM CARE MEMORIAL HOSPITAL
+                      </h2>
+                      <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: '#475569', fontWeight: 500 }}>
+                        Autonomous Multi-Specialty Tertiary Healthcare & Research Centre
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: '8px', fontSize: '0.72rem', color: '#64748B', lineHeight: 1.4 }}>
+                    Hospital Lic: QC-MH-2026-9921 · ABDM Facility ID: IN-08-44219 · 24x7 Helpline: 1800-419-8800
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0F172A' }}>
+                    Dr. Sarah Jenkins, MD
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: 600 }}>
+                    Consultant Physician & Internist
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748B', marginTop: '2px' }}>
+                    Reg No: MCI-49912-B / DHI-098
+                  </div>
+                  <div style={{ marginTop: '6px', display: 'inline-block', background: '#F1F5F9', border: '1px solid #CBD5E1', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700, color: '#1E293B' }}>
+                    OPD TOKEN #{selectedPatient.token || '12'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Patient Demographics Bar */}
+              <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '0.85rem 1.25rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', marginBottom: '1.25rem', fontSize: '0.8rem' }}>
+                <div>
+                  <span style={{ color: '#64748B', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 600 }}>Patient Name</span>
+                  <div style={{ fontWeight: 700, color: '#0F172A' }}>{selectedPatient.name}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 600 }}>Age / Gender</span>
+                  <div style={{ fontWeight: 600, color: '#0F172A' }}>{selectedPatient.age} Yrs · {selectedPatient.gender}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 600 }}>Patient ID / ABHA</span>
+                  <div style={{ fontWeight: 600, color: '#0F172A' }}>{selectedPatient.id || 'P-10245'}</div>
+                </div>
+                <div>
+                  <span style={{ color: '#64748B', fontSize: '0.7rem', textTransform: 'uppercase', fontWeight: 600 }}>Consultation Date</span>
+                  <div style={{ fontWeight: 600, color: '#0F172A' }}>{new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+                </div>
+              </div>
+
+              {/* Clinical Presentation & Diagnosis */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div style={{ borderLeft: '3px solid #3B82F6', paddingLeft: '10px' }}>
+                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, color: '#2563EB' }}>
+                      Chief Complaint & Symptoms
+                    </span>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#1E293B', lineHeight: 1.4 }}>
+                      {selectedPatient.chiefComplaint || 'Generalized weakness and persistent symptoms.'}
+                    </p>
+                  </div>
+                  <div style={{ borderLeft: '3px solid #10B981', paddingLeft: '10px' }}>
+                    <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', fontWeight: 700, color: '#059669' }}>
+                      Clinical / Diagnostic Impression
+                    </span>
+                    <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#1E293B', lineHeight: 1.4, fontWeight: 600 }}>
+                      {editImpression || selectedPatient.diagnosticImpression || 'Under clinical evaluation.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Prescribed Medications (Rx) */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', borderBottom: '1px solid #E2E8F0', paddingBottom: '4px' }}>
+                  <span style={{ fontSize: '1.2rem', fontFamily: 'serif', fontWeight: 800, color: '#2563EB' }}>℞</span>
+                  <strong style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: '#0F172A', letterSpacing: '0.04em' }}>
+                    Prescribed Medications
+                  </strong>
+                </div>
+
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr style={{ background: '#F8FAFC', borderBottom: '1px solid #CBD5E1' }}>
+                      <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>#</th>
+                      <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Medicine Name & Strength</th>
+                      <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Dosage Schedule</th>
+                      <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Duration</th>
+                      <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600, color: '#475569' }}>Instructions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedPatient.prescriptions && selectedPatient.prescriptions.length > 0 ? (
+                      selectedPatient.prescriptions.map((rx, idx) => (
+                        <tr key={idx} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <td style={{ padding: '6px 8px', color: '#64748B' }}>{idx + 1}</td>
+                          <td style={{ padding: '6px 8px', fontWeight: 700, color: '#0F172A' }}>{rx.name || rx.medicine}</td>
+                          <td style={{ padding: '6px 8px', color: '#334155' }}>{rx.dosage || rx.frequency || '1 tablet twice daily'}</td>
+                          <td style={{ padding: '6px 8px', color: '#334155' }}>{rx.duration || '5 Days'}</td>
+                          <td style={{ padding: '6px 8px', color: '#64748B' }}>{rx.instructions || 'After meals with water'}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <>
+                        <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <td style={{ padding: '6px 8px', color: '#64748B' }}>1</td>
+                          <td style={{ padding: '6px 8px', fontWeight: 700, color: '#0F172A' }}>Tab. Paracetamol 650mg</td>
+                          <td style={{ padding: '6px 8px', color: '#334155' }}>1 tablet SOS (when fever &gt; 100°F)</td>
+                          <td style={{ padding: '6px 8px', color: '#334155' }}>3 Days</td>
+                          <td style={{ padding: '6px 8px', color: '#64748B' }}>After meals (Max 3/day)</td>
+                        </tr>
+                        <tr style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <td style={{ padding: '6px 8px', color: '#64748B' }}>2</td>
+                          <td style={{ padding: '6px 8px', fontWeight: 700, color: '#0F172A' }}>Tab. Pantoprazole 40mg</td>
+                          <td style={{ padding: '6px 8px', color: '#334155' }}>1 tablet once daily</td>
+                          <td style={{ padding: '6px 8px', color: '#334155' }}>5 Days</td>
+                          <td style={{ padding: '6px 8px', color: '#64748B' }}>Before breakfast</td>
+                        </tr>
+                      </>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Suggested Diagnostic Scans & Investigations (Mandated by context.txt) */}
+              <div style={{ marginBottom: '1.5rem', background: '#F8FAFC', border: '1.5px dashed #94A3B8', borderRadius: '8px', padding: '1rem 1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <i className="fa-solid fa-file-waveform" style={{ color: '#DC2626', fontSize: '1rem' }}></i>
+                  <strong style={{ fontSize: '0.85rem', textTransform: 'uppercase', color: '#0F172A', letterSpacing: '0.04em' }}>
+                    Suggested Diagnostic Scans & Laboratory Investigations
+                  </strong>
+                </div>
+
+                {selectedScans.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748B', fontStyle: 'italic' }}>
+                    No specialized imaging or investigations suggested at this time. Routine symptomatic management.
+                  </p>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '6px' }}>
+                    {selectedScans.map((scan, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: '#1E293B' }}>
+                        <span style={{ width: '16px', height: '16px', borderRadius: '3px', border: '1.5px solid #0F172A', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800 }}>
+                          ✓
+                        </span>
+                        <strong>{scan}</strong>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ marginTop: '8px', fontSize: '0.72rem', color: '#64748B' }}>
+                  * Please present this slip at the Quantum Care Radiology / Pathology Wing or any NABL-accredited diagnostic laboratory.
+                </div>
+              </div>
+
+              {/* Advice & Lifestyle Guidance */}
+              <div style={{ marginBottom: '1.5rem' }}>
+                <strong style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: '#475569', letterSpacing: '0.04em' }}>
+                  Physician Advice & Follow-Up Directions:
+                </strong>
+                <p style={{ margin: '4px 0 0', fontSize: '0.825rem', color: '#1E293B', lineHeight: 1.5 }}>
+                  {slipDoctorAdvice}
+                </p>
+                <div style={{ marginTop: '6px', fontSize: '0.8rem', fontWeight: 700, color: '#2563EB' }}>
+                  Review Date: 5 days from today with diagnostic scan & blood reports.
+                </div>
+              </div>
+
+              {/* Footer Notice & Signatures */}
+              <div style={{ borderTop: '1px solid #E2E8F0', paddingTop: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '2rem' }}>
+                <div style={{ maxWidth: '420px', fontSize: '0.7rem', color: '#64748B', lineHeight: 1.4 }}>
+                  <strong>Important Notice for Patient:</strong> This physical consultation slip contains your official medical assessment and scan requests. Keep this document safe and upload a scan/photo of it via the Quantum Care webapp or Kiosk prior to your next follow-up appointment for automated AI case updating.
+                </div>
+
+                <div style={{ textAlign: 'center', width: '200px' }}>
+                  <div style={{ height: '40px', borderBottom: '1px solid #0F172A', marginBottom: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <span style={{ fontFamily: 'cursive', fontSize: '1.1rem', color: '#1E293B' }}>Dr. S. Jenkins</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0F172A' }}>
+                    Attending Physician Signature
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: '#64748B' }}>
+                    Verified Digital OPD Registry
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

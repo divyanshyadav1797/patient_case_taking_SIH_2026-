@@ -11,10 +11,12 @@ class VoiceIntakeService {
 
         const formData = new FormData();
 
+        const cleanMimeType = (mimeType || 'audio/webm').split(';')[0].trim().toLowerCase();
+
         formData.append(
             'audio',
             new Blob([buffer], {
-                type: mimeType
+                type: cleanMimeType
             }),
             originalName || 'answer.webm'
         );
@@ -27,7 +29,7 @@ class VoiceIntakeService {
 
         const timeout = setTimeout(() => {
             controller.abort();
-        }, 15000);
+        }, 30000);
 
         try {
             const response = await fetch(

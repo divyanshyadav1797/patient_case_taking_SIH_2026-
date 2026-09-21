@@ -954,3 +954,64 @@
   box-shadow: 0 2px 6px rgba(16, 185, 129, 0.08);
 }
 
+/* ── Mobile Layout Optimization (<650px) ── */
+@media (max-width: 650px) {
+  .kiosk-terminal .ai-intake-container {
+    padding: 12px;
+    margin: 0;
+    width: 100%;
+  }
+
+  .kiosk-terminal .ai-question-title {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    line-height: 1.35;
+  }
+
+  .kiosk-terminal .ai-options-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .kiosk-terminal .ai-option-card {
+    padding: 14px 16px;
+    font-size: 1rem;
+    border-radius: 12px;
+  }
+
+  .kiosk-terminal .ai-custom-input-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .kiosk-terminal .ai-input-field {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1rem;
+  }
+
+  .kiosk-terminal .ai-summary-card {
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .kiosk-terminal .ai-summary-headline {
+    font-size: 1.2rem;
+  }
+
+  .kiosk-terminal .ai-summary-body {
+    font-size: 1rem;
+    line-height: 1.55;
+  }
+
+  .push-to-talk-container {
+    width: 100%;
+  }
+
+  .ptt-btn {
+    width: 100% !important;
+    justify-content: center;
+  }
+}
+
+

@@ -21,14 +21,28 @@ const upload = multer({
     },
 
     fileFilter: (req, file, cb) => {
-        const extMatch = /\.(pdf|jpg|jpeg|png|webp)$/i.test(file.originalname);
-        if (ALLOWED_TYPES.includes(file.mimetype) || extMatch) {
+        const cleanName = (file.originalname || '').trim();
+        // Prevent path traversal
+        if (cleanName.includes('..') || cleanName.includes('/') || cleanName.includes('\\')) {
+            return cb(new Error('Invalid filename detected.'));
+        }
+
+        // Disallow dangerous executable/script extensions anywhere in the filename
+        if (/\.(exe|sh|bat|cmd|js|vbs|php|phtml|py|pl|cgi|jar)$/i.test(cleanName)) {
+            return cb(new Error('Executable and script file uploads are strictly forbidden.'));
+        }
+
+        const extMatch = /\.(pdf|jpg|jpeg|png|webp)$/i.test(cleanName);
+        const baseMime = (file.mimetype || '').split(';')[0].trim().toLowerCase();
+        const mimeMatch = ALLOWED_TYPES.includes(baseMime);
+
+        if (extMatch && mimeMatch) {
             return cb(null, true);
         }
 
         cb(
             new Error(
-                'Only PDF, JPG, PNG and WebP files are supported for clinical document analysis.'
+                'Only valid PDF, JPG, PNG and WebP files are supported for clinical document analysis.'
             )
         );
     }

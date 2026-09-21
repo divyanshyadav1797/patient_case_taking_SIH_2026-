@@ -28,14 +28,6 @@ app.use("/health", healthRoutes);
 
 app.use("/api/v1/intake", intakeRoutes);
 
-app.use((err, req, res, next) => {
-    console.error("SERVER ERROR:", err);
-
-    res.status(500).json({
-        error: "Internal server error."
-    });
-});
-
 app.use(
     "/internal/ai/v1/ocr",
     ocrRoutes
@@ -45,5 +37,14 @@ app.use(
     "/api/v1/voice",
     voiceRoutes
 );
+
+app.use((err, req, res, next) => {
+    console.error("SERVER ERROR:", err);
+
+    res.status(500).json({
+        error: "Internal server error.",
+        details: err?.message || undefined
+    });
+});
 
 export default app;

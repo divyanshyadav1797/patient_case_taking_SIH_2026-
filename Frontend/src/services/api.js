@@ -90,6 +90,19 @@ export const api = {
     });
   },
 
+  async updateDoctor(id, updateData) {
+    return request(`/doctors/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData)
+    });
+  },
+
+  async deleteDoctor(id) {
+    return request(`/doctors/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
   // ── Medical Records ──
   async getRecords(patientId) {
     const qs = patientId ? `?patientId=${encodeURIComponent(patientId)}` : '';
@@ -100,6 +113,19 @@ export const api = {
     return request('/records', {
       method: 'POST',
       body: JSON.stringify(recordData)
+    });
+  },
+
+  async updateRecord(id, updateData) {
+    return request(`/records/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData)
+    });
+  },
+
+  async deleteRecord(id) {
+    return request(`/records/${id}`, {
+      method: 'DELETE'
     });
   },
 
@@ -124,11 +150,65 @@ export const api = {
     });
   },
 
-  async answerAiIntake(sessionId, answerData) {
+  async answerAiIntake(sessionId, answerData, language = 'en', patientId = '') {
+    const payload = typeof answerData === 'string'
+      ? { answer: answerData, language, patientId }
+      : { ...answerData };
+    if (!payload.language && language) payload.language = language;
+    if (!payload.patientId && patientId) payload.patientId = patientId;
     return request(`/ai/intake/${sessionId}/answer`, {
       method: 'POST',
-      body: JSON.stringify(answerData)
+      body: JSON.stringify(payload)
     });
+  },
+
+  async answerAiIntakeVoice(sessionId, audioBlob, language = 'hi', patientId = '') {
+    const session = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const form = new FormData();
+    form.append('audio', audioBlob, 'answer.webm');
+    if (language) form.append('language', language);
+    if (patientId) form.append('patientId', patientId);
+
+    const headers = {};
+    if (session && session.token) {
+      headers['Authorization'] = `Bearer ${session.token}`;
+    }
+
+    const response = await fetch(`${BASE_URL}/ai/intake/${sessionId}/voice-answer`, {
+      method: 'POST',
+      headers,
+      body: form
+    });
+
+    const json = await response.json();
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || json.error?.message || `Voice intake error ${response.status}`);
+    }
+    return json.data !== undefined ? json.data : json;
+  },
+
+  async transcribeVoice(audioBlob, language = 'hi') {
+    const session = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const form = new FormData();
+    form.append('audio', audioBlob, 'speech.webm');
+    if (language) form.append('language', language);
+
+    const headers = {};
+    if (session && session.token) {
+      headers['Authorization'] = `Bearer ${session.token}`;
+    }
+
+    const response = await fetch(`${BASE_URL}/ai/voice/transcribe`, {
+      method: 'POST',
+      headers,
+      body: form
+    });
+
+    const json = await response.json();
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || json.error?.message || `Voice transcription error ${response.status}`);
+    }
+    return json.data !== undefined ? json.data : json;
   },
 
   async getAiIntakeSession(sessionId) {
@@ -196,73 +276,39 @@ export const api = {
     return request('/hospital/stats');
   },
 
-  async uploadMedicalDocument(
-    file,
-    metadata = {}
-  ) {
-    const session =
-      JSON.parse(
-        localStorage.getItem(
-          STORAGE_KEY
-        ) || '{}'
-      );
+  async uploadMedicalDocument(file, metadata = {}) {
+    const session = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    const form = new FormData();
 
-    const form =
-      new FormData();
+    form.append('document', file);
 
-    form.append(
-      'document',
-      file
-    );
-
-    if (metadata.title) {
-      form.append(
-        'title',
-        metadata.title
-      );
-    }
-
-    if (metadata.type) {
-      form.append(
-        'type',
-        metadata.type
-      );
-    }
+    Object.entries(metadata).forEach(([key, val]) => {
+      if (val !== undefined && val !== null && key !== 'file') {
+        form.append(key, val);
+      }
+    });
 
     const headers = {};
-
     if (session.token) {
-      headers.Authorization =
-        `Bearer ${session.token}`;
+      headers.Authorization = `Bearer ${session.token}`;
     }
 
-    const response =
-      await fetch(
-        `${BASE_URL}/records/upload`,
-        {
-          method: 'POST',
+    const response = await fetch(`${BASE_URL}/records/upload`, {
+      method: 'POST',
+      headers,
+      body: form
+    });
 
-          headers,
-
-          body: form
-        }
-      );
-
-    const json =
-      await response.json();
-
-    if (!response.ok ||
-      json.success === false) {
-      throw new Error(
-        json.message ||
-        json.error?.message ||
-        `API error ${response.status}`
-      );
+    const json = await response.json();
+    if (!response.ok || json.success === false) {
+      throw new Error(json.message || json.error?.message || `API error ${response.status}`);
     }
 
-    return json.data !== undefined
-      ? json.data
-      : json;
+    return json.data !== undefined ? json.data : json;
+  },
+
+  async uploadRecord(file, metadata = {}) {
+    return this.uploadMedicalDocument(file, metadata);
   }
 };
 

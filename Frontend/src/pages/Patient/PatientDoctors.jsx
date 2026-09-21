@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../context/PatientContext';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import PushToTalkButton from '../../components/Voice/PushToTalkButton';
 
 export default function PatientDoctors() {
   const [searchParams] = useSearchParams();
@@ -157,6 +158,95 @@ export default function PatientDoctors() {
       };
       setClinicalReport(fallbackReport);
       setModalStep('documents');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleVoiceAnswer = async (audioBlob, liveTranscript = '') => {
+    if (!audioBlob && !liveTranscript) return;
+    setIsAiLoading(true);
+
+    try {
+      let spokenAnswer = (liveTranscript || '').trim();
+
+      // Transcribe via Gemini 3.6 Flash if no live browser transcript was captured
+      if (!spokenAnswer && audioBlob) {
+        const transRes = await api.transcribeVoice(audioBlob, selectedLang);
+        spokenAnswer = (transRes?.transcript || transRes?.englishTranslation || '').trim();
+      }
+
+      if (!spokenAnswer) {
+        showToast('Could not convert voice to text. Please speak clearly or type your answer.');
+        return;
+      }
+
+      // Convert voice to text into the input field for visual feedback
+      setCustomAnswer(spokenAnswer);
+      showToast(`🎤 Voice converted to text: "${spokenAnswer}"`);
+
+      // Progress AI session with the spoken text
+      if (sessionId && sessionId.startsWith('WEB-SES-')) {
+        handleAnswer(spokenAnswer);
+        return;
+      }
+
+      const res = await api.answerAiIntake(
+        sessionId,
+        spokenAnswer,
+        selectedLang,
+        user?.customId || user?.id || ''
+      );
+
+      if (res && res.complete) {
+        setClinicalReport(res.report);
+        setReportId(res.reportId || res.report?.id || res.report?.customId);
+        setModalStep('documents');
+      } else if (res && res.question) {
+        setCurrentQuestion(res.question);
+        setQuestionCount((q) => q + 1);
+        setCustomAnswer('');
+      }
+    } catch (err) {
+      console.warn('[PatientDoctors] Voice answer error, attempting fallback:', err.message);
+      try {
+        if (audioBlob) {
+          const transRes = await api.transcribeVoice(audioBlob, selectedLang);
+          if (transRes && (transRes.englishTranslation || transRes.transcript)) {
+            const txt = transRes.transcript || transRes.englishTranslation;
+            setCustomAnswer(txt);
+            showToast(`🎤 Voice converted to text: "${txt}"`);
+            handleAnswer(txt);
+            return;
+          }
+        }
+      } catch (e2) {
+        // ignore
+      }
+      showToast('Could not process voice audio. Please speak clearly or select an option.');
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleVoiceComplaint = async (audioBlob, liveTranscript = '') => {
+    if (!audioBlob && !liveTranscript) return;
+    setIsAiLoading(true);
+    try {
+      let text = (liveTranscript || '').trim();
+      if (!text && audioBlob) {
+        const res = await api.transcribeVoice(audioBlob, selectedLang);
+        text = (res?.transcript || res?.englishTranslation || '').trim();
+      }
+      if (text) {
+        setComplaint(text);
+        showToast(`🎤 Voice converted to text: "${text}"`);
+      } else {
+        showToast('Speech unclear, please try again.');
+      }
+    } catch (err) {
+      console.warn('[PatientDoctors] Voice complaint error:', err.message);
+      showToast('Voice transcription failed. Please type your symptoms.');
     } finally {
       setIsAiLoading(false);
     }
@@ -593,6 +683,19 @@ export default function PatientDoctors() {
                   }}
                 />
 
+                <div style={{ marginBottom: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#F8FAFC', padding: '10px 14px', borderRadius: '12px', border: '1px solid #E2E8F0' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#475569', fontWeight: 600 }}>
+                    {selectedLang === 'hi' ? '🎤 बोलकर बताएं (Push to Talk):' : '🎤 Describe with voice (Push to Talk):'}
+                  </span>
+                  <PushToTalkButton
+                    onAudioReady={handleVoiceComplaint}
+                    isProcessing={isAiLoading}
+                    language={selectedLang}
+                    compact={true}
+                    label={selectedLang === 'hi' ? 'बोलने के लिए दबाएं (Hold to Talk)' : 'Hold / Tap to Speak'}
+                  />
+                </div>
+
                 <div style={{ marginBottom: '22px' }}>
                   <small style={{ color: '#64748B', display: 'block', marginBottom: '8px', fontWeight: 600 }}>
                     Quick symptom options:
@@ -646,9 +749,25 @@ export default function PatientDoctors() {
                   </div>
                 ) : currentQuestion ? (
                   <div>
-                    <h3 style={{ fontSize: '1.25rem', color: '#0F172A', lineHeight: 1.4, marginBottom: '20px', fontWeight: 700 }}>
+                    <h3 style={{ fontSize: '1.25rem', color: '#0F172A', lineHeight: 1.4, marginBottom: '16px', fontWeight: 700 }}>
                       {currentQuestion.question}
                     </h3>
+
+                    {/* Dedicated Push-to-Talk Voice Bar for Patient Interview Turn */}
+                    <div style={{ margin: '14px 0 18px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#EFF6FF', padding: '16px', borderRadius: '14px', border: '1.5px dashed #93C5FD' }}>
+                      <div style={{ marginBottom: '8px', fontWeight: 700, color: '#1E40AF', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🎙️</span> {selectedLang === 'hi' ? 'बोलकर उत्तर दें (Push to Talk - हिंदी):' : 'Answer with Voice (Push to Talk):'}
+                      </div>
+                      <PushToTalkButton
+                        onAudioReady={handleVoiceAnswer}
+                        isProcessing={isAiLoading}
+                        language={selectedLang}
+                        label={selectedLang === 'hi' ? 'बोलने के लिए दबाकर रखें (Hold or Tap to Speak)' : 'Hold or Tap to Speak'}
+                      />
+                      <small style={{ marginTop: '6px', color: '#475569', fontSize: '0.8rem' }}>
+                        {selectedLang === 'hi' ? 'दबाकर बोलें और छोड़ दें, AI उत्तर रिकॉर्ड करके अगला प्रश्न पूछेगा' : 'Hold to talk and release, AI processes your answer instantly'}
+                      </small>
+                    </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
                       {(currentQuestion.options || []).map((opt) => (
@@ -680,7 +799,7 @@ export default function PatientDoctors() {
                       ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                       <input
                         type="text"
                         placeholder="Or type specific details / duration / allergies..."
@@ -695,6 +814,32 @@ export default function PatientDoctors() {
                           fontSize: '0.9rem',
                           outline: 'none'
                         }}
+                      />
+                      <PushToTalkButton
+                        onAudioReady={async (audioBlob, liveTranscript = '') => {
+                          try {
+                            setIsAiLoading(true);
+                            let text = (liveTranscript || '').trim();
+                            if (!text && audioBlob) {
+                              const tr = await api.transcribeVoice(audioBlob, selectedLang);
+                              text = (tr?.transcript || tr?.englishTranslation || '').trim();
+                            }
+                            if (text) {
+                              setCustomAnswer(text);
+                              showToast(`🎤 Voice converted to text: "${text}"`);
+                            } else {
+                              showToast('Speech unclear, please try again.');
+                            }
+                          } catch (e) {
+                            showToast('Could not process audio');
+                          } finally {
+                            setIsAiLoading(false);
+                          }
+                        }}
+                        isProcessing={isAiLoading}
+                        language={selectedLang}
+                        compact={true}
+                        label="🎙️"
                       />
                       <button
                         type="button"

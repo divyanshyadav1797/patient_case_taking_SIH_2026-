@@ -8,7 +8,29 @@ class ClinicalController {
   // Appointments
   async getAppointments(req, res, next) {
     try {
-      const appointments = await clinicalRepository.getAppointments(req.query);
+      const query = { ...req.query };
+      // User data isolation: Patients can only view their own appointments (matching customId or _id)
+      if (req.user && req.user.role === 'patient') {
+        const pCustom = req.user.customId;
+        const pId = req.user._id ? req.user._id.toString() : null;
+        if (pCustom && pId && pCustom !== pId) {
+          query.$or = [{ patientId: pCustom }, { patientId: pId }];
+          delete query.patientId;
+        } else {
+          query.patientId = pCustom || pId;
+        }
+      } else if (req.user && req.user.role === 'doctor' && !query.patientId && !query.doctorId) {
+        // Doctors default to viewing appointments assigned to them (by doctorId or doctorName)
+        const dCustom = req.user.customId;
+        const dId = req.user._id ? req.user._id.toString() : null;
+        const dName = req.user.name;
+        const orConditions = [];
+        if (dCustom) orConditions.push({ doctorId: dCustom });
+        if (dId) orConditions.push({ doctorId: dId });
+        if (dName) orConditions.push({ doctorName: new RegExp(`^${dName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') });
+        if (orConditions.length > 0) query.$or = orConditions;
+      }
+      const appointments = await clinicalRepository.getAppointments(query);
       return formatSuccess(res, appointments, 'Appointments retrieved successfully');
     } catch (err) {
       next(err);
@@ -17,7 +39,20 @@ class ClinicalController {
 
   async createAppointment(req, res, next) {
     try {
-      const apt = await clinicalRepository.createAppointment(req.body);
+      const payload = { ...req.body };
+      // Input validation
+      if (!payload.date) {
+        return formatError(res, 'Appointment date is required', 400);
+      }
+      // Never trust frontend user IDs for authenticated patients
+      if (req.user && req.user.role === 'patient') {
+        payload.patientId = req.user.customId || req.user._id.toString();
+        payload.patientName = req.user.name;
+      } else if (!payload.patientName && !payload.patientId) {
+        return formatError(res, 'Patient information is required to book an appointment', 400);
+      }
+
+      const apt = await clinicalRepository.createAppointment(payload);
       return formatSuccess(res, apt, 'Appointment booked successfully', 201);
     } catch (err) {
       next(err);
@@ -26,8 +61,18 @@ class ClinicalController {
 
   async updateAppointment(req, res, next) {
     try {
+      const existing = await clinicalRepository.getAppointmentById(req.params.id);
+      if (!existing) return formatError(res, 'Appointment not found', 404);
+
+      // Verify permission: patients can only update their own appointments
+      if (req.user && req.user.role === 'patient') {
+        const userPid = req.user.customId || req.user._id.toString();
+        if (existing.patientId && existing.patientId !== userPid) {
+          return formatError(res, 'You do not have permission to modify this appointment', 403);
+        }
+      }
+
       const updated = await clinicalRepository.updateAppointment(req.params.id, req.body);
-      if (!updated) return formatError(res, 'Appointment not found', 404);
       return formatSuccess(res, updated, 'Appointment updated successfully');
     } catch (err) {
       next(err);
@@ -36,6 +81,17 @@ class ClinicalController {
 
   async deleteAppointment(req, res, next) {
     try {
+      const existing = await clinicalRepository.getAppointmentById(req.params.id);
+      if (!existing) return formatError(res, 'Appointment not found', 404);
+
+      // Verify permission: patients can only delete their own appointments
+      if (req.user && req.user.role === 'patient') {
+        const userPid = req.user.customId || req.user._id.toString();
+        if (existing.patientId && existing.patientId !== userPid) {
+          return formatError(res, 'You do not have permission to cancel this appointment', 403);
+        }
+      }
+
       const deleted = await clinicalRepository.deleteAppointment(req.params.id);
       if (!deleted) return formatError(res, 'Appointment not found', 404);
       return formatSuccess(res, { id: req.params.id }, 'Appointment cancelled successfully');
@@ -60,7 +116,10 @@ class ClinicalController {
 
   async createDoctor(req, res, next) {
     try {
-      const hospitalName = req.body.hospitalName || req.user?.name || req.user?.hospitalDetails?.hospitalName;
+      if (!req.body.name || !req.body.email) {
+        return formatError(res, 'Doctor name and email are required', 400);
+      }
+      const hospitalName = req.body.hospitalName || req.user?.name || req.user?.hospitalDetails?.hospitalName || 'Main Hospital';
       const hospitalId = req.body.hospitalId || req.user?.customId || req.user?._id?.toString();
 
       const doctor = await clinicalRepository.createDoctor({
@@ -74,10 +133,35 @@ class ClinicalController {
     }
   }
 
+  async updateDoctor(req, res, next) {
+    try {
+      const updated = await clinicalRepository.updateDoctor(req.params.id, req.body);
+      if (!updated) return formatError(res, 'Doctor not found', 404);
+      return formatSuccess(res, updated, 'Doctor details updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async deleteDoctor(req, res, next) {
+    try {
+      const deleted = await clinicalRepository.deleteDoctor(req.params.id);
+      if (!deleted) return formatError(res, 'Doctor not found', 404);
+      return formatSuccess(res, { id: req.params.id }, 'Doctor removed successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
   // Medical Records
   async getRecords(req, res, next) {
     try {
-      const records = await clinicalRepository.getRecords(req.query.patientId);
+      let patientId = req.query.patientId;
+      // User data isolation: Force patient's own ID
+      if (req.user && req.user.role === 'patient') {
+        patientId = req.user.customId || req.user._id.toString();
+      }
+      const records = await clinicalRepository.getRecords(patientId);
       return formatSuccess(res, records, 'Medical records retrieved successfully');
     } catch (err) {
       next(err);
@@ -86,8 +170,35 @@ class ClinicalController {
 
   async createRecord(req, res, next) {
     try {
-      const record = await clinicalRepository.createRecord(req.body);
+      const payload = { ...req.body };
+      if (!payload.title) {
+        return formatError(res, 'Medical record title is required', 400);
+      }
+      if (req.user && req.user.role === 'patient') {
+        payload.patientId = req.user.customId || req.user._id.toString();
+      }
+      const record = await clinicalRepository.createRecord(payload);
       return formatSuccess(res, record, 'Medical record uploaded successfully', 201);
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async updateRecord(req, res, next) {
+    try {
+      const updated = await clinicalRepository.updateRecord(req.params.id, req.body);
+      if (!updated) return formatError(res, 'Medical record not found', 404);
+      return formatSuccess(res, updated, 'Medical record updated successfully');
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async deleteRecord(req, res, next) {
+    try {
+      const deleted = await clinicalRepository.deleteRecord(req.params.id);
+      if (!deleted) return formatError(res, 'Medical record not found', 404);
+      return formatSuccess(res, { id: req.params.id }, 'Medical record deleted successfully');
     } catch (err) {
       next(err);
     }
@@ -96,7 +207,11 @@ class ClinicalController {
   // Prescriptions
   async getPrescriptions(req, res, next) {
     try {
-      const rxs = await clinicalRepository.getPrescriptions(req.query);
+      const query = { ...req.query };
+      if (req.user && req.user.role === 'patient') {
+        query.patientId = req.user.customId || req.user._id.toString();
+      }
+      const rxs = await clinicalRepository.getPrescriptions(query);
       return formatSuccess(res, rxs, 'Prescriptions retrieved successfully');
     } catch (err) {
       next(err);
@@ -105,7 +220,18 @@ class ClinicalController {
 
   async createPrescription(req, res, next) {
     try {
-      const rx = await clinicalRepository.createPrescription(req.body);
+      const payload = { ...req.body };
+      if (!payload.patientId && !payload.patient) {
+        return formatError(res, 'Patient identifier or name is required', 400);
+      }
+      if (!payload.medicines && !payload.medicine) {
+        return formatError(res, 'Prescribed medicine details are required', 400);
+      }
+      if (req.user && req.user.role === 'doctor') {
+        payload.doctorId = req.user.customId || req.user._id.toString();
+        payload.doctorName = req.user.name;
+      }
+      const rx = await clinicalRepository.createPrescription(payload);
       return formatSuccess(res, rx, 'Prescription issued successfully', 201);
     } catch (err) {
       next(err);
@@ -115,7 +241,11 @@ class ClinicalController {
   // AI Clinical Reports
   async getClinicalReports(req, res, next) {
     try {
-      const reports = await clinicalRepository.getClinicalReports(req.query.patientId);
+      let patientId = req.query.patientId;
+      if (req.user && req.user.role === 'patient') {
+        patientId = req.user.customId || req.user._id.toString();
+      }
+      const reports = await clinicalRepository.getClinicalReports(patientId);
       return formatSuccess(res, reports, 'Clinical reports retrieved successfully');
     } catch (err) {
       next(err);
@@ -126,6 +256,14 @@ class ClinicalController {
     try {
       const report = await clinicalRepository.getClinicalReportById(req.params.id);
       if (!report) return formatError(res, 'Clinical report not found', 404);
+
+      // Verify patient data isolation
+      if (req.user && req.user.role === 'patient') {
+        const userPid = req.user.customId || req.user._id.toString();
+        if (report.patientId && report.patientId !== userPid) {
+          return formatError(res, 'You do not have permission to view this clinical report', 403);
+        }
+      }
       return formatSuccess(res, report, 'Clinical report details');
     } catch (err) {
       next(err);
@@ -154,7 +292,14 @@ class ClinicalController {
   // Comprehensive Medical History Timeline
   async getPatientHistory(req, res, next) {
     try {
-      const patientId = req.params.patientId || req.query.patientId || (req.user && (req.user.customId || req.user._id));
+      let patientId = req.params.patientId || req.query.patientId;
+      if (req.user && req.user.role === 'patient') {
+        const userPid = req.user.customId || req.user._id.toString();
+        if (patientId && patientId !== userPid) {
+          return formatError(res, 'Access denied: You cannot view another patient\'s medical history', 403);
+        }
+        patientId = userPid;
+      }
       if (!patientId) return formatError(res, 'patientId parameter is required', 400);
       const history = await clinicalRepository.getMedicalHistory(patientId);
       const aiMedicalHistorySummary = await aiIntakeService.generateMedicalHistorySummary(patientId);
@@ -167,7 +312,14 @@ class ClinicalController {
   // AI Longitudinal Medical History Summary (Synthesizes all previous reports for doctor review)
   async getAiMedicalHistorySummary(req, res, next) {
     try {
-      const patientId = req.params.patientId || req.query.patientId || (req.user && (req.user.customId || req.user._id));
+      let patientId = req.params.patientId || req.query.patientId;
+      if (req.user && req.user.role === 'patient') {
+        const userPid = req.user.customId || req.user._id.toString();
+        if (patientId && patientId !== userPid) {
+          return formatError(res, 'Access denied: You cannot view another patient\'s medical history', 403);
+        }
+        patientId = userPid;
+      }
       if (!patientId) return formatError(res, 'patientId parameter is required', 400);
       const summary = await aiIntakeService.generateMedicalHistorySummary(patientId, req.query.currentComplaint);
       return formatSuccess(res, summary, 'AI Medical history summary synthesized from previous reports');
@@ -179,11 +331,15 @@ class ClinicalController {
   // AI Intake Session Endpoints
   async startAiIntake(req, res, next) {
     try {
-      const session = await aiIntakeService.startIntake({
-        ...req.body,
-        patientId: req.body.patientId || (req.user && (req.user.customId || req.user._id)),
-        patientName: req.body.patientName || (req.user && req.user.name)
-      });
+      const payload = { ...req.body };
+      if (!payload.chiefComplaint || typeof payload.chiefComplaint !== 'string' || !payload.chiefComplaint.trim()) {
+        return formatError(res, 'chiefComplaint is required to start AI intake interview', 400);
+      }
+      if (req.user && req.user.role === 'patient') {
+        payload.patientId = req.user.customId || req.user._id.toString();
+        payload.patientName = req.user.name;
+      }
+      const session = await aiIntakeService.startIntake(payload);
       return formatSuccess(res, session, 'AI intake session started', 201);
     } catch (err) {
       next(err);
@@ -192,7 +348,8 @@ class ClinicalController {
 
   async answerAiIntake(req, res, next) {
     try {
-      const result = await aiIntakeService.answerIntake(req.params.sessionId, req.body);
+      const payload = typeof req.body === 'string' ? { answer: req.body } : (req.body || {});
+      const result = await aiIntakeService.answerIntake(req.params.sessionId, payload);
       return formatSuccess(res, result, result.complete ? 'Clinical report synthesized and saved' : 'Next question generated');
     } catch (err) {
       next(err);
@@ -237,6 +394,7 @@ class ClinicalController {
       next(err);
     }
   }
+
   async uploadAndProcessRecord(req, res, next) {
     try {
       if (!req.file) {
@@ -247,12 +405,12 @@ class ClinicalController {
         );
       }
 
-      const patientId =
-        req.body?.patientId ||
-        req.query?.patientId ||
-        req.user?.customId ||
-        req.user?._id?.toString() ||
-        'P-10249';
+      let patientId;
+      if (req.user && req.user.role === 'patient') {
+        patientId = req.user.customId || req.user._id.toString();
+      } else {
+        patientId = req.body?.patientId || req.query?.patientId || `KIOSK-${Date.now()}`;
+      }
 
       const fs = require('fs');
       const path = require('path');
@@ -439,20 +597,25 @@ class ClinicalController {
           languageHint: req.body.language
         });
 
-      const transcript =
+      let transcript =
         transcription?.data?.transcript ||
         transcription?.transcript ||
         '';
 
-      const englishAnswer =
+      let englishAnswer =
         transcription?.data?.englishTranslation ||
         transcription?.englishTranslation ||
         transcript;
 
+      if (!transcript.trim() && (req.body.fallbackAnswer || req.body.answer)) {
+        transcript = String(req.body.fallbackAnswer || req.body.answer).trim();
+        englishAnswer = transcript;
+      }
+
       if (!transcript.trim()) {
         return formatError(
           res,
-          'Could not understand the audio',
+          'Could not understand the audio. Please speak clearly and try again.',
           422
         );
       }
@@ -468,8 +631,7 @@ class ClinicalController {
               transcription?.data?.detectedLanguage ||
               transcription?.detectedLanguage ||
               req.body.language ||
-              'unknown',
-            patientId
+              'hi'
           }
         );
 
@@ -478,15 +640,12 @@ class ClinicalController {
         {
           transcript,
           englishAnswer,
-
           detectedLanguage:
             transcription?.data?.detectedLanguage ||
             transcription?.detectedLanguage ||
             req.body.language ||
-            'unknown',
-
+            'hi',
           answerMethod: 'voice',
-
           ...result
         },
         result.complete
@@ -494,6 +653,49 @@ class ClinicalController {
           : 'Voice answer processed and next question generated'
       );
 
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async transcribeVoice(req, res, next) {
+    try {
+      if (!req.file) {
+        return formatError(res, 'Audio file is required', 400);
+      }
+
+      const transcription = await voiceIntakeService.transcribeAudio({
+        buffer: req.file.buffer,
+        mimeType: req.file.mimetype,
+        originalName: req.file.originalname,
+        languageHint: req.body.language || 'hi'
+      });
+
+      const transcript =
+        transcription?.data?.transcript ||
+        transcription?.transcript ||
+        '';
+
+      const englishTranslation =
+        transcription?.data?.englishTranslation ||
+        transcription?.englishTranslation ||
+        transcript;
+
+      const detectedLanguage =
+        transcription?.data?.detectedLanguage ||
+        transcription?.detectedLanguage ||
+        req.body.language ||
+        'hi';
+
+      return formatSuccess(
+        res,
+        {
+          transcript,
+          englishTranslation,
+          detectedLanguage
+        },
+        'Voice transcribed successfully'
+      );
     } catch (err) {
       next(err);
     }

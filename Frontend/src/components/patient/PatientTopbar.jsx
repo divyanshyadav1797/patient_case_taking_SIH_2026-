@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { usePatient } from '../../context/PatientContext';
+import ThemeToggle from '../ThemeToggle';
 
 export default function PatientTopbar() {
   const { user } = useAuth();
@@ -54,6 +55,7 @@ export default function PatientTopbar() {
       </div>
 
       <div className="header-actions">
+        <ThemeToggle />
         <button
           className="notification-btn"
           id="notificationBtn"
