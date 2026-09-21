@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDoctor } from '../../context/DoctorContext';
 import api from '../../services/api';
 
-export default function Modals() {
+export default function DoctorModals() {
   const navigate = useNavigate();
   const {
     isCreateRxOpen,
@@ -19,14 +19,15 @@ export default function Modals() {
     isSupportModalOpen,
     setIsSupportModalOpen,
     patients,
+    selectedPatient,
     setSelectedPatient,
     showToast
   } = useDoctor();
 
   // Create Prescription Form state
   const [rxForm, setRxForm] = useState({
-    patient: 'Rahul Mehta',
-    patientId: 'P1001',
+    patient: '',
+    patientId: '',
     medicine: '',
     dosage: '',
     frequency: 'Twice daily',
@@ -35,7 +36,7 @@ export default function Modals() {
   });
 
   // Reschedule Form state
-  const [reschedDate, setReschedDate] = useState('2026-09-13');
+  const [reschedDate, setReschedDate] = useState('2026-09-22');
   const [reschedTime, setReschedTime] = useState('09:30 AM');
 
   // Support Form state
@@ -44,6 +45,33 @@ export default function Modals() {
 
   // AI Medical History Summary for active appointment consultation
   const [aptAiSummary, setAptAiSummary] = useState(null);
+
+  // Sync default patient into prescription form when opened
+  useEffect(() => {
+    if (isCreateRxOpen) {
+      const activePatient = selectedPatient || (patients && patients.length > 0 ? patients[0] : null);
+      setRxForm((prev) => ({
+        ...prev,
+        patient: activePatient?.name || prev.patient || 'Patient',
+        patientId: activePatient?.id || prev.patientId || 'P1001'
+      }));
+    }
+  }, [isCreateRxOpen, selectedPatient, patients]);
+
+  // Global ESC key listener to close active modal
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsCreateRxOpen(false);
+        setRescheduleData(null);
+        setPreviewDoc(null);
+        setAptDetail(null);
+        setIsSupportModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setIsCreateRxOpen, setRescheduleData, setPreviewDoc, setAptDetail, setIsSupportModalOpen]);
 
   useEffect(() => {
     if (aptDetail && (aptDetail.patientId || aptDetail.patient)) {
@@ -69,26 +97,34 @@ export default function Modals() {
     const patientObj = patients.find((p) => p.name === rxForm.patient);
     addPrescription({
       patient: rxForm.patient,
-      patientId: patientObj ? patientObj.id : 'P1001',
-      diagnosis: 'Clinical Consultation',
-      medicines: `${rxForm.medicine} (${rxForm.dosage}) - ${rxForm.frequency} (${rxForm.duration})`
+      patientName: rxForm.patient,
+      patientId: patientObj ? patientObj.id : (rxForm.patientId || selectedPatient?.id || 'P-10249'),
+      diagnosis: selectedPatient?.diagnosticImpression || selectedPatient?.chiefComplaint || 'Clinical Consultation',
+      medicine: rxForm.medicine,
+      dosage: rxForm.dosage,
+      frequency: rxForm.frequency,
+      duration: rxForm.duration,
+      instructions: rxForm.instructions
     });
 
     setRxForm({
-      patient: 'Rahul Mehta',
-      patientId: 'P1001',
+      patient: selectedPatient?.name || (patients[0]?.name || ''),
+      patientId: selectedPatient?.id || (patients[0]?.id || ''),
       medicine: '',
       dosage: '',
       frequency: 'Twice daily',
       duration: '',
       instructions: ''
     });
+
+    setIsCreateRxOpen(false);
   };
 
   const handleRescheduleSubmit = (e) => {
     e.preventDefault();
     if (rescheduleData) {
       rescheduleAppointment(rescheduleData.appointmentId, reschedDate, reschedTime);
+      setRescheduleData(null);
     }
   };
 
@@ -104,15 +140,50 @@ export default function Modals() {
     setIsSupportModalOpen(false);
   };
 
+  // Shared inline style for bulletproof modal overlays
+  const backdropOverlayStyle = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 9999,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(15, 23, 42, 0.65)',
+    backdropFilter: 'blur(4px)',
+    WebkitBackdropFilter: 'blur(4px)',
+    opacity: 1,
+    pointerEvents: 'auto',
+    padding: '20px'
+  };
+
   return (
     <>
       {/* 1. Modal: Create Prescription */}
       {isCreateRxOpen && (
-        <div className="modal-backdrop open" id="modalCreatePrescription" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalCreatePrescription"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsCreateRxOpen(false);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalPrescriptionTitle">Create Prescription</h3>
-              <button type="button" className="modal-close-btn" onClick={() => setIsCreateRxOpen(false)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsCreateRxOpen(false)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <form onSubmit={handleCreateRxSubmit}>
               <div className="modal-body">
@@ -122,7 +193,14 @@ export default function Modals() {
                     id="rxPatientSelect"
                     className="form-control"
                     value={rxForm.patient}
-                    onChange={(e) => setRxForm({ ...rxForm, patient: e.target.value })}
+                    onChange={(e) => {
+                      const selectedP = patients.find((p) => p.name === e.target.value);
+                      setRxForm({
+                        ...rxForm,
+                        patient: e.target.value,
+                        patientId: selectedP ? selectedP.id : rxForm.patientId
+                      });
+                    }}
                     required
                   >
                     {patients.map((p) => (
@@ -207,11 +285,30 @@ export default function Modals() {
 
       {/* 2. Modal: Reschedule Appointment */}
       {rescheduleData && (
-        <div className="modal-backdrop open" id="modalReschedule" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalReschedule"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setRescheduleData(null);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalRescheduleTitle">Reschedule Appointment</h3>
-              <button type="button" className="modal-close-btn" onClick={() => setRescheduleData(null)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setRescheduleData(null)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <form onSubmit={handleRescheduleSubmit}>
               <div className="modal-body">
@@ -257,56 +354,380 @@ export default function Modals() {
         </div>
       )}
 
-      {/* 3. Modal: Document Preview */}
-      {previewDoc && (
-        <div className="modal-backdrop open" id="modalDocPreview" role="dialog" aria-modal="true">
-          <div className="modal-box">
-            <div className="modal-header">
-              <h3 className="modal-title" id="modalDocTitle">Document Preview</h3>
-              <button type="button" className="modal-close-btn" onClick={() => setPreviewDoc(null)}>&times;</button>
-            </div>
-            <div className="modal-body">
-              <div style={{ backgroundColor: '#F8FAFC', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)', padding: '32px', textAlign: 'center' }}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" strokeWidth="1.8" style={{ marginBottom: '12px' }}>
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" y1="13" x2="8" y2="13" />
-                  <line x1="16" y1="17" x2="8" y2="17" />
-                </svg>
-                <h4 style={{ fontSize: '1.1rem', color: 'var(--text-dark)', marginBottom: '6px' }}>
-                  {previewDoc.title || 'Clinical Diagnostic Document'}
-                </h4>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                  Patient: {previewDoc.patient || 'Patient'} · {previewDoc.date || 'Verified Record'} · Uploaded by: {previewDoc.uploadedBy || 'Clinical Labs'}
-                </p>
+      {/* 3. Modal: Document Preview & AI OCR Clinical Summary */}
+      {previewDoc && (() => {
+        const resolveDocUrl = (doc) => {
+          if (!doc) return '';
+          if (doc.imageData && doc.imageData.startsWith('data:')) return doc.imageData;
+          const url = doc.fileUrl || doc.previewUrl;
+          if (!url) return '';
+          if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+          return url.startsWith('/') ? url : `/${url}`;
+        };
+
+        const docUrl = resolveDocUrl(previewDoc);
+        const fileName = (previewDoc.file || previewDoc.title || '').toLowerCase();
+        const isImg = Boolean(
+          previewDoc.imageData ||
+          previewDoc.mimeType?.startsWith('image/') ||
+          fileName.endsWith('.png') ||
+          fileName.endsWith('.jpg') ||
+          fileName.endsWith('.jpeg') ||
+          fileName.endsWith('.webp')
+        );
+        const isPdf = Boolean(previewDoc.mimeType?.includes('pdf') || fileName.endsWith('.pdf'));
+
+        const ocr = previewDoc.ocrData || {};
+        const diagnoses = Array.isArray(ocr.diagnoses) ? ocr.diagnoses : [];
+        const medications = Array.isArray(ocr.medications) ? ocr.medications : [];
+        const investigations = Array.isArray(ocr.investigations) ? ocr.investigations : [];
+        const warnings = Array.isArray(ocr.warnings) ? ocr.warnings : [];
+        const summaryText = previewDoc.aiSummary || ocr.summary || 'Clinical document cataloged in electronic medical history. Physical record verified by health center.';
+
+        return (
+          <div
+            className="modal-backdrop open active doctor-modal-backdrop"
+            id="modalDocPreview"
+            role="dialog"
+            aria-modal="true"
+            style={{ ...backdropOverlayStyle, zIndex: 100000 }}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setPreviewDoc(null);
+            }}
+          >
+            <div
+              className="modal-box doctor-modal-box"
+              style={{ maxWidth: '920px', width: '95vw', maxHeight: '90vh', overflowY: 'auto' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="modal-header" style={{ borderBottom: '1px solid #E2E8F0', paddingBottom: '14px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      background: '#EFF6FF',
+                      color: '#2563EB',
+                      padding: '3px 9px',
+                      borderRadius: '12px',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.5px'
+                    }}>
+                      <i className="fa-solid fa-file-medical"></i>
+                      {(previewDoc.type || 'Clinical Document').toUpperCase()}
+                    </span>
+                    <span style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      background: '#F0FDF4',
+                      color: '#16A34A',
+                      padding: '3px 8px',
+                      borderRadius: '12px',
+                      fontSize: '0.72rem',
+                      fontWeight: 600
+                    }}>
+                      <i className="fa-solid fa-circle-check"></i> OCR ANALYZED
+                    </span>
+                  </div>
+                  <h3 className="modal-title" style={{ fontSize: '1.25rem', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                    {previewDoc.title || 'Clinical Diagnostic Document'}
+                  </h3>
+                  <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: '#64748B' }}>
+                    Patient: <strong>{previewDoc.patient || 'Verified Patient'}</strong> · Date: {previewDoc.date || 'Recent'} · Facility / Lab: {previewDoc.hospital || previewDoc.doctor || 'SMS Hospital Diagnostics'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={() => setPreviewDoc(null)}
+                  aria-label="Close"
+                  style={{ fontSize: '1.5rem', background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                >
+                  &times;
+                </button>
+              </div>
+
+              <div className="modal-body" style={{ padding: '20px 0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Two-Column Grid: Visual Document Left, AI OCR Summary Right */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(280px, 1fr) minmax(320px, 1.25fr)',
+                  gap: '20px',
+                  alignItems: 'start'
+                }}>
+                  {/* Visual Document / Photo Inspection Column */}
+                  <div style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', letterSpacing: '0.5px' }}>
+                        <i className="fa-solid fa-image" style={{ marginRight: '6px' }}></i>
+                        DOCUMENT PHOTO / FILE
+                      </span>
+                      {docUrl && (
+                        <a
+                          href={docUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: '0.75rem', color: '#2563EB', textDecoration: 'none', fontWeight: 600 }}
+                        >
+                          Open Full Resolution <i className="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                      )}
+                    </div>
+
+                    <div style={{
+                      minHeight: '260px',
+                      background: '#FFFFFF',
+                      border: '1px dashed #CBD5E1',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      position: 'relative'
+                    }}>
+                      {isImg && docUrl ? (
+                        <img
+                          src={docUrl}
+                          alt={previewDoc.title}
+                          style={{
+                            maxWidth: '100%',
+                            maxHeight: '340px',
+                            objectFit: 'contain',
+                            display: 'block'
+                          }}
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
+                          }}
+                        />
+                      ) : isPdf && docUrl ? (
+                        <div style={{ textAlign: 'center', padding: '24px' }}>
+                          <i className="fa-solid fa-file-pdf" style={{ fontSize: '3rem', color: '#EF4444', marginBottom: '12px' }}></i>
+                          <h5 style={{ margin: '0 0 6px', color: '#1E293B', fontSize: '0.95rem' }}>PDF Diagnostic Report</h5>
+                          <p style={{ margin: '0 0 14px', fontSize: '0.78rem', color: '#64748B' }}>Digital vector / scanned document</p>
+                          <a
+                            href={docUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-primary btn-sm"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}
+                          >
+                            <i className="fa-solid fa-eye"></i> View PDF In New Tab
+                          </a>
+                        </div>
+                      ) : (
+                        <div style={{ textAlign: 'center', padding: '24px' }}>
+                          <i className="fa-solid fa-file-waveform" style={{ fontSize: '2.8rem', color: '#3B82F6', marginBottom: '10px' }}></i>
+                          <h5 style={{ margin: '0 0 4px', color: '#1E293B', fontSize: '0.9rem' }}>{previewDoc.title}</h5>
+                          <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748B' }}>Verified Hospital Clinical Record ({previewDoc.size || 'Verified'})</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.75rem', color: '#64748B' }}>
+                      <span>Format: {previewDoc.mimeType || (isImg ? 'Image (JPG/PNG)' : 'PDF')}</span>
+                      <span>Size: {previewDoc.size || 'Standard'}</span>
+                    </div>
+                  </div>
+
+                  {/* AI OCR Clinical Summary Column */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{
+                      background: '#F0FDF4',
+                      border: '1px solid #BBF7D0',
+                      borderRadius: '10px',
+                      padding: '14px'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <i className="fa-solid fa-robot" style={{ color: '#16A34A', fontSize: '1rem' }}></i>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#166534', letterSpacing: '0.5px' }}>
+                          AI OCR CLINICAL EXTRACTION & SUMMARY
+                        </span>
+                      </div>
+                      <div style={{
+                        fontSize: '0.84rem',
+                        lineHeight: '1.55',
+                        color: '#1E293B',
+                        whiteSpace: 'pre-line',
+                        maxHeight: '220px',
+                        overflowY: 'auto',
+                        paddingRight: '4px'
+                      }}>
+                        {summaryText}
+                      </div>
+                    </div>
+
+                    {/* Diagnoses Identified */}
+                    {diagnoses.length > 0 && (
+                      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>
+                          <i className="fa-solid fa-stethoscope" style={{ marginRight: '6px', color: '#2563EB' }}></i>
+                          DOCUMENTED DIAGNOSES / FINDINGS
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {diagnoses.map((d, idx) => (
+                            <span key={idx} style={{
+                              background: '#EFF6FF',
+                              color: '#1D4ED8',
+                              border: '1px solid #DBEAFE',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              fontSize: '0.78rem',
+                              fontWeight: 600
+                            }}>
+                              {d}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Identified Medications */}
+                    {medications.length > 0 && (
+                      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>
+                          <i className="fa-solid fa-pills" style={{ marginRight: '6px', color: '#059669' }}></i>
+                          EXTRACTED MEDICATIONS & REGIMEN
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {medications.map((m, idx) => (
+                            <div key={idx} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              fontSize: '0.78rem',
+                              padding: '6px 8px',
+                              background: '#F8FAFC',
+                              borderRadius: '6px'
+                            }}>
+                              <strong>{m.name || 'Medicine'} {m.strength ? `(${m.strength})` : ''}</strong>
+                              <span style={{ color: '#64748B' }}>{m.dosage || ''} {m.frequency || ''} {m.duration ? `· ${m.duration}` : ''}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Investigations / Lab Values */}
+                    {investigations.length > 0 && (
+                      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '10px', padding: '12px' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#475569', marginBottom: '8px' }}>
+                          <i className="fa-solid fa-flask-vial" style={{ marginRight: '6px', color: '#7C3AED' }}></i>
+                          LABORATORY INVESTIGATION VALUES
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {investigations.map((t, idx) => (
+                            <div key={idx} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              fontSize: '0.78rem',
+                              padding: '6px 8px',
+                              background: t.abnormalAsReported ? '#FEF2F2' : '#F8FAFC',
+                              borderLeft: t.abnormalAsReported ? '3px solid #EF4444' : '3px solid #10B981',
+                              borderRadius: '4px'
+                            }}>
+                              <div>
+                                <strong>{t.name}</strong>
+                                {t.referenceRange && <small style={{ color: '#64748B', display: 'block' }}>Ref: {t.referenceRange}</small>}
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontWeight: 700, color: t.abnormalAsReported ? '#DC2626' : '#1E293B' }}>
+                                  {t.value} {t.unit || ''}
+                                </span>
+                                {t.abnormalAsReported && (
+                                  <span style={{ display: 'block', fontSize: '0.68rem', color: '#DC2626', fontWeight: 700 }}>
+                                    ABNORMAL
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Warnings */}
+                    {warnings.length > 0 && (
+                      <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: '8px', padding: '10px 12px' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#92400E' }}>
+                          <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '6px' }}></i>
+                          CLINICAL ADVISORY
+                        </span>
+                        <ul style={{ margin: '4px 0 0', paddingLeft: '18px', fontSize: '0.78rem', color: '#78350F' }}>
+                          {warnings.map((w, idx) => <li key={idx}>{w}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-footer" style={{ borderTop: '1px solid #E2E8F0', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ fontSize: '0.78rem', color: '#64748B' }}>
+                  <i className="fa-solid fa-shield-halved" style={{ marginRight: '5px', color: '#16A34A' }}></i>
+                  HIPAA & EHR Compliant Digital Record
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="button" className="btn-outline" onClick={() => setPreviewDoc(null)}>
+                    Close
+                  </button>
+                  {docUrl && (
+                    <a
+                      href={docUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary"
+                      style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <i className="fa-solid fa-arrow-up-right-from-square"></i> Open Original File
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button type="button" className="btn-outline" onClick={() => setPreviewDoc(null)}>Close</button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => {
-                  showToast(`Downloading "${previewDoc.title || 'Document'}.pdf"...`);
-                  setPreviewDoc(null);
-                }}
-              >
-                Download Document
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 4. Modal: Appointment / OT Details */}
       {aptDetail && (
-        <div className="modal-backdrop open" id="modalAptDetails" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalAptDetails"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setAptDetail(null);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalAptTitle">
                 {aptDetail.category === 'operation' ? 'Surgical Procedure Details' : 'Appointment Details'}
               </h3>
-              <button type="button" className="modal-close-btn" onClick={() => setAptDetail(null)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setAptDetail(null)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <div className="modal-body">
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -381,7 +802,7 @@ export default function Modals() {
                   const p = patients.find((pat) => pat.id === aptDetail.patientId || pat.name === aptDetail.patient);
                   if (p) setSelectedPatient(p);
                   setAptDetail(null);
-                  navigate('/patients');
+                  navigate('/doctor/patients', { state: { viewProfile: true, patientId: aptDetail.patientId } });
                 }}
               >
                 View Patient Profile
@@ -392,7 +813,10 @@ export default function Modals() {
                   className="btn-primary"
                   onClick={() => {
                     showToast(`Consultation started with ${aptDetail.patient}`);
+                    const p = patients.find((pat) => pat.id === aptDetail.patientId || pat.name === aptDetail.patient);
+                    if (p) setSelectedPatient(p);
                     setAptDetail(null);
+                    navigate('/doctor/patients', { state: { viewProfile: true, patientId: aptDetail.patientId } });
                   }}
                 >
                   Start Consultation
@@ -405,11 +829,30 @@ export default function Modals() {
 
       {/* 5. Modal: Contact Support */}
       {isSupportModalOpen && (
-        <div className="modal-backdrop open" id="modalContactSupport" role="dialog" aria-modal="true">
-          <div className="modal-box">
+        <div
+          className="modal-backdrop open active doctor-modal-backdrop"
+          id="modalContactSupport"
+          role="dialog"
+          aria-modal="true"
+          style={backdropOverlayStyle}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsSupportModalOpen(false);
+          }}
+        >
+          <div
+            className="modal-box doctor-modal-box"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="modal-header">
               <h3 className="modal-title" id="modalSupportTitle">Contact Support Desk</h3>
-              <button type="button" className="modal-close-btn" onClick={() => setIsSupportModalOpen(false)}>&times;</button>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setIsSupportModalOpen(false)}
+                aria-label="Close"
+              >
+                &times;
+              </button>
             </div>
             <form onSubmit={handleSupportSubmit}>
               <div className="modal-body">

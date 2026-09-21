@@ -15,12 +15,67 @@ const MedicalRecordSchema = new mongoose.Schema({
   },
   file: { type: String, default: 'report.pdf' },
   fileUrl: { type: String },
-  size: { type: String, default: '1.5 MB' },
+  previewUrl: { type: String },
+  mimeType: { type: String, default: 'application/pdf' },
+  imageData: { type: String }, // Base64 Data URI for fast photo preview
+  aiSummary: { type: String, default: '' },
+  size: { type: String, default: '20 MB' },
   ocrData: {
     rawText: { type: String, default: '' },
-    summary: { type: String, default: '' },
-    parsedValues: { type: mongoose.Schema.Types.Mixed, default: {} },
-    scannedAt: { type: Date }
+
+    documentType: {
+      type: String,
+      default: 'unknown'
+    },
+
+    summary: {
+      type: String,
+      default: ''
+    },
+
+    parsedValues: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
+
+    diagnoses: {
+      type: [String],
+      default: []
+    },
+
+    medications: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: []
+    },
+
+    investigations: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: []
+    },
+
+    warnings: {
+      type: [String],
+      default: []
+    },
+
+    status: {
+      type: String,
+      enum: [
+        'NOT_PROCESSED',
+        'PROCESSING',
+        'PROCESSED',
+        'REVIEW_REQUIRED',
+        'RED_FLAG_REVIEW',
+        'FLAGGED',
+        'CONFIRMED',
+        'FAILED'
+      ],
+      default: 'NOT_PROCESSED'
+    },
+
+    scannedAt: {
+      type: Date
+    }
   }
 }, {
   timestamps: true

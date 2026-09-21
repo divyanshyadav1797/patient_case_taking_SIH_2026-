@@ -183,6 +183,44 @@ class AuthController {
       return errorResponse(res, err.message, 500);
     }
   }
+
+  /**
+   * POST /api/v1/auth/kiosk/patient-auth
+   * Authorize patient at kiosk terminal via Aadhaar + 4-digit PIN
+   */
+  async kioskPatientAuth(req, res, next) {
+    try {
+      const { aadhaar, pin } = req.body;
+      const result = await authService.kioskPatientAuth(aadhaar, pin);
+      if (!result.found) {
+        return successResponse(res, result, result.message, 200);
+      }
+      if (!result.authenticated) {
+        return errorResponse(res, result.message, 401, { found: true, authenticated: false });
+      }
+      return successResponse(res, result, result.message, 200);
+    } catch (err) {
+      return errorResponse(res, err.message, 400);
+    }
+  }
+
+  /**
+   * POST /api/v1/auth/kiosk/fast-register
+   * Rapid patient registration from kiosk (name, aadhaar, pin only)
+   */
+  async kioskFastRegister(req, res, next) {
+    try {
+      const { fullName, name, aadhaar, pin } = req.body;
+      const result = await authService.kioskFastRegister({
+        fullName: fullName || name,
+        aadhaar,
+        pin
+      });
+      return successResponse(res, result, result.message, 201);
+    } catch (err) {
+      return errorResponse(res, err.message, 400);
+    }
+  }
 }
 
 module.exports = new AuthController();

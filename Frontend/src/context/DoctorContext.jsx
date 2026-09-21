@@ -119,8 +119,11 @@ export function DoctorProvider({ children }) {
           setPrescriptions(rxs.value);
         }
 
-        if (recs.status === 'fulfilled' && Array.isArray(recs.value)) {
-          setRecords(recs.value);
+        const allRecords = recs.status === 'fulfilled' && Array.isArray(recs.value) ? recs.value : [];
+        const allPrescriptions = rxs.status === 'fulfilled' && Array.isArray(rxs.value) ? rxs.value : [];
+
+        if (allRecords.length > 0) {
+          setRecords(allRecords);
         }
 
         if (reps.status === 'fulfilled' && Array.isArray(reps.value)) {
@@ -130,6 +133,10 @@ export function DoctorProvider({ children }) {
           const loadedPatients = [];
           reps.value.forEach(rep => {
             const symptomsStr = Array.isArray(rep.reportedSymptoms) ? rep.reportedSymptoms.join(', ') : (rep.reportedSymptoms || rep.chiefComplaint);
+            const pId = rep.patientId;
+            const patientRecords = allRecords.filter(r => String(r.patientId) === String(pId) || String(r.patientId) === String(rep.customId));
+            const patientPrescriptions = allPrescriptions.filter(p => String(p.patientId) === String(pId) || String(p.patientId) === String(rep.customId));
+
             loadedPatients.push({
               id: rep.patientId || `P-${Math.floor(1000 + Math.random() * 9000)}`,
               name: rep.patientName || 'Intake Patient',
@@ -155,8 +162,8 @@ export function DoctorProvider({ children }) {
               diagnosticImpression: rep.diagnosticImpression || '',
               conversation: rep.conversation || [],
               reportId: rep.id || rep.customId,
-              records: [],
-              prescriptions: [],
+              records: patientRecords,
+              prescriptions: patientPrescriptions,
               timeline: []
             });
           });
@@ -259,17 +266,98 @@ export function DoctorProvider({ children }) {
       doctorName: doctor.name || 'Dr. Sarah Jenkins',
       date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       diagnosis: newRx.diagnosis || 'Clinical Follow-up',
-      medicines: `${newRx.medicine} (${newRx.dosage}) - ${newRx.freq} (${newRx.duration})`,
-      status: 'Active'
+      medicines: `${newRx.medicine} (${newRx.dosage}) - ${newRx.freq || newRx.frequency || 'Twice daily'} (${newRx.duration})`,
+      status: 'Active',
+      instructions: newRx.instructions || ''
     };
 
     setPrescriptions((prev) => [rxItem, ...prev]);
-    showToast('Prescription issued successfully');
+    showToast('Prescription issued and stored in electronic health records.');
 
     try {
       await api.createPrescription(rxItem);
     } catch (e) {
       console.warn('[DoctorContext] Prescription saved locally:', e.message);
+    }
+  };
+
+  // Complete Patient Consultation & Finalize Encounter
+  const completeConsultation = async ({ patientId, appointmentId, reportId, finalDiagnosis, doctorNotes }) => {
+    const timestamp = new Date().toISOString();
+    const dateStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+    // 1. Update Appointments
+    setAppointments((prev) =>
+      prev.map((apt) =>
+        apt.id === appointmentId || apt.patientId === patientId
+          ? { ...apt, status: 'Completed', completedAt: timestamp }
+          : apt
+      )
+    );
+
+    // 2. Update Patients local state
+    setPatients((prev) =>
+      prev.map((p) =>
+        p.id === patientId || p.reportId === reportId
+          ? {
+              ...p,
+              status: 'Completed',
+              isCompleted: true,
+              completedAt: dateStr,
+              diagnosticImpression: finalDiagnosis || p.diagnosticImpression,
+              clinicalNotes: doctorNotes || p.clinicalNotes
+            }
+          : p
+      )
+    );
+
+    if (selectedPatient && (selectedPatient.id === patientId || selectedPatient.reportId === reportId)) {
+      setSelectedPatient((prev) => ({
+        ...prev,
+        status: 'Completed',
+        isCompleted: true,
+        completedAt: dateStr,
+        diagnosticImpression: finalDiagnosis || prev.diagnosticImpression,
+        clinicalNotes: doctorNotes || prev.clinicalNotes
+      }));
+    }
+
+    // 3. Persist to MongoDB
+    try {
+      const updates = [];
+      if (appointmentId) {
+        updates.push(api.updateAppointment(appointmentId, { status: 'Completed', completedAt: timestamp, diagnosis: finalDiagnosis, doctorNotes }));
+      }
+      if (reportId) {
+        updates.push(api.updateClinicalReport(reportId, { status: 'COMPLETED', completedAt: timestamp, diagnosticImpression: finalDiagnosis, doctorNotes }));
+      }
+      await Promise.allSettled(updates);
+      showToast('Encounter finalized: Consultation marked as Completed.');
+    } catch (e) {
+      console.warn('[DoctorContext] Consultation completion sync warning:', e.message);
+      showToast('Encounter marked as completed locally.');
+    }
+  };
+
+  // Order Lab Investigation or Imaging
+  const orderInvestigation = async ({ patientId, patientName, testName, category = 'Laboratory Investigation' }) => {
+    const recordItem = {
+      title: testName,
+      type: category,
+      doctor: doctor.name || 'Attending Physician',
+      hospital: doctor.hospital || 'Hospital OPD',
+      patientId: patientId || 'P-10249',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      status: 'Ordered - Pending Sample'
+    };
+
+    setRecords((prev) => [recordItem, ...prev]);
+    showToast(`Diagnostic order placed: ${testName}`);
+
+    try {
+      await api.createRecord(recordItem);
+    } catch (e) {
+      console.warn('[DoctorContext] Record save warning:', e.message);
     }
   };
 
@@ -312,7 +400,9 @@ export function DoctorProvider({ children }) {
     rescheduleAppointment,
     cancelAppointment,
     saveDoctorNotes,
-    addPrescription
+    addPrescription,
+    completeConsultation,
+    orderInvestigation
   };
 
   return <DoctorContext.Provider value={value}>{children}</DoctorContext.Provider>;

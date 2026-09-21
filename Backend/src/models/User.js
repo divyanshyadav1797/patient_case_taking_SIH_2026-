@@ -25,7 +25,7 @@ const UserSchema = new mongoose.Schema({
   },
   
   // Aadhaar Identity (Privacy preserved)
-  aadhaarReference: { type: String, index: true, sparse: true }, // SHA-256 hash of raw Aadhaar
+  aadhaarReference: { type: String, index: true, unique: true, sparse: true }, // SHA-256 hash of raw Aadhaar
   maskedAadhaar: { type: String }, // e.g. XXXX XXXX 1234
   
   status: {

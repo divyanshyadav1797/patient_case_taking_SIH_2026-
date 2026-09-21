@@ -1,17 +1,269 @@
-/* Global Resets and Defaults */
+/* ==========================================================================
+   QUANTUM CARE — LIQUID GLASS THEME & DESIGN SYSTEM
+   Modern Apple / macOS Inspired Liquid Glassmorphism & High-Legibility AI UI
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. GLOBAL RESETS & LIQUID DESIGN TOKENS
+   -------------------------------------------------------------------------- */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
+:root {
+  /* Liquid Glass Color Palette */
+  --liquid-bg: #F0F4F9;
+  --liquid-glass-bg: rgba(255, 255, 255, 0.72);
+  --liquid-glass-bg-subtle: rgba(255, 255, 255, 0.52);
+  --liquid-glass-bg-elevated: rgba(255, 255, 255, 0.86);
+  --liquid-glass-bg-tinted-blue: rgba(239, 246, 255, 0.78);
+  --liquid-glass-bg-tinted-green: rgba(240, 253, 244, 0.82);
+  --liquid-glass-bg-tinted-purple: rgba(245, 243, 255, 0.82);
+  --liquid-glass-bg-tinted-amber: rgba(254, 243, 199, 0.82);
+
+  /* Specular Glass Borders */
+  --liquid-glass-border: 1px solid rgba(255, 255, 255, 0.75);
+  --liquid-glass-border-subtle: 1px solid rgba(255, 255, 255, 0.5);
+  --liquid-glass-border-hover: 1px solid rgba(255, 255, 255, 0.95);
+  --liquid-glass-border-accent: 1.5px solid rgba(37, 99, 235, 0.35);
+
+  /* Glassmorphism Blur & Shadows */
+  --liquid-blur: blur(20px) saturate(190%);
+  --liquid-blur-heavy: blur(28px) saturate(200%);
+  --liquid-blur-subtle: blur(12px) saturate(160%);
+
+  --liquid-shadow-sm: 0 4px 16px 0 rgba(31, 38, 135, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+  --liquid-shadow-md: 0 10px 32px 0 rgba(31, 38, 135, 0.08), inset 0 1px 2px 0 rgba(255, 255, 255, 0.95);
+  --liquid-shadow-lg: 0 20px 50px 0 rgba(31, 38, 135, 0.12), inset 0 1px 3px 0 rgba(255, 255, 255, 1);
+  --liquid-shadow-hover: 0 18px 42px 0 rgba(37, 99, 235, 0.14), inset 0 1px 3px 0 rgba(255, 255, 255, 1);
+
+  /* Brand Accents */
+  --liquid-primary: #2563EB;
+  --liquid-primary-dark: #1D4ED8;
+  --liquid-primary-gradient: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  --liquid-emerald-gradient: linear-gradient(135deg, #059669 0%, #10B981 100%);
+  --liquid-amber-gradient: linear-gradient(135deg, #D97706 0%, #F59E0B 100%);
+  --liquid-rose-gradient: linear-gradient(135deg, #E11D48 0%, #F43F5E 100%);
+
+  /* Typography */
+  --liquid-text-headline: #0F172A;
+  --liquid-text-body: #1E293B;
+  --liquid-text-secondary: #475569;
+  --liquid-text-muted: #64748B;
+
+  /* Context.txt Exact Specification Baseline Palette — Light Mode */
+  --qc-bg: #FFF9FB;
+  --qc-surface: #FFFFFF;
+  --qc-soft-pink: #F9DDE8;
+  --qc-pink-accent: #EFA7C0;
+  --qc-soft-orange: #FFE4C7;
+  --qc-orange-accent: #F5B27A;
+  --qc-soft-blue: #DDEEFF;
+  --qc-blue-accent: #9CCAF2;
+  --qc-lavender: #E9E1F7;
+  --qc-primary-text: #25232A;
+  --qc-secondary-text: #706B76;
+  --qc-border: #E9E5EA;
+}
+
+/* Context.txt Exact Specification Baseline Palette — Dark Mode */
+[data-theme='dark'] {
+  --liquid-bg: #0E0D12;
+  --liquid-glass-bg: rgba(23, 21, 29, 0.85);
+  --liquid-glass-bg-subtle: rgba(23, 21, 29, 0.65);
+  --liquid-glass-bg-elevated: rgba(33, 29, 41, 0.95);
+  --liquid-glass-border: 1px solid rgba(118, 86, 168, 0.25);
+  --liquid-glass-border-subtle: 1px solid rgba(118, 86, 168, 0.15);
+  --liquid-glass-border-hover: 1px solid rgba(169, 146, 216, 0.5);
+  --liquid-text-headline: #F7F4FA;
+  --liquid-text-body: #E2DFE7;
+  --liquid-text-secondary: #AAA4B4;
+  --liquid-text-muted: #857F8F;
+  --qc-bg: #0E0D12;
+  --qc-surface: #17151D;
+  --qc-elevated-surface: #211D29;
+  --qc-dark-purple: #39264D;
+  --qc-purple: #7656A8;
+  --qc-light-purple: #CBB8F2;
+  --qc-soft-accent: #A992D8;
+  --qc-primary-text: #F7F4FA;
+  --qc-secondary-text: #AAA4B4;
+  --qc-border: #302B37;
+}
+
+body[data-theme='dark'],
+body.dark {
+  background-color: #0E0D12 !important;
+  color: #F7F4FA !important;
+  background-image: 
+    radial-gradient(at 10% 12%, rgba(57, 38, 77, 0.45) 0px, transparent 50%),
+    radial-gradient(at 90% 10%, rgba(118, 86, 168, 0.3) 0px, transparent 48%),
+    radial-gradient(at 85% 88%, rgba(57, 38, 77, 0.4) 0px, transparent 50%),
+    radial-gradient(at 12% 86%, rgba(169, 146, 216, 0.18) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(33, 29, 41, 0.9) 0px, transparent 55%) !important;
+}
+
+body[data-theme='dark'] .topbar,
+body[data-theme='dark'] .app-header,
+body[data-theme='dark'] .top-header,
+body[data-theme='dark'] .sidebar,
+body[data-theme='dark'] .patient-sidebar,
+body[data-theme='dark'] .app-sidebar,
+body[data-theme='dark'] .profile-card,
+body[data-theme='dark'] .section-card,
+body[data-theme='dark'] .table-card,
+body[data-theme='dark'] .appointment,
+body[data-theme='dark'] .action-card,
+body[data-theme='dark'] .quick-actions button,
+body[data-theme='dark'] .kiosk-card {
+  background-color: #17151D !important;
+  border-color: #302B37 !important;
+  color: #F7F4FA !important;
+}
+
+body[data-theme='dark'] h1,
+body[data-theme='dark'] h2,
+body[data-theme='dark'] h3,
+body[data-theme='dark'] h4,
+body[data-theme='dark'] strong,
+body[data-theme='dark'] .page-header h1,
+body[data-theme='dark'] .section-header h2,
+body[data-theme='dark'] .header-title,
+body[data-theme='dark'] .doctor-greeting,
+body[data-theme='dark'] .welcome-section h1 {
+  color: #F7F4FA !important;
+}
+
+body[data-theme='dark'] p,
+body[data-theme='dark'] small,
+body[data-theme='dark'] .page-header p,
+body[data-theme='dark'] .header-subtitle,
+body[data-theme='dark'] .greeting-subtitle,
+body[data-theme='dark'] .welcome-section p,
+body[data-theme='dark'] .appointment-details span {
+  color: #AAA4B4 !important;
+}
+
+body[data-theme='dark'] input,
+body[data-theme='dark'] select,
+body[data-theme='dark'] textarea {
+  background-color: #211D29 !important;
+  color: #F7F4FA !important;
+  border-color: #39264D !important;
+}
+
+body[data-theme='dark'] input::placeholder,
+body[data-theme='dark'] textarea::placeholder {
+  color: #857F8F !important;
+}
+
+body[data-theme='dark'] .tabs {
+  border-color: #302B37 !important;
+}
+
+body[data-theme='dark'] .tab {
+  background-color: #211D29 !important;
+  color: #AAA4B4 !important;
+  border-color: #302B37 !important;
+}
+
+body[data-theme='dark'] .tab.active {
+  background-color: #7656A8 !important;
+  color: #FFFFFF !important;
+  border-color: #7656A8 !important;
+}
+
+body[data-theme='dark'] .data-table,
+body[data-theme='dark'] table {
+  background-color: #17151D !important;
+  color: #F7F4FA !important;
+  border-color: #302B37 !important;
+}
+
+body[data-theme='dark'] th {
+  background-color: #211D29 !important;
+  color: #AAA4B4 !important;
+  border-bottom-color: #302B37 !important;
+}
+
+body[data-theme='dark'] td {
+  border-bottom-color: #302B37 !important;
+  color: #F7F4FA !important;
+}
+
+body[data-theme='dark'] tr {
+  border-bottom-color: #302B37 !important;
+}
+
+body[data-theme='dark'] tr:hover {
+  background-color: rgba(57, 38, 77, 0.3) !important;
+}
+
+body[data-theme='dark'] .search-box,
+body[data-theme='dark'] .search-box-wrapper,
+body[data-theme='dark'] .search-box-container {
+  background-color: #211D29 !important;
+  border-color: #39264D !important;
+}
+
+body[data-theme='dark'] .search-box input,
+body[data-theme='dark'] .search-input {
+  background-color: transparent !important;
+  color: #F7F4FA !important;
+}
+
+body[data-theme='dark'] .profile-menu,
+body[data-theme='dark'] .dropdown-menu {
+  background-color: #211D29 !important;
+  color: #F7F4FA !important;
+  border-color: #39264D !important;
+}
+
+body[data-theme='dark'] .secondary-btn,
+body[data-theme='dark'] .btn-secondary,
+body[data-theme='dark'] .btn-outline {
+  background-color: #211D29 !important;
+  color: #CBB8F2 !important;
+  border-color: #39264D !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. AMBIENT LIQUID MESH BACKGROUND
+   -------------------------------------------------------------------------- */
 html, body, #root {
   min-height: 100%;
   font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  color: #1E293B;
-  background-color: #F8FAFC;
+  color: var(--liquid-text-body);
+  background-color: #F0F4F9;
+  background-image: 
+    radial-gradient(at 8% 12%, rgba(56, 189, 248, 0.18) 0px, transparent 48%),
+    radial-gradient(at 92% 10%, rgba(99, 102, 241, 0.16) 0px, transparent 48%),
+    radial-gradient(at 85% 88%, rgba(20, 184, 166, 0.16) 0px, transparent 50%),
+    radial-gradient(at 12% 86%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(168, 85, 247, 0.08) 0px, transparent 55%);
+  background-attachment: fixed;
+  background-size: cover;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Fluid scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.6);
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.8);
 }
 
 a {
@@ -19,10 +271,503 @@ a {
   text-decoration: none;
 }
 
-button {
+button, input, select, textarea {
   font-family: inherit;
 }
 
-input, select, textarea {
-  font-family: inherit;
+/* --------------------------------------------------------------------------
+   3. UNIVERSAL LIQUID GLASS SURFACE CLASSES
+   -------------------------------------------------------------------------- */
+.liquid-glass,
+.glass-panel {
+  background: var(--liquid-glass-bg) !important;
+  backdrop-filter: var(--liquid-blur) !important;
+  -webkit-backdrop-filter: var(--liquid-blur) !important;
+  border: var(--liquid-glass-border) !important;
+  box-shadow: var(--liquid-shadow-md) !important;
+  border-radius: 20px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass:hover,
+.glass-panel:hover {
+  background: var(--liquid-glass-bg-elevated) !important;
+  border: var(--liquid-glass-border-hover) !important;
+  box-shadow: var(--liquid-shadow-hover) !important;
+}
+
+/* Liquid Glass Cards Override across all modules */
+.section-card,
+.stat-card,
+.content-card,
+.table-card,
+.doctor-card,
+.appointment,
+.health-message,
+.action-card {
+  background: var(--liquid-glass-bg) !important;
+  backdrop-filter: var(--liquid-blur) !important;
+  -webkit-backdrop-filter: var(--liquid-blur) !important;
+  border: var(--liquid-glass-border) !important;
+  box-shadow: var(--liquid-shadow-md) !important;
+  border-radius: 20px !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.section-card:hover,
+.stat-card:hover,
+.doctor-card:hover,
+.action-card:hover {
+  background: var(--liquid-glass-bg-elevated) !important;
+  border: var(--liquid-glass-border-hover) !important;
+  box-shadow: var(--liquid-shadow-hover) !important;
+  transform: translateY(-3px) !important;
+}
+
+/* Liquid Glass Sidebar Navigation */
+.sidebar,
+.doctor-portal .sidebar,
+.patient-portal .sidebar {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: var(--liquid-blur-heavy) !important;
+  -webkit-backdrop-filter: var(--liquid-blur-heavy) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.7) !important;
+  box-shadow: 4px 0 30px rgba(31, 38, 135, 0.05) !important;
+}
+
+/* Liquid Glass Top Header */
+.topbar,
+.doctor-header,
+.patient-portal .topbar {
+  background: rgba(255, 255, 255, 0.72) !important;
+  backdrop-filter: var(--liquid-blur) !important;
+  -webkit-backdrop-filter: var(--liquid-blur) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.65) !important;
+  box-shadow: 0 4px 24px rgba(31, 38, 135, 0.04) !important;
+}
+
+/* Glass Active Nav Items */
+.nav-item.active,
+.sidebar-link.active,
+.tab.active,
+.horizontal-tab-btn.active {
+  background: var(--liquid-primary-gradient) !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+}
+
+.nav-item,
+.sidebar-link {
+  transition: all 0.2s ease !important;
+}
+
+.nav-item:hover:not(.active),
+.sidebar-link:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.65) !important;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8) !important;
+  transform: translateX(4px);
+}
+
+/* Liquid Buttons */
+.primary-btn {
+  background: var(--liquid-primary-gradient) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.45) !important;
+  color: #FFFFFF !important;
+  border-radius: 12px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.primary-btn:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.45), inset 0 1px 2px rgba(255, 255, 255, 0.6) !important;
+}
+
+.secondary-btn {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: var(--liquid-blur-subtle) !important;
+  -webkit-backdrop-filter: var(--liquid-blur-subtle) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.85) !important;
+  box-shadow: var(--liquid-shadow-sm) !important;
+  color: #1E293B !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  box-shadow: var(--liquid-shadow-md) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Liquid Glass Input Fields */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="search"],
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1.5px solid rgba(226, 232, 240, 0.85) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+  border-radius: 12px !important;
+  transition: all 0.2s ease !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #2563EB !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15), inset 0 1px 1px rgba(255, 255, 255, 1) !important;
+  outline: none !important;
+}
+
+/* Glass Modals and Drawers */
+.patient-drawer,
+.drawer-content,
+.modal-content,
+.overview-grid {
+  backdrop-filter: var(--liquid-blur-heavy) !important;
+  -webkit-backdrop-filter: var(--liquid-blur-heavy) !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. BIG, ULTRA-READABLE AI CLINICAL SUMMARY SYSTEM
+   -------------------------------------------------------------------------- */
+
+/* Hero Glass Container for Clinical Summary */
+.ai-summary-glass-container {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(240, 253, 244, 0.78) 100%) !important;
+  backdrop-filter: var(--liquid-blur-heavy) !important;
+  -webkit-backdrop-filter: var(--liquid-blur-heavy) !important;
+  border: 2px solid rgba(16, 185, 129, 0.4) !important;
+  box-shadow: 0 16px 45px 0 rgba(16, 185, 129, 0.12), inset 0 1px 3px 0 rgba(255, 255, 255, 1) !important;
+  border-radius: 24px !important;
+  padding: 28px 32px !important;
+  margin-bottom: 24px !important;
+  position: relative !important;
+  overflow: hidden !important;
+  transition: all 0.3s ease !important;
+}
+
+.ai-summary-glass-container.urgent-alert {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(254, 242, 242, 0.85) 100%) !important;
+  border: 2px solid rgba(239, 68, 68, 0.5) !important;
+  box-shadow: 0 18px 50px 0 rgba(239, 68, 68, 0.16), inset 0 1px 3px 0 rgba(255, 255, 255, 1) !important;
+}
+
+/* Ambient glow accent inside AI Summary */
+.ai-summary-glass-container::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.25) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ai-summary-glass-container.urgent-alert::before {
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.3) 0%, transparent 70%);
+}
+
+/* Header bar with icon and acuity pill */
+.ai-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ai-summary-title-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  color: #065F46 !important;
+  letter-spacing: -0.5px;
+}
+
+.ai-summary-glass-container.urgent-alert .ai-summary-title-badge {
+  color: #991B1B !important;
+}
+
+.ai-summary-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #059669;
+  display: grid;
+  place-items: center;
+  font-size: 1.4rem;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.ai-summary-glass-container.urgent-alert .ai-summary-icon {
+  background: rgba(239, 68, 68, 0.15);
+  color: #DC2626;
+}
+
+/* Large Acuity Indicator Badges */
+.ai-acuity-pill-urgent {
+  background: linear-gradient(135deg, #EF4444, #DC2626) !important;
+  color: #FFFFFF !important;
+  padding: 8px 18px !important;
+  border-radius: 30px !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.ai-acuity-pill-standard {
+  background: linear-gradient(135deg, #059669, #10B981) !important;
+  color: #FFFFFF !important;
+  padding: 8px 18px !important;
+  border-radius: 30px !important;
+  font-size: 0.95rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px !important;
+  text-transform: uppercase !important;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  }
+  50% {
+    box-shadow: 0 6px 24px rgba(239, 68, 68, 0.65), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* Big, Ultra-Readable Body Text */
+.ai-summary-brief-body {
+  color: #0F172A !important;
+  font-size: 1.15rem !important;
+  line-height: 1.85 !important;
+  font-weight: 500 !important;
+  margin-bottom: 20px !important;
+  white-space: pre-line !important;
+  letter-spacing: -0.1px;
+}
+
+/* Frosted Callout for History of Present Illness (HPI) */
+.ai-hpi-callout {
+  background: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+  border: 1.5px solid rgba(59, 130, 246, 0.3) !important;
+  border-left: 6px solid #2563EB !important;
+  border-radius: 16px !important;
+  padding: 20px 24px !important;
+  margin: 18px 0 !important;
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.06), inset 0 1px 2px rgba(255, 255, 255, 1) !important;
+}
+
+.ai-hpi-callout-title {
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: #1E3A8A !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  margin-bottom: 8px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.ai-hpi-callout-text {
+  font-size: 1.1rem !important;
+  line-height: 1.75 !important;
+  color: #1E293B !important;
+  margin: 0 !important;
+}
+
+/* Glass Pill Tags for Differentials & Symptoms */
+.ai-glass-chip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  background: rgba(255, 255, 255, 0.82) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  color: #065F46 !important;
+  padding: 6px 14px !important;
+  border-radius: 20px !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+}
+
+.ai-glass-chip.scan-chip {
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  color: #3730A3 !important;
+  background: rgba(238, 242, 255, 0.8) !important;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Large Longitudinal Medical History Container */
+.ai-longitudinal-glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.88) 0%, rgba(245, 243, 255, 0.78) 100%) !important;
+  backdrop-filter: var(--liquid-blur-heavy) !important;
+  -webkit-backdrop-filter: var(--liquid-blur-heavy) !important;
+  border: 2px solid rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 16px 45px rgba(124, 58, 237, 0.1), inset 0 1px 3px rgba(255, 255, 255, 1) !important;
+  border-radius: 24px !important;
+  padding: 26px 30px !important;
+  margin-bottom: 24px !important;
+}
+
+.ai-longitudinal-title {
+  font-size: 1.25rem !important;
+  font-weight: 800 !important;
+  color: #5B21B6 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+
+.ai-longitudinal-summary-text {
+  font-size: 1.125rem !important;
+  line-height: 1.8 !important;
+  color: #2E1065 !important;
+  margin: 14px 0 !important;
+  font-weight: 500 !important;
+}
+
+/* Comprehensive Dark Mode Enhancements for Modals, Cards & Slips */
+[data-theme='dark'] .modal-content,
+.dark .modal-content,
+body.dark .modal-content,
+[data-theme='dark'] .modal-card,
+.dark .modal-card,
+body.dark .modal-card {
+  background-color: #17151D !important;
+  color: #F7F4FA !important;
+  border: 1px solid #39264D !important;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.6) !important;
+}
+
+[data-theme='dark'] .doctor-card,
+.dark .doctor-card,
+body.dark .doctor-card,
+[data-theme='dark'] .card,
+.dark .card,
+body.dark .card {
+  background-color: #17151D !important;
+  border-color: #302B37 !important;
+  color: #F7F4FA !important;
+}
+
+[data-theme='dark'] .doctor-card:hover,
+.dark .doctor-card:hover,
+body.dark .doctor-card:hover {
+  background-color: #211D29 !important;
+  border-color: #7656A8 !important;
+}
+
+[data-theme='dark'] .appointment-card,
+.dark .appointment-card,
+body.dark .appointment-card {
+  background-color: #17151D !important;
+  border-color: #302B37 !important;
+}
+
+[data-theme='dark'] .appointment-card:hover,
+.dark .appointment-card:hover,
+body.dark .appointment-card:hover {
+  background-color: #211D29 !important;
+}
+
+[data-theme='dark'] .scheme-card,
+.dark .scheme-card,
+body.dark .scheme-card {
+  background-color: #17151D !important;
+  border-color: #302B37 !important;
+  color: #F7F4FA !important;
+}
+
+[data-theme='dark'] .ai-longitudinal-glass-card,
+.dark .ai-longitudinal-glass-card,
+body.dark .ai-longitudinal-glass-card {
+  background: linear-gradient(135deg, rgba(23, 21, 29, 0.95) 0%, rgba(33, 29, 41, 0.9) 100%) !important;
+  border-color: rgba(118, 86, 168, 0.4) !important;
+}
+
+[data-theme='dark'] .ai-longitudinal-title,
+.dark .ai-longitudinal-title,
+body.dark .ai-longitudinal-title {
+  color: #CBB8F2 !important;
+}
+
+[data-theme='dark'] .ai-longitudinal-summary-text,
+.dark .ai-longitudinal-summary-text,
+body.dark .ai-longitudinal-summary-text {
+  color: #E2DFE7 !important;
+}
+
+[data-theme='dark'] .ai-glass-chip,
+.dark .ai-glass-chip,
+body.dark .ai-glass-chip {
+  background: rgba(33, 29, 41, 0.9) !important;
+  border-color: rgba(118, 86, 168, 0.4) !important;
+  color: #CBB8F2 !important;
+}
+
+/* ==========================================================================
+   PRINT MEDIA RULES — PHYSICAL CONSULTATION SLIP & DIGITAL HEALTH PASS
+   ========================================================================== */
+@media print {
+  body {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: #000000 !important;
+  }
+
+  .no-print,
+  .topbar,
+  .app-header,
+  .top-header,
+  .sidebar,
+  .patient-sidebar,
+  .app-sidebar,
+  .mobile-toggle-btn,
+  .mobile-menu,
+  .mobile-menu-btn,
+  .profile-tabs-nav,
+  .back-btn-bar {
+    display: none !important;
+  }
+
+  #physical-consultation-slip-print {
+    visibility: visible !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
 }

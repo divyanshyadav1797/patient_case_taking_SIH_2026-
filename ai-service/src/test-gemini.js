@@ -8,7 +8,7 @@ const ai = new GoogleGenAI({
 async function testGemini() {
     try {
         const response = await ai.models.generateContent({
-            model: process.env.GEMINI_MODEL || "gemini-3.8-flash",
+            model: process.env.GEMINI_MODEL || "Gemini 3.5 Flash Lite",
             contents: "Reply with exactly: Quantum Care AI is working."
         });
 

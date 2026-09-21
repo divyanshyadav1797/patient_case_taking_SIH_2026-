@@ -384,12 +384,135 @@ class AuthService {
   /**
    * Get user profile by user ID
    */
-  async getProfile(userId) {
-    const user = await userRepository.findById(userId);
-    if (!user) {
-      throw new Error('User profile not found');
+  /**
+   * Kiosk Patient Authorization: Check Aadhaar and verify 4-digit PIN against MongoDB
+   */
+  async kioskPatientAuth(aadhaar, pin) {
+    if (!aadhaar) {
+      throw new Error('12-digit Aadhaar number is required');
     }
-    return user;
+    const cleanAadhaar = String(aadhaar).replace(/\D/g, '');
+    if (cleanAadhaar.length !== 12) {
+      throw new Error('Please enter a valid 12-digit Aadhaar number');
+    }
+
+    const cleanPin = String(pin || '').trim();
+    if (cleanPin.length !== 4) {
+      throw new Error('4-digit PIN is required');
+    }
+
+    const user = await userRepository.findRawByRoleAndIdentifier('patient', cleanAadhaar);
+    if (!user) {
+      return {
+        found: false,
+        authenticated: false,
+        message: 'Patient record not found for this Aadhaar number'
+      };
+    }
+
+    // Verify PIN with bcrypt against pinHash or passwordHash
+    let isMatch = false;
+    if (user.pinHash) {
+      isMatch = await bcrypt.compare(cleanPin, user.pinHash);
+    }
+    if (!isMatch && user.passwordHash) {
+      isMatch = await bcrypt.compare(cleanPin, user.passwordHash);
+    }
+
+    if (!isMatch) {
+      return {
+        found: true,
+        authenticated: false,
+        message: 'Incorrect 4-digit PIN. Please re-enter your PIN.'
+      };
+    }
+
+    // Update last login
+    await userRepository.updateUser(user._id || user.customId, {
+      lastLoginAt: new Date().toISOString()
+    });
+
+    const safeUser = { ...user };
+    delete safeUser.passwordHash;
+    delete safeUser.pinHash;
+    delete safeUser.aadhaarReference;
+
+    const tokenPair = generateTokenPair(safeUser);
+
+    return {
+      found: true,
+      authenticated: true,
+      user: safeUser,
+      token: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+      message: 'Patient authenticated successfully'
+    };
+  }
+
+  /**
+   * Kiosk Fast Registration: Only asks Name, Aadhaar (12 digits), and PIN (4 digits)
+   */
+  async kioskFastRegister({ fullName, aadhaar, pin }) {
+    if (!fullName || fullName.trim().length < 2) {
+      throw new Error('Patient name is required (minimum 2 characters)');
+    }
+    const cleanAadhaar = String(aadhaar || '').replace(/\D/g, '');
+    if (cleanAadhaar.length !== 12) {
+      throw new Error('Valid 12-digit Aadhaar number is required');
+    }
+    const cleanPin = String(pin || '').replace(/\D/g, '');
+    if (cleanPin.length !== 4) {
+      throw new Error('Please set a 4-digit security PIN');
+    }
+
+    const aadhaarReference = hashAadhaar(cleanAadhaar);
+    const maskedAadhaar = maskAadhaar(cleanAadhaar);
+
+    // Check if patient already exists
+    const existing = await userRepository.findRawByRoleAndIdentifier('patient', cleanAadhaar);
+    if (existing) {
+      throw new Error('A patient account is already registered with this Aadhaar number. Please log in with your PIN.');
+    }
+
+    // Derive demographic defaults deterministically from Aadhaar e-KYC
+    const derived = generateAadhaarDemographics(cleanAadhaar);
+
+    const pinHash = await bcrypt.hash(cleanPin, 10);
+    const passwordHash = pinHash;
+    const customId = `PAT-${Math.floor(10000 + Math.random() * 90000)}`;
+
+    const newUserPayload = {
+      customId,
+      name: fullName.trim(),
+      email: null,
+      phone: derived.phone || null,
+      passwordHash,
+      pinHash,
+      role: 'patient',
+      status: 'ACTIVE',
+      aadhaarReference,
+      maskedAadhaar,
+      patientDetails: {
+        age: derived.age || 28,
+        gender: derived.gender || 'male',
+        bloodGroup: 'O+',
+        abhaId: `91-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`,
+        address: `${derived.district}, ${derived.state}, India`,
+        schemes: { isEnrolled: false }
+      },
+      lastLoginAt: new Date().toISOString()
+    };
+
+    const createdUser = await userRepository.createUser(newUserPayload);
+    const tokenPair = generateTokenPair(createdUser);
+
+    return {
+      success: true,
+      user: createdUser,
+      token: tokenPair.accessToken,
+      refreshToken: tokenPair.refreshToken,
+      message: 'Quick patient registration completed in database'
+    };
   }
 }
 

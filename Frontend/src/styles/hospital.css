@@ -1869,9 +1869,11 @@ table {
   transition: opacity 0.22s ease;
 }
 
-.modal-backdrop.active {
-  opacity: 1;
-  pointer-events: auto;
+.modal-backdrop.active,
+.modal-backdrop.open {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  display: flex !important;
 }
 
 .modal-dialog {

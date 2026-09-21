@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDoctor } from '../../context/DoctorContext';
+import ThemeToggle from '../ThemeToggle';
 
 export default function DoctorHeader() {
   const { doctor, globalSearch, setGlobalSearch, setIsMobileNavOpen } = useDoctor();
@@ -63,6 +64,9 @@ export default function DoctorHeader() {
             </button>
           )}
         </div>
+
+        {/* Theme Mode Switcher */}
+        <ThemeToggle />
 
         {/* Doctor Profile Summary */}
         <div className="doctor-profile" role="region" aria-label="Doctor Profile">

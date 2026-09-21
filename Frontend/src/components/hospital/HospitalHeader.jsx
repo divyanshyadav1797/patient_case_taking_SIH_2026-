@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useHospital } from '../../context/HospitalContext';
+import ThemeToggle from '../ThemeToggle';
 
 export default function HospitalHeader({ title = 'Good morning, Hospital Admin', subtitle = 'Here’s your hospital overview for today.' }) {
   const { user, logout } = useAuth();
@@ -82,6 +83,9 @@ export default function HospitalHeader({ title = 'Good morning, Hospital Admin',
             </button>
           )}
         </div>
+
+        {/* Theme Mode Switcher */}
+        <ThemeToggle />
 
         {/* Notification Bell with Dropdown */}
         <div className="dropdown-wrapper">

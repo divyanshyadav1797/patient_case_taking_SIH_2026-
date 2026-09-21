@@ -8,7 +8,7 @@ const User = require('../models/User');
 const DEFAULT_DOCTORS = [
   {
     name: "Dr. Sarah Jenkins",
-    specialty: "Chief Cardiologist",
+    specialty: "Cardiology",
     department: "Cardiology",
     experience: "14 yrs exp",
     rating: "4.9",
@@ -30,8 +30,8 @@ const DEFAULT_DOCTORS = [
     available: "Next slot: Tomorrow",
     fee: "₹1,000",
     image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=300",
-    hospital: "SMS Hospital Jaipur",
-    email: "dr.chang@medicare.org",
+    hospital: "Fortis Escorts Hospital",
+    email: "dr.chang@fortis.org",
     phone: "9829012346"
   },
   {
@@ -44,8 +44,8 @@ const DEFAULT_DOCTORS = [
     available: "Available Today",
     fee: "₹500",
     image: "https://images.unsplash.com/photo-1594824813581-9b16866b1a20?auto=format&fit=crop&q=80&w=300",
-    hospital: "SMS Hospital Jaipur",
-    email: "dr.patel@medicare.org",
+    hospital: "Apex Hospital Mansarovar",
+    email: "dr.patel@apex.org",
     phone: "9829012347"
   },
   {
@@ -58,8 +58,8 @@ const DEFAULT_DOCTORS = [
     available: "Available Today",
     fee: "₹900",
     image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300",
-    hospital: "SMS Hospital Jaipur",
-    email: "dr.gupta@medicare.org",
+    hospital: "Narayana Multispeciality Hospital",
+    email: "dr.gupta@narayana.org",
     phone: "9829012348"
   },
   {
@@ -72,35 +72,93 @@ const DEFAULT_DOCTORS = [
     available: "Next slot: Monday",
     fee: "₹600",
     image: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300",
-    hospital: "SMS Hospital Jaipur",
-    email: "dr.roy@medicare.org",
+    hospital: "EHCC Hospital Jaipur",
+    email: "dr.roy@ehcc.org",
     phone: "9829012349"
+  },
+  {
+    name: "Dr. Vikram Malhotra",
+    specialty: "Pulmonology",
+    department: "Pulmonology",
+    experience: "15 yrs exp",
+    rating: "4.9",
+    reviews: 164,
+    available: "Available Today",
+    fee: "₹850",
+    image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=300",
+    hospital: "SMS Hospital Jaipur",
+    email: "dr.malhotra@sms.org",
+    phone: "9829012350"
+  },
+  {
+    name: "Dr. Sunita Meena",
+    specialty: "Gastroenterology",
+    department: "Gastroenterology",
+    experience: "11 yrs exp",
+    rating: "4.8",
+    reviews: 112,
+    available: "Available Today",
+    fee: "₹950",
+    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=300",
+    hospital: "Apex Hospital Mansarovar",
+    email: "dr.meena@apex.org",
+    phone: "9829012351"
+  },
+  {
+    name: "Dr. Rohan Verma",
+    specialty: "ENT Specialist",
+    department: "ENT",
+    experience: "10 yrs exp",
+    rating: "4.7",
+    reviews: 130,
+    available: "Tomorrow, 10:00 AM",
+    fee: "₹700",
+    image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=300",
+    hospital: "Fortis Escorts Hospital",
+    email: "dr.verma@fortis.org",
+    phone: "9829012352"
   }
 ];
 
 class ClinicalRepository {
   async seedDefaults() {
     try {
-      const docCount = await User.countDocuments({ role: 'doctor' });
-      if (docCount < DEFAULT_DOCTORS.length) {
-        for (const doc of DEFAULT_DOCTORS) {
-          const exists = await User.findOne({ email: doc.email.toLowerCase() });
-          if (!exists) {
-            await User.create({
-              name: doc.name,
-              email: doc.email.toLowerCase(),
-              phone: doc.phone,
-              passwordHash: '$2a$10$wTfZ7eZfZh5vM3kO6W.gYe8Y8w0d8Z9X2P1h1k0k4l1j4h8e2g3a', // doctor123
-              pinHash: '$2a$10$wTfZ7eZfZh5vM3kO6W.gYe8Y8w0d8Z9X2P1h1k0k4l1j4h8e2g3a',
-              role: 'doctor',
-              status: 'ACTIVE',
-              doctorDetails: {
-                specialty: doc.specialty,
-                department: doc.department,
-                hospitalName: doc.hospital
-              }
-            });
-          }
+      for (const doc of DEFAULT_DOCTORS) {
+        const exists = await User.findOne({ email: doc.email.toLowerCase() });
+        if (!exists) {
+          await User.create({
+            customId: `DOC-${Math.floor(1000 + Math.random() * 9000)}`,
+            name: doc.name,
+            email: doc.email.toLowerCase(),
+            phone: doc.phone,
+            passwordHash: '$2a$10$wTfZ7eZfZh5vM3kO6W.gYe8Y8w0d8Z9X2P1h1k0k4l1j4h8e2g3a', // doctor123
+            pinHash: '$2a$10$wTfZ7eZfZh5vM3kO6W.gYe8Y8w0d8Z9X2P1h1k0k4l1j4h8e2g3a',
+            role: 'doctor',
+            status: 'ACTIVE',
+            doctorDetails: {
+              specialty: doc.specialty,
+              department: doc.department,
+              hospitalName: doc.hospital,
+              experience: doc.experience,
+              rating: doc.rating,
+              fee: doc.fee,
+              available: doc.available,
+              image: doc.image
+            }
+          });
+        } else if (!exists.doctorDetails?.hospitalName || exists.doctorDetails?.hospitalName === 'SMS Hospital Jaipur') {
+          // Ensure hospital matches diversified hospital name
+          exists.doctorDetails = {
+            ...exists.doctorDetails,
+            hospitalName: doc.hospital,
+            specialty: doc.specialty,
+            department: doc.department,
+            fee: doc.fee,
+            available: doc.available,
+            experience: doc.experience,
+            image: doc.image
+          };
+          await exists.save();
         }
       }
     } catch (e) {
@@ -148,12 +206,12 @@ class ClinicalRepository {
     const newApt = {
       customId,
       id: customId,
-      patientId: aptData.patientId || 'P-10249',
-      patientName: aptData.patientName || 'Rahul Sharma',
+      patientId: aptData.patientId || `WALKIN-${Math.floor(1000 + Math.random() * 9000)}`,
+      patientName: aptData.patientName || 'Walk-in Patient',
       doctorId: aptData.doctorId,
-      doctorName: aptData.doctorName || 'Dr. Sarah Jenkins',
+      doctorName: aptData.doctorName || 'Attending Physician',
       specialty: aptData.specialty || 'General Consultation',
-      hospital: aptData.hospital || 'SMS Hospital Jaipur',
+      hospital: aptData.hospital || 'Clinical Facility',
       date: aptData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       time: aptData.time || '11:00 AM',
       status: aptData.status || 'Upcoming',
@@ -214,6 +272,20 @@ class ClinicalRepository {
     } catch (e) {
       console.error('[ClinicalRepo] deleteAppointment error:', e.message);
       return false;
+    }
+  }
+
+  async getAppointmentById(id) {
+    if (!id) return null;
+    try {
+      const conditions = [{ customId: id }, { id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+      return await Appointment.findOne({ $or: conditions }).lean();
+    } catch (e) {
+      console.error('[ClinicalRepo] getAppointmentById error:', e.message);
+      return null;
     }
   }
 
@@ -349,13 +421,80 @@ class ClinicalRepository {
         name: d.name,
         specialty: d.doctorDetails?.specialty || 'General Physician',
         department: d.doctorDetails?.department || 'General Medicine',
+        available: d.doctorDetails?.available || 'Available Today',
+        fee: d.doctorDetails?.fee || '₹600',
         hospital: d.doctorDetails?.hospitalName || 'SMS Hospital Jaipur',
+        hospitalId: d.doctorDetails?.hospitalId || null,
         email: d.email,
         phone: d.phone
       };
     } catch (e) {
       console.error('[ClinicalRepo] getDoctorById error:', e.message);
       return null;
+    }
+  }
+
+  async updateDoctor(id, updates) {
+    if (!id) return null;
+    try {
+      const conditions = [{ customId: id }, { 'doctorDetails.nmcId': id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+
+      const updateFields = {};
+      if (updates.name) updateFields.name = updates.name.trim();
+      if (updates.email) updateFields.email = updates.email.trim().toLowerCase();
+      if (updates.phone) updateFields.phone = updates.phone.trim();
+
+      if (updates.available) updateFields['doctorDetails.available'] = updates.available;
+      if (updates.fee) updateFields['doctorDetails.fee'] = updates.fee;
+      if (updates.specialty) updateFields['doctorDetails.specialty'] = updates.specialty;
+      if (updates.department) updateFields['doctorDetails.department'] = updates.department;
+
+      if (updates.password || updates.pin) {
+        const bcrypt = require('bcryptjs');
+        const secret = updates.password || updates.pin;
+        updateFields.passwordHash = await bcrypt.hash(secret, 10);
+        if (updates.pin) updateFields.pinHash = await bcrypt.hash(updates.pin, 10);
+      }
+
+      const updated = await User.findOneAndUpdate(
+        { role: 'doctor', $or: conditions },
+        { $set: updateFields },
+        { new: true }
+      ).lean();
+
+      if (!updated) return null;
+      return {
+        id: updated.customId || updated._id.toString(),
+        name: updated.name,
+        specialty: updated.doctorDetails?.specialty || 'General Physician',
+        department: updated.doctorDetails?.department || 'General Medicine',
+        available: updated.doctorDetails?.available || 'Available Today',
+        fee: updated.doctorDetails?.fee || '₹600',
+        hospital: updated.doctorDetails?.hospitalName || 'SMS Hospital Jaipur',
+        email: updated.email,
+        phone: updated.phone
+      };
+    } catch (e) {
+      console.error('[ClinicalRepo] updateDoctor error:', e.message);
+      throw e;
+    }
+  }
+
+  async deleteDoctor(id) {
+    if (!id) return false;
+    try {
+      const conditions = [{ customId: id }, { 'doctorDetails.nmcId': id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+      const res = await User.findOneAndDelete({ role: 'doctor', $or: conditions });
+      return !!res;
+    } catch (e) {
+      console.error('[ClinicalRepo] deleteDoctor error:', e.message);
+      return false;
     }
   }
 
@@ -381,17 +520,22 @@ class ClinicalRepository {
   }
 
   async createRecord(recordData) {
-    const customId = recordData.id || recordData.customId || `REC-${Math.floor(10 + Math.random() * 90)}`;
+    const customId = recordData.id || recordData.customId || `REC-${Math.floor(1000 + Math.random() * 9000)}`;
     const newRec = {
       customId,
       id: customId,
-      patientId: recordData.patientId || 'P-10249',
+      patientId: recordData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
       title: recordData.title || 'Clinical Diagnostic Report',
-      doctor: recordData.doctor || 'Dr. Sarah Jenkins',
-      hospital: recordData.hospital || 'SMS Hospital Jaipur',
+      doctor: recordData.doctor || 'Attending Physician',
+      hospital: recordData.hospital || 'Hospital Clinical Diagnostics',
       date: recordData.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       type: recordData.type || 'Lab Report',
       file: recordData.file || 'report.pdf',
+      fileUrl: recordData.fileUrl || (recordData.file ? `/uploads/documents/${recordData.file}` : ''),
+      previewUrl: recordData.previewUrl || recordData.fileUrl || '',
+      mimeType: recordData.mimeType || 'application/pdf',
+      imageData: recordData.imageData || '',
+      aiSummary: recordData.aiSummary || '',
       size: recordData.size || '1.2 MB',
       ocrData: recordData.ocrData || {}
     };
@@ -404,6 +548,48 @@ class ClinicalRepository {
     } catch (e) {
       console.error('[ClinicalRepo] createRecord error:', e.message);
       throw e;
+    }
+  }
+
+  async updateRecord(id, updateData) {
+    if (!id) return null;
+    try {
+      const conditions = [{ customId: id }, { id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+
+      const updated = await MedicalRecord.findOneAndUpdate(
+        { $or: conditions },
+        { $set: updateData },
+        { new: true }
+      ).lean();
+
+      if (updated) {
+        return {
+          ...updated,
+          id: updated.customId || updated.id || updated._id.toString()
+        };
+      }
+      return null;
+    } catch (e) {
+      console.error('[ClinicalRepo] updateRecord error:', e.message);
+      return null;
+    }
+  }
+
+  async deleteRecord(id) {
+    if (!id) return false;
+    try {
+      const conditions = [{ customId: id }, { id }];
+      if (/^[0-9a-fA-F]{24}$/.test(String(id))) {
+        conditions.push({ _id: id });
+      }
+      const res = await MedicalRecord.findOneAndDelete({ $or: conditions });
+      return !!res;
+    } catch (e) {
+      console.error('[ClinicalRepo] deleteRecord error:', e.message);
+      return false;
     }
   }
 
@@ -433,9 +619,9 @@ class ClinicalRepository {
     const newRx = {
       customId,
       id: customId,
-      patient: rxData.patient || 'Rahul Sharma',
-      patientId: rxData.patientId || 'P-10249',
-      doctorName: rxData.doctorName || 'Dr. Sarah Jenkins',
+      patient: rxData.patient || 'Patient',
+      patientId: rxData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      doctorName: rxData.doctorName || 'Attending Physician',
       doctorId: rxData.doctorId,
       date: rxData.date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       diagnosis: rxData.diagnosis || 'Clinical Follow-up',
@@ -503,12 +689,12 @@ class ClinicalRepository {
     const newReport = {
       customId,
       id: customId,
-      patientId: reportData.patientId || 'P-10249',
-      patientName: reportData.patientName || 'Rahul Sharma',
+      patientId: reportData.patientId || `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
+      patientName: reportData.patientName || 'Patient',
       doctorId: reportData.doctorId,
-      doctorName: reportData.doctorName || 'Dr. Sarah Jenkins',
+      doctorName: reportData.doctorName || 'Attending Physician',
       hospitalId: reportData.hospitalId,
-      hospitalName: reportData.hospitalName || 'SMS Hospital Jaipur',
+      hospitalName: reportData.hospitalName || 'Clinical Facility',
       appointmentId: reportData.appointmentId,
       source: reportData.source || 'webapp',
       language: reportData.language || 'en',
@@ -521,6 +707,8 @@ class ClinicalRepository {
       pastHistoryMentioned: reportData.pastHistoryMentioned || [],
       pastMedicalHistorySummary: reportData.pastMedicalHistorySummary || {},
       urgentReview: Boolean(reportData.urgentReview),
+      triageLevel: reportData.triageLevel || 'STANDARD_CONSULTATION',
+      recommendedSpecialty: reportData.recommendedSpecialty || 'General Physician',
       importantUnknowns: reportData.importantUnknowns || [],
       conversation: reportData.conversation || [],
       doctorNotes: reportData.doctorNotes || '',

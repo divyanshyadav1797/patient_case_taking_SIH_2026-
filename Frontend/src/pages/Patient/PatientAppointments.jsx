@@ -1,23 +1,73 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePatient } from '../../context/PatientContext';
+import api from '../../services/api';
 
 export default function PatientAppointments() {
   const [activeTab, setActiveTab] = useState('upcoming');
   const navigate = useNavigate();
   const { appointments, cancelAppointment, showToast } = usePatient();
+  const [localAppointments, setLocalAppointments] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    api.getAppointments()
+      .then((res) => {
+        if (!mounted) return;
+        if (Array.isArray(res) && res.length > 0) {
+          setLocalAppointments(res);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not load appointments directly:', err.message);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => { mounted = false; };
+  }, []);
+
+  const combinedAppointments = useMemo(() => {
+    const map = new Map();
+    // Prioritize local direct fetch, merge with context appointments
+    (Array.isArray(appointments) ? appointments : []).forEach(a => {
+      const key = a.customId || a.id || a._id;
+      if (key) map.set(key, a);
+    });
+    (Array.isArray(localAppointments) ? localAppointments : []).forEach(a => {
+      const key = a.customId || a.id || a._id;
+      if (key) map.set(key, a);
+    });
+    return Array.from(map.values());
+  }, [appointments, localAppointments]);
 
   const appointmentGroups = useMemo(() => ({
-    upcoming: appointments.filter((a) => a.status === 'upcoming'),
-    completed: appointments.filter((a) => a.status === 'past' || a.status === 'completed'),
-    cancelled: appointments.filter((a) => a.status === 'cancelled'),
-  }), [appointments]);
+    upcoming: combinedAppointments.filter((a) => (a.status || '').toLowerCase() === 'upcoming'),
+    completed: combinedAppointments.filter((a) => {
+      const s = (a.status || '').toLowerCase();
+      return s === 'past' || s === 'completed';
+    }),
+    cancelled: combinedAppointments.filter((a) => (a.status || '').toLowerCase() === 'cancelled'),
+  }), [combinedAppointments]);
 
   const filteredAppointments = appointmentGroups[activeTab] || [];
 
-  const handleCancel = (id) => {
+  const handleCancel = async (targetId) => {
+    if (!targetId) return;
     if (window.confirm('Are you sure you want to cancel this appointment?')) {
-      cancelAppointment(id);
+      try {
+        await api.deleteAppointment(targetId);
+      } catch (err) {
+        console.warn('Backend cancel notice:', err.message);
+      }
+      cancelAppointment(targetId);
+      setLocalAppointments(prev => prev.map(a => 
+        (a.id === targetId || a._id === targetId || a.customId === targetId) 
+          ? { ...a, status: 'cancelled' } 
+          : a
+      ));
       showToast('Appointment cancelled.');
     }
   };
@@ -59,10 +109,11 @@ export default function PatientAppointments() {
             const initials = appt.doctorName
               ? appt.doctorName.replace('Dr. ', '').split(' ').map((n) => n[0]).slice(0, 2).join('')
               : 'DR';
-            const isUpcoming = appt.status === 'upcoming';
+            const apptId = appt.customId || appt.id || appt._id;
+            const isUpcoming = (appt.status || '').toLowerCase() === 'upcoming';
 
             return (
-              <div className="section-card" key={appt.id} style={{ marginBottom: 0 }}>
+              <div className="section-card" key={apptId} style={{ marginBottom: 0 }}>
                 <div className="appointment">
                   <div className="doctor-avatar">
                     {initials}
@@ -99,7 +150,7 @@ export default function PatientAppointments() {
                       <button
                         type="button"
                         className="secondary-btn"
-                        onClick={() => handleCancel(appt.id)}
+                        onClick={() => handleCancel(apptId)}
                       >
                         Cancel
                       </button>
@@ -132,7 +183,7 @@ export default function PatientAppointments() {
             <button
               type="button"
               className="primary-btn"
-              onClick={() => navigate('/patient/doctors')}
+              onClick={() => navigate('/patient/doctors?mode=book')}
             >
               <i className="fa-solid fa-plus" style={{ marginRight: '8px' }}></i>
               Book New Appointment
