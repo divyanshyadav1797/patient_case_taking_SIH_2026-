@@ -1,0 +1,949 @@
+/* =====================================================
+   QUANTUMCARE KIOSK CSS (SCOPED TO .kiosk-terminal)
+   Prevents global style bleeding into Patient/Doctor/Hospital pages
+===================================================== */
+
+.kiosk-terminal {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  background: radial-gradient(circle at 10px 10px, rgba(255, 255, 255, 0.1) 1px, transparent 1.5px) 0 0 / 14px 14px, #18212a;
+  font-family: 'Inter', "Segoe UI", Arial, sans-serif;
+  color: #071a49;
+  z-index: 9999;
+  overflow-y: auto;
+  box-sizing: border-box;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.kiosk-terminal * {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kiosk-terminal button {
+  font: inherit;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.kiosk-terminal .kiosk {
+  width: min(96vw, 1180px);
+  height: min(96vh, 840px);
+  min-height: 600px;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 30px 90px #0005;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.kiosk-terminal header {
+  min-height: 70px;
+  padding: 13px 25px;
+  border-bottom: 1px solid #edf2f6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kiosk-terminal .brand {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.kiosk-terminal .mark {
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  background: #eaf5ff;
+  color: #087fc9;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.kiosk-terminal .brand b {
+  display: block;
+  font-size: 18px;
+}
+
+.kiosk-terminal .brand small {
+  font-size: 10px;
+  color: #6b7d95;
+}
+
+.kiosk-terminal .headRight {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.kiosk-terminal .langs {
+  display: flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 20px;
+}
+
+.kiosk-terminal .langs button {
+  padding: 7px 11px;
+  border-radius: 17px;
+  background: transparent;
+  color: #63758c;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.kiosk-terminal .langs button.active {
+  background: #087fc9;
+  color: #fff;
+}
+
+.kiosk-terminal .clock {
+  text-align: right;
+  display: grid;
+  font-size: 11px;
+  color: #0872b9;
+}
+
+.kiosk-terminal .clock small {
+  font-size: 9px;
+  color: #647b96;
+}
+
+.kiosk-terminal main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.kiosk-terminal .view {
+  width: min(720px, 94%);
+  height: 100%;
+  overflow: auto;
+  scrollbar-width: none;
+  padding: 22px 12px;
+  text-align: center;
+}
+
+.kiosk-terminal .view::-webkit-scrollbar {
+  display: none;
+}
+
+.kiosk-terminal .view.wide {
+  width: min(900px, 96%);
+}
+
+.kiosk-terminal h1,
+.kiosk-terminal h2 {
+  margin: 0;
+  letter-spacing: -0.8px;
+}
+
+.kiosk-terminal h1 {
+  font-size: clamp(34px, 4vw, 48px);
+}
+
+.kiosk-terminal h2 {
+  font-size: clamp(27px, 3vw, 37px);
+}
+
+.kiosk-terminal p {
+  color: #5e7798;
+  font-size: 14px;
+}
+
+.kiosk-terminal .heroIcon {
+  width: 90px;
+  height: 90px;
+  margin: 35px auto 16px;
+  border-radius: 22px;
+  background: #eaf5ff;
+  color: #087fc9;
+  display: grid;
+  place-items: center;
+  font-size: 54px;
+}
+
+.kiosk-terminal .welcome > p {
+  font-size: 19px;
+  color: #0872b9;
+  margin: 10px 0 28px;
+}
+
+.kiosk-terminal .primary,
+.kiosk-terminal .secondary {
+  min-height: 57px;
+  border-radius: 12px;
+  padding: 0 26px;
+  font-weight: 900;
+}
+
+.kiosk-terminal .primary {
+  color: #fff;
+  background: linear-gradient(#0b89d5, #0877be);
+  box-shadow: 0 10px 22px #087fc93d;
+}
+
+.kiosk-terminal .secondary {
+  background: #fff;
+  color: #0872b9;
+  border: 1px solid #a9cde8;
+}
+
+.kiosk-terminal .giant,
+.kiosk-terminal .wide {
+  width: min(430px, 100%);
+}
+
+.kiosk-terminal .features {
+  width: min(620px, 100%);
+  margin: 28px auto 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.kiosk-terminal .features div {
+  min-height: 64px;
+  border: 1px solid #dce8f2;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  color: #41658d;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.kiosk-terminal .features b {
+  font-size: 21px;
+  color: #087fc9;
+}
+
+.kiosk-terminal .touch {
+  display: block;
+  margin-top: 20px;
+  color: #607895;
+  font-size: 11px;
+}
+
+.kiosk-terminal .auth {
+  max-width: 600px;
+  text-align: center;
+}
+
+.kiosk-terminal .back {
+  display: block;
+  background: #eef6fc;
+  color: #0872b9;
+  border-radius: 18px;
+  padding: 9px 13px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.kiosk-terminal .authIcon {
+  width: 70px;
+  height: 70px;
+  margin: 18px auto 13px;
+  border-radius: 20px;
+  background: #eaf5ff;
+  color: #087fc9;
+  display: grid;
+  place-items: center;
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.kiosk-terminal .auth p {
+  margin: 9px 0 20px;
+}
+
+.kiosk-terminal .display {
+  width: min(410px, 100%);
+  min-height: 60px;
+  margin: 0 auto 12px;
+  border: 1px solid #d8e4ee;
+  border-radius: 13px;
+  background: #f8fafc;
+  display: grid;
+  place-items: center;
+  color: #0872b9;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 2px;
+}
+
+.kiosk-terminal .keypad {
+  width: min(410px, 100%);
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.kiosk-terminal .key {
+  min-height: 58px;
+  border: 1px solid #e1eaf2;
+  border-radius: 12px;
+  background: #fff;
+  color: #071a49;
+  font-size: 18px;
+  box-shadow: 0 2px 7px #00000008;
+}
+
+.kiosk-terminal .key.action {
+  background: #f3f6f9;
+  color: #4c6887;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.kiosk-terminal .key.next {
+  background: #e2f3ff;
+  color: #0872b9;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.kiosk-terminal .new {
+  margin-top: 10px;
+}
+
+.kiosk-terminal .secure {
+  width: min(410px, 100%);
+  margin: 13px auto;
+  padding: 12px;
+  border-radius: 11px;
+  background: #eaf5ff;
+  color: #315d87;
+  font-size: 11px;
+}
+
+.kiosk-terminal .heading {
+  margin: 5px auto 25px;
+}
+
+.kiosk-terminal .heading > div {
+  width: 49px;
+  height: 49px;
+  margin: 0 auto 10px;
+  border-radius: 14px;
+  background: #eaf5ff;
+  color: #087fc9;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+}
+
+.kiosk-terminal .heading p {
+  margin: 8px 0;
+}
+
+.kiosk-terminal .issueGrid,
+.kiosk-terminal .deptGrid {
+  width: min(780px, 100%);
+  margin: auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.kiosk-terminal .issueGrid button,
+.kiosk-terminal .deptGrid button {
+  min-height: 115px;
+  border: 1px solid #dce8f2;
+  border-radius: 14px;
+  background: #fbfdff;
+  color: #071a49;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 10px;
+}
+
+.kiosk-terminal .issueGrid span,
+.kiosk-terminal .deptGrid span {
+  font-size: 30px;
+}
+
+.kiosk-terminal .issueGrid b,
+.kiosk-terminal .deptGrid b {
+  font-size: 12px;
+}
+
+.kiosk-terminal .voice {
+  width: min(780px, 100%);
+  margin: 13px auto 0;
+  min-height: 72px;
+  border-radius: 13px;
+  background: #dff0ff;
+  color: #0872b9;
+  display: grid;
+  grid-template-columns: 45px 1fr 25px;
+  align-items: center;
+  text-align: left;
+  padding: 10px 15px;
+  gap: 10px;
+}
+
+.kiosk-terminal .voice div b,
+.kiosk-terminal .voice div small {
+  display: block;
+}
+
+.kiosk-terminal .voice div small {
+  font-size: 9px;
+  color: #5a7595;
+  margin-top: 3px;
+}
+
+.kiosk-terminal .docPanel {
+  width: min(780px, 100%);
+  margin: auto;
+  display: grid;
+  grid-template-columns: 275px 1fr;
+  gap: 24px;
+}
+
+.kiosk-terminal .qr {
+  border: 1px solid #dce8f2;
+  border-radius: 16px;
+  padding: 16px;
+  display: grid;
+  justify-items: center;
+}
+
+.kiosk-terminal .qrbox {
+  width: 175px;
+  height: 175px;
+  border: 8px solid #fff;
+  box-shadow: 0 0 0 1px #ccd7e0;
+  background: repeating-linear-gradient(45deg, #111 0 5px, #fff 5px 10px);
+  position: relative;
+}
+
+.kiosk-terminal .qrbox i {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  background: #fff;
+  border: 7px solid #111;
+  border-radius: 4px;
+}
+
+.kiosk-terminal .qrbox i:nth-child(1) { left: 5px; top: 5px; }
+.kiosk-terminal .qrbox i:nth-child(2) { right: 5px; top: 5px; }
+.kiosk-terminal .qrbox i:nth-child(3) { left: 5px; bottom: 5px; }
+
+.kiosk-terminal .qr b,
+.kiosk-terminal .qr small {
+  display: block;
+}
+
+.kiosk-terminal .qr b {
+  font-size: 12px;
+  margin-top: 11px;
+}
+
+.kiosk-terminal .qr small {
+  font-size: 9px;
+  color: #69809b;
+  margin-top: 4px;
+}
+
+.kiosk-terminal .docActions {
+  display: grid;
+  gap: 9px;
+}
+
+.kiosk-terminal .docActions button {
+  min-height: 62px;
+  border: 1px solid #d5e4ef;
+  border-radius: 13px;
+  background: #fff;
+  display: grid;
+  grid-template-columns: 35px 1fr 18px;
+  align-items: center;
+  text-align: left;
+  padding: 0 15px;
+  gap: 8px;
+  color: #071a49;
+}
+
+.kiosk-terminal .docActions span b,
+.kiosk-terminal .docActions span small {
+  display: block;
+}
+
+.kiosk-terminal .docActions span b {
+  font-size: 12px;
+}
+
+.kiosk-terminal .docActions span small {
+  font-size: 9px;
+  color: #68809b;
+  margin-top: 3px;
+}
+
+.kiosk-terminal .info {
+  width: min(780px, 100%);
+  margin: 13px auto;
+  background: #eaf5ff;
+  color: #2d6594;
+  padding: 11px 15px;
+  border-radius: 11px;
+  font-size: 10px;
+  text-align: left;
+}
+
+.kiosk-terminal .deptGrid button.selected {
+  background: #087fc9;
+  color: #fff;
+  border-color: #087fc9;
+}
+
+.kiosk-terminal .doctorList {
+  width: min(800px, 100%);
+  margin: auto;
+  display: grid;
+  gap: 9px;
+}
+
+.kiosk-terminal .doctor {
+  min-height: 78px;
+  padding: 9px 12px;
+  border: 1px solid #dce8f2;
+  border-radius: 13px;
+  background: #fff;
+  display: grid;
+  grid-template-columns: 47px 1fr auto;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+}
+
+.kiosk-terminal .avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #eaf5ff;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+.kiosk-terminal .doctor b,
+.kiosk-terminal .doctor small,
+.kiosk-terminal .doctor em {
+  display: block;
+}
+
+.kiosk-terminal .doctor b {
+  font-size: 13px;
+}
+
+.kiosk-terminal .doctor small {
+  font-size: 10px;
+  color: #647c98;
+  margin-top: 3px;
+}
+
+.kiosk-terminal .doctor em {
+  font-style: normal;
+  font-size: 9px;
+  color: #7a8da4;
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.kiosk-terminal .doctor em.available {
+  color: #1cab70;
+}
+
+.kiosk-terminal .doctor > strong {
+  background: #087fc9;
+  color: #fff;
+  padding: 12px 15px;
+  border-radius: 9px;
+  font-size: 10px;
+}
+
+.kiosk-terminal .confirm {
+  max-width: 600px;
+}
+
+.kiosk-terminal .success {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  margin: 18px auto 12px;
+  background: #21ab70;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 40px;
+  font-weight: 900;
+}
+
+.kiosk-terminal .success.small {
+  width: 66px;
+  height: 66px;
+}
+
+.kiosk-terminal .confirm label,
+.kiosk-terminal .token label {
+  color: #1cab70;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 1.2px;
+}
+
+.kiosk-terminal .selected {
+  width: min(500px, 100%);
+  margin: 22px auto;
+  padding: 17px;
+  border: 1px solid #dcebf6;
+  border-radius: 15px;
+  background: #f7fbff;
+  display: flex;
+  gap: 13px;
+  align-items: center;
+  text-align: left;
+}
+
+.kiosk-terminal .avatar.large {
+  width: 54px;
+  height: 54px;
+}
+
+.kiosk-terminal .selected b,
+.kiosk-terminal .selected span,
+.kiosk-terminal .selected small {
+  display: block;
+}
+
+.kiosk-terminal .selected b {
+  font-size: 15px;
+}
+
+.kiosk-terminal .selected span {
+  font-size: 11px;
+  color: #0872b9;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+.kiosk-terminal .selected small {
+  font-size: 9px;
+  color: #6b809a;
+  margin-top: 5px;
+}
+
+.kiosk-terminal .token {
+  max-width: 650px;
+}
+
+.kiosk-terminal .tokenCard {
+  width: min(500px, 100%);
+  margin: 18px auto 12px;
+  background: #eaf5ff;
+  border-radius: 15px;
+  padding: 19px;
+}
+
+.kiosk-terminal .tokenCard small,
+.kiosk-terminal .tokenCard strong,
+.kiosk-terminal .tokenCard > b,
+.kiosk-terminal .tokenCard > span {
+  display: block;
+}
+
+.kiosk-terminal .tokenCard small {
+  font-size: 10px;
+  color: #5b7698;
+}
+
+.kiosk-terminal .tokenCard strong {
+  font-size: 50px;
+  color: #087fc9;
+  line-height: 1.05;
+  margin: 5px 0 10px;
+  letter-spacing: 2px;
+}
+
+.kiosk-terminal .tokenCard > b {
+  font-size: 12px;
+}
+
+.kiosk-terminal .tokenCard > span {
+  font-size: 11px;
+  color: #5c7698;
+  margin-top: 3px;
+}
+
+.kiosk-terminal .receipt {
+  display: inline-flex;
+  background: #eaf9f2;
+  color: #168156;
+  border-radius: 20px;
+  padding: 9px 14px;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.kiosk-terminal .redirect {
+  font-size: 10px;
+  color: #617995;
+  margin-top: 13px;
+}
+
+.kiosk-terminal .redirect b {
+  color: #087fc9;
+}
+
+.kiosk-terminal .progress {
+  width: min(500px, 100%);
+  height: 6px;
+  margin: 8px auto 12px;
+  background: #e5edf4;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.kiosk-terminal .progress i {
+  display: block;
+  height: 100%;
+  background: #087fc9;
+  transition: width 1s linear;
+}
+
+.kiosk-terminal footer {
+  min-height: 34px;
+  border-top: 1px solid #edf2f6;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #5c7591;
+  font-size: 9px;
+  padding: 5px;
+}
+
+.kiosk-terminal .kiosk-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: #071a49;
+  color: #fff;
+  padding: 13px 20px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 800;
+  z-index: 10000;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+@media (max-width: 800px) {
+  .kiosk-terminal .kiosk {
+    width: 97vw;
+    height: 97vh;
+    min-height: 550px;
+  }
+  .kiosk-terminal header {
+    padding: 12px 15px;
+  }
+  .kiosk-terminal .brand b {
+    font-size: 15px;
+  }
+  .kiosk-terminal .brand .mark {
+    width: 37px;
+    height: 37px;
+  }
+  .kiosk-terminal .clock {
+    display: none;
+  }
+  .kiosk-terminal .issueGrid,
+  .kiosk-terminal .deptGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .kiosk-terminal .docPanel {
+    grid-template-columns: 1fr;
+  }
+  .kiosk-terminal .qr {
+    width: min(280px, 100%);
+    margin: auto;
+  }
+  .kiosk-terminal .features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-height: 720px) {
+  .kiosk-terminal .heroIcon {
+    width: 68px;
+    height: 68px;
+    font-size: 40px;
+    margin: 8px auto;
+  }
+  .kiosk-terminal .features {
+    margin-top: 15px;
+  }
+  .kiosk-terminal .issueGrid button,
+  .kiosk-terminal .deptGrid button {
+    min-height: 88px;
+  }
+  .kiosk-terminal .tokenCard {
+    margin: 10px auto;
+    padding: 13px;
+  }
+  .kiosk-terminal .tokenCard strong {
+    font-size: 40px;
+  }
+}
+
+/* ─── KIOSK AI INTAKE & CASE-TAKING STYLES ─────────────────── */
+.kiosk-terminal .ai-intake-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.25rem 2rem;
+  overflow-y: auto;
+}
+
+.kiosk-terminal .ai-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #EFF6FF;
+  color: #1D4ED8;
+  padding: 8px 18px;
+  border-radius: 30px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border: 1px solid #BFDBFE;
+  width: fit-content;
+  margin-bottom: 0.85rem;
+}
+
+.kiosk-terminal .ai-step-indicator {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.5rem;
+}
+
+.kiosk-terminal .ai-question-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #0F172A;
+  line-height: 1.3;
+  margin: 0.25rem 0 1.5rem 0;
+}
+
+.kiosk-terminal .ai-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 1.5rem;
+}
+
+.kiosk-terminal .ai-option-card {
+  background: #F8FAFC;
+  border: 2px solid #E2E8F0;
+  border-radius: 16px;
+  padding: 18px 22px;
+  text-align: left;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1E293B;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kiosk-terminal .ai-option-card:hover,
+.kiosk-terminal .ai-option-card:focus {
+  background: #EFF6FF;
+  border-color: #2563EB;
+  color: #1D4ED8;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.12);
+}
+
+.kiosk-terminal .ai-custom-input-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 1rem;
+}
+
+.kiosk-terminal .ai-input-field {
+  flex: 1;
+  padding: 16px 20px;
+  font-size: 1.15rem;
+  border: 2px solid #CBD5E1;
+  border-radius: 14px;
+  outline: none;
+}
+
+.kiosk-terminal .ai-input-field:focus {
+  border-color: #2563EB;
+}
+
+.kiosk-terminal .ai-summary-card {
+  background: #F0FDF4;
+  border: 2px solid #86EFAC;
+  border-radius: 20px;
+  padding: 24px;
+  margin: 1rem 0 1.5rem 0;
+  text-align: left;
+}
+
+.kiosk-terminal .ai-summary-headline {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #166534;
+  margin-bottom: 0.5rem;
+}
+
+.kiosk-terminal .ai-summary-body {
+  font-size: 1.1rem;
+  color: #15803D;
+  line-height: 1.55;
+}
+
+.kiosk-terminal .ai-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.kiosk-terminal .ai-symptom-tag {
+  background: #DCFCE7;
+  color: #166534;
+  font-weight: 700;
+  font-size: 0.85rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+}
+
