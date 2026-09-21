@@ -25,14 +25,19 @@ Click this link directly to deploy both the Web App and the AI Microservice auto
 
 ---
 
-## 🌐 Option 2: Live Public Link (Active Right Now!)
+## 🌐 Option 2: Live Public Link (Active via Cloudflare BAT Launcher)
 
-If you need a link to share with anyone immediately without waiting for Render:
+To launch the live online server at any time, simply double-click:
+👉 **`START_CLOUD_SERVER.bat`**
 
-> **Live Public URL**: **[https://locked-right-supreme-envelope.trycloudflare.com](https://locked-right-supreme-envelope.trycloudflare.com)**
+This automatically compiles the latest frontend, binds the unified server with MongoDB, and launches Cloudflare Tunnel.
 
-- **Patient Portal**: `https://locked-right-supreme-envelope.trycloudflare.com/patient/login`
-- **Doctor Dashboard**: `https://locked-right-supreme-envelope.trycloudflare.com/doctor/login`
-- **Hospital Dashboard**: `https://locked-right-supreme-envelope.trycloudflare.com/hospital/dashboard`
+> **Active Live Public URL**: **[https://flex-influenced-vocal-computer.trycloudflare.com](https://flex-influenced-vocal-computer.trycloudflare.com)**
 
-*(This URL is currently live and connected to your local database and services).*
+- **Patient Portal**: `https://flex-influenced-vocal-computer.trycloudflare.com/login?role=patient`
+- **Doctor Portal**: `https://flex-influenced-vocal-computer.trycloudflare.com/login?role=doctor`
+- **Hospital Portal**: `https://flex-influenced-vocal-computer.trycloudflare.com/login?role=hospital`
+- **OPD Kiosk Terminal**: `https://flex-influenced-vocal-computer.trycloudflare.com/kiosk`
+- **API Status**: `https://flex-influenced-vocal-computer.trycloudflare.com/health`
+
+*(This URL is live and works on any phone, tablet, or laptop worldwide).*

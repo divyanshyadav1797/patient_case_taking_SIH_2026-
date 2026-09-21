@@ -50,16 +50,121 @@ import KioskPage          from './pages/Kiosk/KioskPage';
 // ── 404 ───────────────────────────────────────────────
 import NotFound           from './pages/NotFound/NotFound';
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('[Quantum Care Error Boundary caught]:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+          color: '#F8FAFC',
+          fontFamily: 'Inter, sans-serif',
+          padding: '2rem'
+        }}>
+          <div style={{
+            maxWidth: '520px',
+            width: '100%',
+            textAlign: 'center',
+            background: 'rgba(30, 41, 59, 0.9)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '1.5rem',
+            padding: '2.5rem 2rem',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)'
+          }}>
+            <div style={{
+              width: '70px',
+              height: '70px',
+              margin: '0 auto 1.25rem',
+              borderRadius: '50%',
+              background: 'rgba(239, 68, 68, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#EF4444',
+              fontSize: '2rem'
+            }}>
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: 700, margin: '0 0 0.5rem', color: '#F8FAFC' }}>
+              Application Loaded
+            </h2>
+            <p style={{ fontSize: '0.9rem', color: '#94A3B8', lineHeight: 1.6, margin: '0 0 1.5rem' }}>
+              {this.state.error?.message || 'An unexpected rendering issue occurred. Click below to reload or return to the login portal.'}
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button
+                onClick={() => {
+                  localStorage.removeItem('medicare_auth_session');
+                  window.location.href = '/login';
+                }}
+                style={{
+                  background: '#2563EB',
+                  color: '#FFF',
+                  border: 'none',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Go to Login
+              </button>
+              <button
+                onClick={() => window.location.reload()}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: '#F8FAFC',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  padding: '0.75rem 1.5rem',
+                  borderRadius: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Root redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Root redirect */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* Authentication */}
-          <Route path="/login" element={<Login />} />
+            {/* Authentication */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Direct Portal Login Redirects to avoid nested route empty outlet blackholes */}
+            <Route path="/patient/login" element={<Navigate to="/login?role=patient" replace />} />
+            <Route path="/doctor/login" element={<Navigate to="/login?role=doctor" replace />} />
+            <Route path="/hospital/login" element={<Navigate to="/login?role=hospital" replace />} />
+            <Route path="/kiosk/login" element={<Navigate to="/login?role=kiosk" replace />} />
 
           {/* ── Patient Portal ── */}
           <Route
@@ -142,5 +247,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }

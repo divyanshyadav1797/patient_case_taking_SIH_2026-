@@ -1,6 +1,19 @@
-require('dotenv').config();
 const path = require('path');
 const fs = require('fs');
+
+// ── Multi-Path Environment Variable Loader ──
+const envCandidates = [
+  path.resolve(__dirname, '.env'),
+  path.resolve(__dirname, '../.env'),
+  path.resolve(process.cwd(), '.env'),
+  path.resolve(process.cwd(), 'Backend/.env')
+];
+for (const envFile of envCandidates) {
+  if (fs.existsSync(envFile)) {
+    require('dotenv').config({ path: envFile });
+  }
+}
+
 const express = require('express');
 const cors = require('cors');
 const { connectDB, getStatus } = require('./src/config/db');
@@ -23,7 +36,7 @@ const PORT = process.env.PORT || 5000;
 // ── Security Headers & Hardening ──
 app.use(securityHeaders);
 
-// ── Strict & Configurable CORS Policy ──
+// ── Strict & Configurable CORS Policy with Tunnel Support ──
 const rawOrigins = process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS || '';
 const allowedOrigins = rawOrigins
   ? rawOrigins.split(',').map((o) => o.trim())
@@ -31,10 +44,31 @@ const allowedOrigins = rawOrigins
 
 const allowAllOrigins = allowedOrigins.includes('*') || rawOrigins === '*';
 
+const isAllowedTunnelOrigin = (origin) => {
+  if (!origin) return true;
+  return (
+    origin.endsWith('.trycloudflare.com') ||
+    origin.endsWith('.cloudflarestream.com') ||
+    origin.endsWith('.loca.lt') ||
+    origin.endsWith('.ngrok-free.app') ||
+    origin.endsWith('.ngrok.io') ||
+    origin.endsWith('.onrender.com') ||
+    origin.endsWith('.vercel.app') ||
+    origin.includes('localhost') ||
+    origin.includes('127.0.0.1')
+  );
+};
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser agents, wildcard origins, whitelisted origins, or development mode
-    if (!origin || allowAllOrigins || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    // Allow non-browser agents, wildcard origins, whitelisted origins, Cloudflare tunnels, or dev mode
+    if (
+      !origin ||
+      allowAllOrigins ||
+      isAllowedTunnelOrigin(origin) ||
+      allowedOrigins.includes(origin) ||
+      process.env.NODE_ENV !== 'production'
+    ) {
       return callback(null, true);
     }
     return callback(new Error('Blocked by CORS policy'));
@@ -201,13 +235,22 @@ const resolvedFrontendDist = candidateDistPaths.find(
 if (process.env.SERVE_FRONTEND !== 'false' && resolvedFrontendDist) {
   console.log(`[Frontend] Serving production SPA from: ${resolvedFrontendDist}`);
   app.use(express.static(resolvedFrontendDist, {
-    maxAge: '1d',
+    maxAge: '1h',
     index: 'index.html'
   }));
 
   // Non-API GET routes serve index.html for client-side routing (Express 5 compatible)
   app.use((req, res, next) => {
-    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/health')) {
+    if (
+      req.method === 'GET' &&
+      !req.path.startsWith('/api') &&
+      !req.path.startsWith('/uploads') &&
+      !req.path.startsWith('/health') &&
+      !req.path.startsWith('/assets') &&
+      (!req.path.includes('.') || req.path === '/')
+    ) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.sendFile(path.join(resolvedFrontendDist, 'index.html'));
     }
     next();
