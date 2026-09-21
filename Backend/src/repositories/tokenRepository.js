@@ -1,38 +1,37 @@
-const fs = require('fs');
-const path = require('path');
-const dbConfig = require('../config/db');
 const BlacklistedToken = require('../models/BlacklistedToken');
-
-const DATA_DIR = path.join(__dirname, '../../data');
-const DB_FILE = process.env.LOCAL_DB_FILE || path.join(DATA_DIR, 'db.json');
 
 // Fast in-memory cache of blacklisted tokens: Map<token, expiresAtTimestamp>
 const blacklistCache = new Map();
 
-function loadBlacklist() {
-  try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-      if (Array.isArray(data.blacklistedTokens)) {
-        const now = Date.now();
-        data.blacklistedTokens.forEach(item => {
-          const expTime = new Date(item.expiresAt).getTime();
-          if (expTime > now) {
-            blacklistCache.set(item.token, expTime);
-          }
-        });
-      }
-    }
-  } catch (err) {
-    console.warn('[TokenRepository] Could not load blacklisted tokens from file:', err.message);
-  }
-}
-
-loadBlacklist();
-
 class TokenRepository {
+  constructor() {
+    // Attempt to hydrate blacklist cache from MongoDB once connected
+    this.hydrateFromMongo().catch(err => {
+      // Ignored during startup before connection
+    });
+  }
+
   /**
-   * Blacklist a token upon logout or revocation
+   * Load active unexpired blacklisted tokens from MongoDB
+   */
+  async hydrateFromMongo() {
+    try {
+      const now = new Date();
+      const tokens = await BlacklistedToken.find({ expiresAt: { $gt: now } }).lean();
+      tokens.forEach(item => {
+        const expTime = new Date(item.expiresAt).getTime();
+        blacklistCache.set(item.token, expTime);
+      });
+      if (tokens.length > 0) {
+        console.log(`[TokenRepository] Loaded ${tokens.length} revoked tokens from MongoDB`);
+      }
+    } catch (e) {
+      // Non-blocking if DB not ready yet
+    }
+  }
+
+  /**
+   * Blacklist a token upon logout or revocation in MongoDB
    * @param {string} token
    * @param {object} decoded - Decoded JWT payload with exp, sub, jti
    * @param {string} reason
@@ -50,44 +49,17 @@ class TokenRepository {
       jti: decoded.jti || null,
       userId: decoded.id || decoded.sub || null,
       reason,
-      expiresAt: expiresAt.toISOString()
+      expiresAt
     };
 
     // 1. Update in-memory cache
     blacklistCache.set(token, expiresAt.getTime());
 
-    // 2. Persist in MongoDB if connected
-    if (dbConfig.isConnected) {
-      try {
-        await BlacklistedToken.create({
-          token,
-          jti: record.jti,
-          userId: record.userId,
-          reason,
-          expiresAt
-        });
-      } catch (e) {
-        // Token might already be in blacklist, ignore duplicate key error
-      }
-    }
-
-    // 3. Persist in local JSON store
+    // 2. Persist directly in MongoDB
     try {
-      if (fs.existsSync(DB_FILE)) {
-        const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-        if (!Array.isArray(data.blacklistedTokens)) {
-          data.blacklistedTokens = [];
-        }
-        // Remove expired from array
-        const now = Date.now();
-        data.blacklistedTokens = data.blacklistedTokens.filter(
-          item => new Date(item.expiresAt).getTime() > now
-        );
-        data.blacklistedTokens.push(record);
-        fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
-      }
+      await BlacklistedToken.create(record);
     } catch (e) {
-      console.warn('[TokenRepository] Failed to save blacklist to db.json:', e.message);
+      // Ignore duplicate key error if already blacklisted
     }
   }
 
@@ -101,7 +73,7 @@ class TokenRepository {
     const expTime = blacklistCache.get(token);
     if (!expTime) return false;
 
-    // If expired, clean up and treat as not blacklisted (it will fail normal JWT exp check anyway)
+    // If expired, clean up from in-memory cache
     if (Date.now() > expTime) {
       blacklistCache.delete(token);
       return false;

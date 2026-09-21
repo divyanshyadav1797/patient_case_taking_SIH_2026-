@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDoctor } from '../../context/DoctorContext';
+import api from '../../services/api';
 
 export default function Modals() {
   const navigate = useNavigate();
@@ -40,6 +41,23 @@ export default function Modals() {
   // Support Form state
   const [supportSubject, setSupportSubject] = useState('');
   const [supportMessage, setSupportMessage] = useState('');
+
+  // AI Medical History Summary for active appointment consultation
+  const [aptAiSummary, setAptAiSummary] = useState(null);
+
+  useEffect(() => {
+    if (aptDetail && (aptDetail.patientId || aptDetail.patient)) {
+      const pid = aptDetail.patientId || aptDetail.patient;
+      api.getAiMedicalHistorySummary(pid, aptDetail.type || aptDetail.procedure || '')
+        .then((res) => {
+          if (res && res.executiveSummary) setAptAiSummary(res);
+          else if (res && res.data && res.data.executiveSummary) setAptAiSummary(res.data);
+        })
+        .catch(() => setAptAiSummary(null));
+    } else {
+      setAptAiSummary(null);
+    }
+  }, [aptDetail]);
 
   const handleCreateRxSubmit = (e) => {
     e.preventDefault();
@@ -323,6 +341,33 @@ export default function Modals() {
                   <div>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Clinical Notes</span>
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-dark)', marginTop: '4px', lineHeight: 1.5 }}>{aptDetail.notes}</p>
+                  </div>
+                )}
+
+                {/* AI Longitudinal Medical History Summary from past reports */}
+                {aptAiSummary && (
+                  <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: '8px', padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>🧠</span>
+                        <strong style={{ fontSize: '0.825rem', color: '#166534' }}>AI Medical History Summary (Past Reports)</strong>
+                      </div>
+                      <span style={{ background: '#DCFCE7', color: '#15803D', padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: 700 }}>
+                        {aptAiSummary.previousReportsCount > 0 ? `${aptAiSummary.previousReportsCount} Prior Reports` : 'Baseline Visit'}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '0.825rem', color: '#14532D', margin: '0 0 8px 0', lineHeight: 1.5 }}>
+                      {aptAiSummary.executiveSummary}
+                    </p>
+                    {Array.isArray(aptAiSummary.keyPastDiagnoses) && aptAiSummary.keyPastDiagnoses.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                        {aptAiSummary.keyPastDiagnoses.map((dx, i) => (
+                          <span key={i} style={{ background: '#FFFFFF', border: '1px solid #BBF7D0', color: '#166534', padding: '2px 6px', borderRadius: '4px', fontSize: '0.725rem' }}>
+                            {dx}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

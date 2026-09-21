@@ -1,47 +1,7 @@
-const fs = require('fs');
-const path = require('path');
 const bcrypt = require('bcryptjs');
-const dbConfig = require('../config/db');
 const User = require('../models/User');
 const OtpSession = require('../models/OtpSession');
-const { hashAadhaar, maskAadhaar } = require('../utils/aadhaarUtils');
-
-const DATA_DIR = path.join(__dirname, '../../data');
-const DB_FILE = process.env.LOCAL_DB_FILE || path.join(DATA_DIR, 'db.json');
-
-// Ensure data directory exists
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
-}
-
-// In-memory fallback state with file persistence
-let localDb = {
-  users: [],
-  otpSessions: []
-};
-
-// Load existing JSON DB if file exists
-function loadLocalDb() {
-  try {
-    if (fs.existsSync(DB_FILE)) {
-      const data = fs.readFileSync(DB_FILE, 'utf8');
-      localDb = JSON.parse(data);
-    }
-  } catch (err) {
-    console.warn('[Repository] Failed to read db.json, using fresh memory state:', err.message);
-  }
-}
-
-// Save to JSON DB
-function saveLocalDb() {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(localDb, null, 2), 'utf8');
-  } catch (err) {
-    console.error('[Repository] Failed to write db.json:', err.message);
-  }
-}
-
-loadLocalDb();
+const { hashAadhaar, maskAadhaar, normalizeAadhaar } = require('../utils/aadhaarUtils');
 
 /**
  * Default Seed Users for instant demonstration
@@ -52,7 +12,8 @@ const DEFAULT_SEEDS = [
     name: 'Rahul Sharma',
     email: 'rahul.sharma@example.com',
     phone: '9876543210',
-    plainPassword: 'patient123', // Also supports PIN '1234'
+    plainPassword: 'patient123',
+    plainPin: '1234',
     role: 'patient',
     rawAadhaar: '123456789012',
     patientDetails: {
@@ -73,11 +34,27 @@ const DEFAULT_SEEDS = [
     }
   },
   {
+    customId: 'DOC-8820',
+    name: 'Dr. Rajesh Sharma',
+    email: 'dr.sharma@hospital.com',
+    phone: '9829012344',
+    plainPassword: 'doctor123',
+    plainPin: '1234',
+    role: 'doctor',
+    doctorDetails: {
+      nmcId: 'NMC-2024-CARD-9912',
+      specialty: 'Cardiology',
+      department: 'Cardiology',
+      hospitalName: 'SMS Hospital Jaipur'
+    }
+  },
+  {
     customId: 'DOC-8821',
     name: 'Dr. Sarah Jenkins',
     email: 'dr.sarah@medicare.org',
     phone: '9829012345',
     plainPassword: 'doctor123',
+    plainPin: '1234',
     role: 'doctor',
     doctorDetails: {
       nmcId: 'NMC-2018-99412',
@@ -87,11 +64,72 @@ const DEFAULT_SEEDS = [
     }
   },
   {
+    customId: 'DOC-8822',
+    name: 'Dr. Michael Chang',
+    email: 'dr.chang@medicare.org',
+    phone: '9829012346',
+    plainPassword: 'doctor123',
+    plainPin: '1234',
+    role: 'doctor',
+    doctorDetails: {
+      nmcId: 'NMC-2019-10294',
+      specialty: 'Neurology',
+      department: 'Neurology',
+      hospitalName: 'SMS Hospital Jaipur'
+    }
+  },
+  {
+    customId: 'DOC-8823',
+    name: 'Dr. Priya Patel',
+    email: 'dr.patel@medicare.org',
+    phone: '9829012347',
+    plainPassword: 'doctor123',
+    plainPin: '1234',
+    role: 'doctor',
+    doctorDetails: {
+      nmcId: 'NMC-2020-55123',
+      specialty: 'General Physician',
+      department: 'General Medicine',
+      hospitalName: 'SMS Hospital Jaipur'
+    }
+  },
+  {
+    customId: 'DOC-8824',
+    name: 'Dr. Rajesh Gupta',
+    email: 'dr.gupta@medicare.org',
+    phone: '9829012348',
+    plainPassword: 'doctor123',
+    plainPin: '1234',
+    role: 'doctor',
+    doctorDetails: {
+      nmcId: 'NMC-2016-88219',
+      specialty: 'Orthopedics',
+      department: 'Orthopedics',
+      hospitalName: 'SMS Hospital Jaipur'
+    }
+  },
+  {
+    customId: 'DOC-8825',
+    name: 'Dr. Ananya Roy',
+    email: 'dr.roy@medicare.org',
+    phone: '9829012349',
+    plainPassword: 'doctor123',
+    plainPin: '1234',
+    role: 'doctor',
+    doctorDetails: {
+      nmcId: 'NMC-2021-33291',
+      specialty: 'Pediatrics',
+      department: 'Pediatrics',
+      hospitalName: 'SMS Hospital Jaipur'
+    }
+  },
+  {
     customId: 'HOSP-RAJ-01',
     name: 'SMS Hospital Jaipur',
     email: 'admin@smshospital.org',
     phone: '01412560291',
     plainPassword: 'hospital123',
+    plainPin: '1234',
     role: 'hospital',
     hospitalDetails: {
       hospitalRegNo: 'RJ-MED-2014-991',
@@ -105,7 +143,8 @@ const DEFAULT_SEEDS = [
     name: 'OPD Check-In Terminal 04',
     email: 'kiosk.terminal04@smshospital.org',
     phone: '9999900004',
-    plainPassword: '1234', // Kiosk PIN
+    plainPassword: '1234',
+    plainPin: '1234',
     role: 'kiosk',
     kioskDetails: {
       terminalId: 'KIOSK-TER-04',
@@ -117,275 +156,245 @@ const DEFAULT_SEEDS = [
 
 class UserRepository {
   /**
-   * Seed demo accounts if not present
+   * Seed demo accounts in MongoDB if not present
    */
   async seedDefaultUsers() {
-    for (const seed of DEFAULT_SEEDS) {
-      const passwordHash = await bcrypt.hash(seed.plainPassword, 10);
-      const aadhaarRef = seed.rawAadhaar ? hashAadhaar(seed.rawAadhaar) : undefined;
-      const masked = seed.rawAadhaar ? maskAadhaar(seed.rawAadhaar) : undefined;
+    try {
+      for (const seed of DEFAULT_SEEDS) {
+        const passwordHash = await bcrypt.hash(seed.plainPassword, 10);
+        const pinHash = seed.plainPin ? await bcrypt.hash(seed.plainPin, 10) : undefined;
+        const aadhaarRef = seed.rawAadhaar ? hashAadhaar(seed.rawAadhaar) : undefined;
+        const masked = seed.rawAadhaar ? maskAadhaar(seed.rawAadhaar) : undefined;
 
-      const record = {
-        customId: seed.customId,
-        name: seed.name,
-        email: seed.email,
-        phone: seed.phone,
-        passwordHash,
-        role: seed.role,
-        status: 'ACTIVE',
-        aadhaarReference: aadhaarRef,
-        maskedAadhaar: masked,
-        patientDetails: seed.patientDetails,
-        doctorDetails: seed.doctorDetails,
-        hospitalDetails: seed.hospitalDetails,
-        kioskDetails: seed.kioskDetails,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
+        const record = {
+          customId: seed.customId,
+          name: seed.name,
+          email: seed.email,
+          phone: seed.phone,
+          passwordHash,
+          pinHash,
+          role: seed.role,
+          status: 'ACTIVE',
+          aadhaarReference: aadhaarRef,
+          maskedAadhaar: masked,
+          patientDetails: seed.patientDetails,
+          doctorDetails: seed.doctorDetails,
+          hospitalDetails: seed.hospitalDetails,
+          kioskDetails: seed.kioskDetails
+        };
 
-      if (dbConfig.isConnected) {
-        try {
-          const exists = await User.findOne({
-            $or: [
-              { email: seed.email },
-              { customId: seed.customId }
-            ]
-          });
-          if (!exists) {
-            await User.create(record);
+        const conditions = [];
+        if (seed.email) conditions.push({ email: seed.email.toLowerCase() });
+        if (seed.customId) conditions.push({ customId: seed.customId });
+
+        const existing = await User.findOne({ $or: conditions });
+        if (!existing) {
+          await User.create(record);
+        } else {
+          // Ensure pinHash and other essential fields are up to date
+          const updates = {};
+          if (!existing.pinHash && pinHash) updates.pinHash = pinHash;
+          if (!existing.aadhaarReference && aadhaarRef) updates.aadhaarReference = aadhaarRef;
+          if (!existing.maskedAadhaar && masked) updates.maskedAadhaar = masked;
+          if (Object.keys(updates).length > 0) {
+            await User.updateOne({ _id: existing._id }, { $set: updates });
           }
-        } catch (e) {
-          console.warn('[Repository] Mongoose seed error:', e.message);
         }
       }
-
-      // Also ensure localDb has the record
-      const localExists = localDb.users.find(u => u.email === seed.email || u.customId === seed.customId);
-      if (!localExists) {
-        localDb.users.push({
-          _id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          ...record
-        });
-        saveLocalDb();
-      }
+      console.log('[UserRepository] Demo accounts verified in MongoDB (Patient, Doctors, Hospital, Kiosk).');
+    } catch (err) {
+      console.error('[UserRepository] Error seeding demo users in MongoDB:', err.message);
     }
-    console.log('[Repository] Demo accounts ready: Patient, Doctor, Hospital, Kiosk.');
   }
 
   /**
    * Find user by database ID or customId
    */
   async findById(id) {
-    if (dbConfig.isConnected) {
-      try {
-        const user = await User.findById(id);
-        if (user) return user.toSafeObject ? user.toSafeObject() : user;
-      } catch (e) {
-        // Fallback to local
+    if (!id) return null;
+    try {
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(String(id));
+      const query = isObjectId ? { $or: [{ _id: id }, { customId: id }] } : { customId: id };
+      const user = await User.findOne(query);
+      if (user) {
+        return user.toSafeObject ? user.toSafeObject() : user;
       }
+      return null;
+    } catch (e) {
+      console.error('[UserRepository] findById error:', e.message);
+      return null;
     }
-    const local = localDb.users.find(u => u._id === id || u.customId === id);
-    if (!local) return null;
-    const safe = { ...local };
-    delete safe.passwordHash;
-    delete safe.aadhaarReference;
-    return safe;
   }
 
   /**
-   * Find raw user by identifier (includes passwordHash for auth check)
+   * Find raw user by identifier (includes passwordHash and pinHash for auth check)
    */
   async findRawByRoleAndIdentifier(role, identifier) {
-    const cleanId = String(identifier || '').trim();
-    const cleanLower = cleanId.toLowerCase();
-    const cleanAadhaarRef = hashAadhaar(cleanId);
+    const rawId = String(identifier || '').trim();
+    const cleanLower = rawId.toLowerCase();
+    
+    // Normalize Aadhaar if it looks like numeric digits (e.g. 12 digits or formatted)
+    const digitsOnly = rawId.replace(/\D/g, '');
+    const cleanAadhaarRef = digitsOnly.length === 12 ? hashAadhaar(digitsOnly) : hashAadhaar(rawId);
 
-    if (dbConfig.isConnected) {
-      try {
-        const query = {
-          role,
-          $or: [
-            { email: cleanLower },
-            { phone: cleanId },
-            { customId: cleanId },
-            { aadhaarReference: cleanAadhaarRef },
-            { 'doctorDetails.nmcId': cleanId },
-            { 'hospitalDetails.hospitalRegNo': cleanId },
-            { 'kioskDetails.terminalId': cleanId }
-          ]
-        };
-        const user = await User.findOne(query);
-        if (user) return user.toObject ? user.toObject() : user;
-      } catch (e) {
-        // Fallback to local
-      }
+    const conditions = [
+      { email: cleanLower },
+      { phone: rawId },
+      { phone: digitsOnly },
+      ...(digitsOnly.length >= 10 ? [{ phone: new RegExp(digitsOnly.slice(-10) + '$') }] : []),
+      { customId: rawId },
+      { aadhaarReference: cleanAadhaarRef },
+      { 'doctorDetails.nmcId': rawId },
+      { 'doctorDetails.nmcId': cleanLower },
+      { 'hospitalDetails.hospitalRegNo': rawId },
+      { 'hospitalDetails.hospitalRegNo': cleanLower },
+      { 'hospitalDetails.licenseNumber': rawId },
+      { 'hospitalDetails.licenseNumber': cleanLower },
+      { name: new RegExp('^' + rawId.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&') + '$', 'i') },
+      { 'kioskDetails.terminalId': rawId },
+      { 'kioskDetails.terminalId': cleanLower }
+    ];
+
+    // If identifier matches an ObjectId format
+    if (/^[0-9a-fA-F]{24}$/.test(rawId)) {
+      conditions.push({ _id: rawId });
     }
 
-    // Search local DB
-    return localDb.users.find(u => {
-      if (u.role !== role) return false;
-      if (u.email && u.email.toLowerCase() === cleanLower) return true;
-      if (u.phone && u.phone === cleanId) return true;
-      if (u.customId && u.customId === cleanId) return true;
-      if (u.aadhaarReference && u.aadhaarReference === cleanAadhaarRef) return true;
-      if (u.doctorDetails?.nmcId && u.doctorDetails.nmcId.toLowerCase() === cleanLower) return true;
-      if (u.hospitalDetails?.hospitalRegNo && u.hospitalDetails.hospitalRegNo.toLowerCase() === cleanLower) return true;
-      if (u.kioskDetails?.terminalId && u.kioskDetails.terminalId.toLowerCase() === cleanLower) return true;
-      return false;
-    });
+    try {
+      const query = {
+        role,
+        $or: conditions
+      };
+
+      const user = await User.findOne(query);
+      if (user) {
+        return user.toObject ? user.toObject() : user;
+      }
+      return null;
+    } catch (e) {
+      console.error('[UserRepository] findRawByRoleAndIdentifier error:', e.message);
+      return null;
+    }
   }
 
   /**
-   * Check if email, phone, or Aadhaar already exists
+   * Check if email, phone, or Aadhaar already exists in MongoDB
    */
   async findExistingConflict({ role, email, phone, aadhaarReference, nmcId, hospitalRegNo }) {
-    if (dbConfig.isConnected) {
-      try {
-        const conditions = [];
-        if (email) conditions.push({ email: email.toLowerCase() });
-        if (phone) conditions.push({ phone });
-        if (aadhaarReference) conditions.push({ aadhaarReference });
-        if (nmcId) conditions.push({ 'doctorDetails.nmcId': nmcId });
-        if (hospitalRegNo) conditions.push({ 'hospitalDetails.hospitalRegNo': hospitalRegNo });
-
-        if (conditions.length > 0) {
-          const conflict = await User.findOne({ $or: conditions });
-          if (conflict) return conflict;
-        }
-      } catch (e) {
-        // Fallback to local
-      }
+    const conditions = [];
+    if (email) conditions.push({ email: String(email).trim().toLowerCase() });
+    if (phone) {
+      const cleanPhone = String(phone).trim();
+      conditions.push({ phone: cleanPhone });
     }
+    if (aadhaarReference) conditions.push({ aadhaarReference });
+    if (nmcId) conditions.push({ 'doctorDetails.nmcId': String(nmcId).trim() });
+    if (hospitalRegNo) conditions.push({ 'hospitalDetails.hospitalRegNo': String(hospitalRegNo).trim() });
 
-    return localDb.users.find(u => {
-      if (email && u.email && u.email.toLowerCase() === email.toLowerCase()) return true;
-      if (phone && u.phone && u.phone === phone) return true;
-      if (aadhaarReference && u.aadhaarReference && u.aadhaarReference === aadhaarReference) return true;
-      if (nmcId && u.doctorDetails?.nmcId && u.doctorDetails.nmcId.toLowerCase() === nmcId.toLowerCase()) return true;
-      if (hospitalRegNo && u.hospitalDetails?.hospitalRegNo && u.hospitalDetails.hospitalRegNo.toLowerCase() === hospitalRegNo.toLowerCase()) return true;
-      return false;
-    });
+    if (conditions.length === 0) return null;
+
+    try {
+      const conflict = await User.findOne({ $or: conditions });
+      return conflict ? (conflict.toObject ? conflict.toObject() : conflict) : null;
+    } catch (e) {
+      console.error('[UserRepository] findExistingConflict error:', e.message);
+      return null;
+    }
   }
 
   /**
-   * Create new user
+   * Create new user in MongoDB
    */
   async createUser(userData) {
-    const now = new Date().toISOString();
-    const newDoc = {
-      ...userData,
-      createdAt: now,
-      updatedAt: now
-    };
-
-    if (dbConfig.isConnected) {
-      try {
-        const created = await User.create(newDoc);
-        // Also sync local
-        localDb.users.push(created.toObject ? created.toObject() : created);
-        saveLocalDb();
-        return created.toSafeObject ? created.toSafeObject() : created;
-      } catch (e) {
-        console.warn('[Repository] Mongoose create failed, using local store:', e.message);
-      }
+    try {
+      const created = await User.create(userData);
+      return created.toSafeObject ? created.toSafeObject() : created;
+    } catch (e) {
+      console.error('[UserRepository] createUser error:', e.message);
+      throw e;
     }
-
-    const localUser = {
-      _id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      ...newDoc
-    };
-    localDb.users.push(localUser);
-    saveLocalDb();
-
-    const safe = { ...localUser };
-    delete safe.passwordHash;
-    delete safe.aadhaarReference;
-    return safe;
   }
 
   /**
-   * Update user details
+   * Update user details in MongoDB
    */
   async updateUser(id, updateData) {
-    updateData.updatedAt = new Date().toISOString();
+    if (!id) return null;
+    try {
+      const isObjectId = /^[0-9a-fA-F]{24}$/.test(String(id));
+      const query = isObjectId ? { $or: [{ _id: id }, { customId: id }] } : { customId: id };
 
-    if (dbConfig.isConnected) {
-      try {
-        const updated = await User.findByIdAndUpdate(id, updateData, { new: true });
-        if (updated) {
-          const idx = localDb.users.findIndex(u => u._id === String(id) || u.customId === String(id));
-          if (idx !== -1) {
-            localDb.users[idx] = { ...localDb.users[idx], ...updateData };
-            saveLocalDb();
-          }
-          return updated.toSafeObject ? updated.toSafeObject() : updated;
-        }
-      } catch (e) {}
+      const updated = await User.findOneAndUpdate(query, updateData, { new: true });
+      if (updated) {
+        return updated.toSafeObject ? updated.toSafeObject() : updated;
+      }
+      return null;
+    } catch (e) {
+      console.error('[UserRepository] updateUser error:', e.message);
+      return null;
     }
-
-    const idx = localDb.users.findIndex(u => u._id === String(id) || u.customId === String(id));
-    if (idx !== -1) {
-      localDb.users[idx] = { ...localDb.users[idx], ...updateData };
-      saveLocalDb();
-      const safe = { ...localDb.users[idx] };
-      delete safe.passwordHash;
-      delete safe.aadhaarReference;
-      return safe;
-    }
-    return null;
   }
 
   /**
-   * List all registered users (for admin/demo inspection)
+   * List all registered users from MongoDB (for admin/inspection)
    */
   async listAllUsers() {
-    if (dbConfig.isConnected) {
-      try {
-        const users = await User.find().select('-passwordHash -aadhaarReference');
-        return users;
-      } catch (e) {}
+    try {
+      const users = await User.find().select('-passwordHash -pinHash -aadhaarReference').lean();
+      return users;
+    } catch (e) {
+      console.error('[UserRepository] listAllUsers error:', e.message);
+      return [];
     }
-    return localDb.users.map(u => {
-      const safe = { ...u };
-      delete safe.passwordHash;
-      delete safe.aadhaarReference;
-      return safe;
-    });
   }
 
-  // --- OTP Session Store ---
+  // ── OTP Session Store in MongoDB ──
   async saveOtpSession(sessionData) {
-    if (dbConfig.isConnected) {
-      try {
-        await OtpSession.create(sessionData);
-      } catch (e) {}
+    try {
+      const session = await OtpSession.create(sessionData);
+      return session ? (session.toObject ? session.toObject() : session) : sessionData;
+    } catch (e) {
+      console.error('[UserRepository] saveOtpSession error:', e.message);
+      throw e;
     }
-    localDb.otpSessions = localDb.otpSessions.filter(s => new Date(s.expiresAt) > new Date());
-    localDb.otpSessions.push(sessionData);
-    saveLocalDb();
-    return sessionData;
   }
 
   async findOtpSession(sessionId) {
-    if (dbConfig.isConnected) {
-      try {
-        const s = await OtpSession.findOne({ sessionId });
-        if (s) return s;
-      } catch (e) {}
+    if (!sessionId) return null;
+    try {
+      const s = await OtpSession.findOne({
+        $or: [{ sessionId }, { verificationToken: sessionId }]
+      }).lean();
+      return s;
+    } catch (e) {
+      console.error('[UserRepository] findOtpSession error:', e.message);
+      return null;
     }
-    return localDb.otpSessions.find(s => s.sessionId === sessionId);
+  }
+
+  async findOtpSessionByToken(verificationToken) {
+    if (!verificationToken) return null;
+    try {
+      const s = await OtpSession.findOne({ verificationToken }).lean();
+      return s;
+    } catch (e) {
+      console.error('[UserRepository] findOtpSessionByToken error:', e.message);
+      return null;
+    }
   }
 
   async updateOtpSession(sessionId, updates) {
-    if (dbConfig.isConnected) {
-      try {
-        await OtpSession.findOneAndUpdate({ sessionId }, updates);
-      } catch (e) {}
-    }
-    const idx = localDb.otpSessions.findIndex(s => s.sessionId === sessionId);
-    if (idx !== -1) {
-      localDb.otpSessions[idx] = { ...localDb.otpSessions[idx], ...updates };
-      saveLocalDb();
+    if (!sessionId) return null;
+    try {
+      const s = await OtpSession.findOneAndUpdate(
+        { $or: [{ sessionId }, { verificationToken: sessionId }] },
+        updates,
+        { new: true }
+      ).lean();
+      return s;
+    } catch (e) {
+      console.error('[UserRepository] updateOtpSession error:', e.message);
+      return null;
     }
   }
 }

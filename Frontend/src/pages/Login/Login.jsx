@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { authService } from '../../services/authService';
 import '../../styles/login.css';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const location = useLocation();
+  const { login, register, completeOtpRegistration } = useAuth();
 
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
   const [role, setRole] = useState('patient'); // 'patient' | 'doctor' | 'hospital' | 'kiosk'
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Scheme toggles for Patient signup
   const [schemeEnrolled, setSchemeEnrolled] = useState(false);
@@ -24,29 +27,155 @@ export default function Login() {
   // Form states
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [patientPin, setPatientPin] = useState('');
+  const [hospitalPin, setHospitalPin] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [nmcId, setNmcId] = useState('');
+  const [age, setAge] = useState('');
+  const [gender, setGender] = useState('Male');
   const [hospitalRegNo, setHospitalRegNo] = useState('');
+  const [licenseNumber, setLicenseNumber] = useState('');
+  const [facilityType, setFacilityType] = useState('Super Specialty Government Hospital');
   const [aadhaarNum, setAadhaarNum] = useState('');
-  const [kioskTerminalId, setKioskTerminalId] = useState('KIOSK-TER-04');
-  const [kioskPin, setKioskPin] = useState('1234');
+
+  // Aadhaar Auto-fetch and e-KYC states
+  const [aadhaarProfile, setAadhaarProfile] = useState(null);
+  const [fetchingAadhaar, setFetchingAadhaar] = useState(false);
+
+  // Aadhaar OTP Verification states
+  const [otpRequested, setOtpRequested] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpSentNotice, setOtpSentNotice] = useState('');
+  const [otpSessionId, setOtpSessionId] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [verificationToken, setVerificationToken] = useState('');
+  const [maskedAadhaar, setMaskedAadhaar] = useState('');
+
+  // Listen to navigation state or URL query for requested role (e.g. /login?role=doctor)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const queryRole = params.get('role');
+    if (queryRole && ['patient', 'doctor', 'hospital', 'kiosk'].includes(queryRole)) {
+      setRole(queryRole);
+    } else if (location.state?.from?.pathname?.includes('/doctor')) {
+      setRole('doctor');
+    } else if (location.state?.from?.pathname?.includes('/hospital')) {
+      setRole('hospital');
+    } else if (location.state?.from?.pathname?.includes('/kiosk')) {
+      setRole('kiosk');
+    }
+  }, [location]);
+
+  // Handle entering Aadhaar number: automatically fetch demographic profile from Aadhaar DB
+  const handleAadhaarChange = async (val) => {
+    const cleanDigits = val.replace(/\D/g, '').slice(0, 12);
+    setAadhaarNum(cleanDigits);
+
+    if (cleanDigits.length === 12) {
+      setFetchingAadhaar(true);
+      try {
+        const profile = await authService.fetchAadhaar(cleanDigits);
+        setAadhaarProfile(profile);
+        setMaskedAadhaar(profile.maskedAadhaar || `XXXX XXXX ${cleanDigits.slice(-4)}`);
+        if (profile.phone && !phone) setPhone(profile.phone);
+        if (profile.age) setAge(profile.age);
+        if (profile.genderLabel) setGender(profile.genderLabel);
+      } catch (e) {
+        console.warn('Aadhaar demographic lookup:', e.message);
+      } finally {
+        setFetchingAadhaar(false);
+      }
+    } else {
+      setAadhaarProfile(null);
+    }
+  };
+
+  const handleRequestOtp = async () => {
+    const cleanAadhaar = String(aadhaarNum).replace(/\D/g, '');
+    if (cleanAadhaar.length !== 12) {
+      setErrorMsg('Please enter a valid 12-digit Aadhaar number before requesting OTP.');
+      return;
+    }
+
+    setErrorMsg('');
+    setOtpLoading(true);
+    try {
+      const res = await authService.requestOtp(cleanAadhaar, phone);
+      const data = res.data || res;
+      if (!res.success && res.message) {
+        throw new Error(res.message);
+      }
+      setOtpSessionId(data.sessionId);
+      setMaskedAadhaar(data.maskedAadhaar || `XXXX XXXX ${cleanAadhaar.slice(-4)}`);
+      if (data.aadhaarProfile) {
+        setAadhaarProfile(data.aadhaarProfile);
+        if (data.aadhaarProfile.phone && !phone) setPhone(data.aadhaarProfile.phone);
+        if (data.aadhaarProfile.age) setAge(data.aadhaarProfile.age);
+        if (data.aadhaarProfile.genderLabel) setGender(data.aadhaarProfile.genderLabel);
+      }
+      setOtpRequested(true);
+      const devCodeNotice = data.devOtp ? ` (Verification Code: ${data.devOtp})` : '';
+      setOtpSentNotice(`OTP sent to mobile linked with Aadhaar${devCodeNotice}`);
+    } catch (err) {
+      setErrorMsg(err.message || 'Failed to request OTP');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    const cleanCode = String(otpCode).trim();
+    if (!cleanCode || cleanCode.length < 6) {
+      setErrorMsg('Please enter the 6-digit OTP code received on your mobile.');
+      return;
+    }
+
+    setErrorMsg('');
+    setOtpLoading(true);
+    try {
+      const res = await authService.verifyOtp(otpSessionId, cleanCode);
+      const data = res.data || res;
+      if (!res.success && res.message) {
+        throw new Error(res.message);
+      }
+      setOtpVerified(true);
+      setVerificationToken(data.verificationToken);
+      if (data.aadhaarProfile) {
+        setAadhaarProfile(data.aadhaarProfile);
+      }
+      setSuccessMsg('Aadhaar identity verified! Demographic data linked from Aadhaar registry.');
+    } catch (err) {
+      setErrorMsg(err.message || 'Invalid OTP. Please check the code and try again.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
 
     try {
-      let credentials = { identifier, password };
-      if (role === 'kiosk') {
-        credentials = { identifier: kioskTerminalId, pin: kioskPin };
+      // If patient entered 12-digit Aadhaar with spaces, strip to clean digits
+      let cleanIdentifier = identifier.trim();
+      if (role === 'patient' && cleanIdentifier.replace(/\D/g, '').length === 12) {
+        cleanIdentifier = cleanIdentifier.replace(/\D/g, '');
       }
+
+      const credentials = {
+        identifier: cleanIdentifier,
+        password: password.trim(),
+        pin: password.trim()
+      };
 
       await login(role, credentials);
       setSuccessMsg(
         role === 'kiosk'
-          ? 'Kiosk Terminal Initialized'
+          ? 'Kiosk Terminal Authorized for Hospital'
           : `${role.charAt(0).toUpperCase() + role.slice(1)} Login Successful`
       );
 
@@ -58,7 +187,8 @@ export default function Login() {
         }
       }, 700);
     } catch (err) {
-      console.error(err);
+      console.error('[Login] Error:', err.message);
+      setErrorMsg(err.message || 'Login failed. Please check your credentials.');
       setLoading(false);
     }
   };
@@ -66,43 +196,109 @@ export default function Login() {
   const handleSignupSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg('');
+    setSuccessMsg('');
 
     try {
-      const signupData = {
-        fullName,
-        email,
-        phone,
-        password,
-        role
-      };
-
       if (role === 'patient') {
-        signupData.aadhaar = aadhaarNum;
-        if (schemeEnrolled) {
-          signupData.schemes = {
-            isEnrolled: true,
-            hasGovScheme,
-            govSchemeType: hasGovScheme ? govSchemeType : null,
-            govSchemeNum: hasGovScheme ? govSchemeNum : null,
-            hasPrivateScheme,
-            privateProvider: hasPrivateScheme ? privateProvider : null,
-            privatePolicyNum: hasPrivateScheme ? privatePolicyNum : null
-          };
+        const pin = patientPin || password;
+        if (!pin || pin.length < 4) {
+          throw new Error('Please set a 4-digit security PIN for your patient account.');
         }
-      } else if (role === 'doctor') {
-        signupData.nmcId = nmcId;
+
+        const cleanAadhaar = String(aadhaarNum).replace(/\D/g, '');
+        if (cleanAadhaar.length !== 12) {
+          throw new Error('Please enter your valid 12-digit Aadhaar number.');
+        }
+
+        if (!fullName || fullName.trim().length < 2) {
+          throw new Error('Please enter your full name as per Aadhaar.');
+        }
+
+        if (!email || !email.trim()) {
+          throw new Error('Please enter your email address for account access.');
+        }
+
+        // Auto-extract demographics if not yet fetched
+        let derived = aadhaarProfile;
+        if (!derived) {
+          try {
+            derived = await authService.fetchAadhaar(cleanAadhaar);
+          } catch (e) {
+            console.warn('Fallback demographic derivation:', e.message);
+          }
+        }
+
+        const schemesData = schemeEnrolled ? {
+          isEnrolled: true,
+          hasGovScheme,
+          govSchemeType: hasGovScheme ? govSchemeType : null,
+          govSchemeNum: hasGovScheme ? govSchemeNum : null,
+          hasPrivateScheme,
+          privateProvider: hasPrivateScheme ? privateProvider : null,
+          privatePolicyNum: hasPrivateScheme ? privatePolicyNum : null
+        } : { isEnrolled: false };
+
+        if (otpVerified && verificationToken) {
+          await completeOtpRegistration({
+            verificationToken,
+            fullName: fullName.trim(),
+            name: fullName.trim(),
+            email: email.trim().toLowerCase(),
+            phone: phone.trim() || derived?.phone,
+            pin,
+            password: password.trim() || pin,
+            schemes: schemesData,
+            age: age ? Number(age) : (derived?.age || 28),
+            dob: derived?.dob,
+            gender: gender || derived?.genderLabel || 'Male'
+          });
+        } else {
+          await register('patient', {
+            fullName: fullName.trim(),
+            name: fullName.trim(),
+            email: email.trim().toLowerCase(),
+            phone: phone.trim() || derived?.phone,
+            aadhaar: cleanAadhaar,
+            pin,
+            password: password.trim() || pin,
+            schemes: schemesData,
+            age: age ? Number(age) : (derived?.age || 28),
+            dob: derived?.dob,
+            gender: gender || derived?.genderLabel || 'Male'
+          });
+        }
+
+        setSuccessMsg('Patient account registered successfully! Logging you in...');
+        setTimeout(() => {
+          navigate('/patient/dashboard');
+        }, 700);
       } else if (role === 'hospital') {
-        signupData.hospitalRegNo = hospitalRegNo;
+        const pin = hospitalPin || password;
+        if (!hospitalRegNo) {
+          throw new Error('Hospital State Health Registration Number is required.');
+        }
+
+        await register('hospital', {
+          fullName: fullName.trim(),
+          name: fullName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          hospitalRegNo: hospitalRegNo.trim(),
+          licenseNumber: licenseNumber.trim() || undefined,
+          facilityType,
+          password: password.trim() || pin,
+          pin
+        });
+
+        setSuccessMsg('Hospital facility registered and credentialed successfully!');
+        setTimeout(() => {
+          navigate('/hospital/dashboard');
+        }, 700);
       }
-
-      await register(role, signupData);
-      setSuccessMsg(`${role.charAt(0).toUpperCase() + role.slice(1)} Registered Successfully`);
-
-      setTimeout(() => {
-        navigate(`/${role}/dashboard`);
-      }, 800);
     } catch (err) {
-      console.error(err);
+      console.error('[Signup] Error:', err.message);
+      setErrorMsg(err.message || 'Registration failed. Please check your details.');
       setLoading(false);
     }
   };
@@ -129,7 +325,7 @@ export default function Login() {
           <div className="flex p-1 bg-gray-100 rounded-xl mb-5 mt-1 relative border border-gray-200">
             <button
               type="button"
-              onClick={() => { setMode('login'); setSuccessMsg(''); }}
+              onClick={() => { setMode('login'); setSuccessMsg(''); setErrorMsg(''); }}
               className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 tab-btn ${
                 mode === 'login'
                   ? 'text-primary bg-white shadow-sm border border-blue-200/60'
@@ -144,6 +340,7 @@ export default function Login() {
                 if (role === 'kiosk') setRole('patient');
                 setMode('signup');
                 setSuccessMsg('');
+                setErrorMsg('');
               }}
               className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all duration-200 tab-btn ${
                 mode === 'signup'
@@ -173,11 +370,11 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Role Navigation Tabs (4 Roles: Patient, Doctor, Hospital, Kiosk) */}
+          {/* Role Navigation Tabs */}
           <div className="flex border-b border-gray-200 mb-6">
             <button
               type="button"
-              onClick={() => setRole('patient')}
+              onClick={() => { setRole('patient'); setErrorMsg(''); }}
               className={`flex-1 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
                 role === 'patient'
                   ? 'border-primary text-primary'
@@ -186,20 +383,24 @@ export default function Login() {
             >
               <i className="fa-solid fa-user mr-1 sm:mr-2"></i>Patient
             </button>
+
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={() => { setRole('doctor'); setErrorMsg(''); }}
+                className={`flex-1 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
+                  role === 'doctor'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-sectext hover:text-primary'
+                }`}
+              >
+                <i className="fa-solid fa-user-doctor mr-1 sm:mr-2"></i>Doctor
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => setRole('doctor')}
-              className={`flex-1 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
-                role === 'doctor'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-sectext hover:text-primary'
-              }`}
-            >
-              <i className="fa-solid fa-user-doctor mr-1 sm:mr-2"></i>Doctor
-            </button>
-            <button
-              type="button"
-              onClick={() => setRole('hospital')}
+              onClick={() => { setRole('hospital'); setErrorMsg(''); }}
               className={`flex-1 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
                 role === 'hospital'
                   ? 'border-primary text-primary'
@@ -208,27 +409,40 @@ export default function Login() {
             >
               <i className="fa-regular fa-building mr-1 sm:mr-2"></i>Hospital
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                setRole('kiosk');
-                setMode('login');
-              }}
-              className={`flex-1 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
-                role === 'kiosk'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-sectext hover:text-primary'
-              }`}
-            >
-              <i className="fa-solid fa-hospital mr-1 sm:mr-2"></i>Kiosk
-            </button>
+
+            {mode === 'login' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRole('kiosk');
+                  setMode('login');
+                  setErrorMsg('');
+                }}
+                className={`flex-1 py-3 text-xs sm:text-sm font-semibold border-b-2 transition-colors ${
+                  role === 'kiosk'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-sectext hover:text-primary'
+                }`}
+              >
+                <i className="fa-solid fa-desktop mr-1 sm:mr-2"></i>Kiosk
+              </button>
+            )}
           </div>
+
+          {/* Error Banner */}
+          {errorMsg && (
+            <div className="mb-4 p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs font-semibold flex items-center gap-2">
+              <i className="fa-solid fa-circle-exclamation text-red-500 text-base shrink-0"></i>
+              <span className="flex-1">{errorMsg}</span>
+              <button type="button" onClick={() => setErrorMsg('')} className="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+            </div>
+          )}
 
           {/* Success Banner */}
           {successMsg && (
-            <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-sm font-medium flex items-center gap-2 animate-fadeIn">
+            <div className="mb-4 p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-sm font-medium flex items-center gap-2">
               <i className="fa-solid fa-circle-check text-emerald-600 text-lg"></i>
-              <span>{successMsg} — Redirecting...</span>
+              <span>{successMsg}</span>
             </div>
           )}
 
@@ -240,26 +454,31 @@ export default function Login() {
               {/* 1. Patient Login */}
               {role === 'patient' && (
                 <form className="space-y-4" onSubmit={handleLoginSubmit}>
+                  <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-center gap-2">
+                    <i className="fa-solid fa-circle-check text-blue-600 shrink-0"></i>
+                    <span>Web Login: Sign in using your registered <strong>Email</strong> or <strong>12-Digit Aadhaar</strong> with your 4-digit PIN.</span>
+                  </div>
+
                   <div className="input-icon-wrapper">
-                    <i className="fa-regular fa-envelope leading-icon"></i>
+                    <i className="fa-regular fa-id-card leading-icon"></i>
                     <input
                       type="text"
                       required
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="Email or Phone Number (e.g. rahul.sharma@example.com)"
+                      placeholder="Email Address or 12-Digit Aadhaar Number"
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80"
                     />
                   </div>
                   <div className="input-icon-wrapper">
-                    <i className="fa-solid fa-lock leading-icon"></i>
+                    <i className="fa-solid fa-key leading-icon"></i>
                     <input
                       type="password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Password"
-                      className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80"
+                      placeholder="4-Digit PIN or Password"
+                      className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80 font-mono"
                     />
                   </div>
 
@@ -277,7 +496,7 @@ export default function Login() {
                       <input type="checkbox" defaultChecked className="w-4 h-4 rounded text-primary border-gray-300" />
                       <span className="text-sm font-medium text-maintext">Remember me</span>
                     </label>
-                    <a href="#forgot" onClick={(e) => e.preventDefault()} className="text-sm font-medium text-primary hover:underline">Forgot password?</a>
+                    <a href="#forgot" onClick={(e) => e.preventDefault()} className="text-sm font-medium text-primary hover:underline">Forgot PIN or Password?</a>
                   </div>
 
                   <button
@@ -301,6 +520,35 @@ export default function Login() {
               {/* 2. Doctor Login */}
               {role === 'doctor' && (
                 <form className="space-y-4" onSubmit={handleLoginSubmit}>
+                  <div className="p-3.5 rounded-xl bg-blue-50/90 border border-blue-200 text-left text-xs text-blue-900 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-blue-950 flex items-center gap-1.5">
+                        <i className="fa-solid fa-user-doctor text-blue-600"></i> Doctor Clinical Portal Sign In
+                      </span>
+                      <span className="bg-blue-200 text-blue-900 text-[10px] font-bold px-2 py-0.5 rounded uppercase font-mono">
+                        NMC Registry
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-blue-800 leading-relaxed">
+                      Doctor accounts are credentialed directly by your affiliated hospital administrator. Sign in using your assigned NMC ID or professional email.
+                    </p>
+                    <div className="pt-2 border-t border-blue-200/80 flex items-center justify-between flex-wrap gap-2">
+                      <span className="text-[11px] text-blue-900 font-mono">
+                        Demo: <strong>NMC-2024-CARD-9912</strong> (PIN: <strong>1234</strong>)
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIdentifier('NMC-2024-CARD-9912');
+                          setPassword('1234');
+                        }}
+                        className="text-[11px] bg-blue-600 hover:bg-blue-700 text-white font-semibold px-2.5 py-1 rounded-lg transition-all shadow-sm flex items-center gap-1"
+                      >
+                        <i className="fa-solid fa-bolt text-yellow-300 text-[10px]"></i> Fill Doctor Credentials
+                      </button>
+                    </div>
+                  </div>
+
                   <div className="input-icon-wrapper">
                     <i className="fa-solid fa-stethoscope leading-icon"></i>
                     <input
@@ -309,7 +557,7 @@ export default function Login() {
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       placeholder="NMC Registration ID or Professional Email"
-                      className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80"
+                      className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80 font-mono"
                     />
                   </div>
                   <div className="input-icon-wrapper">
@@ -319,7 +567,7 @@ export default function Login() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Password"
+                      placeholder="Password or 4-Digit PIN (e.g. 1234)"
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80"
                     />
                   </div>
@@ -364,7 +612,7 @@ export default function Login() {
                       required
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="Facility ID or Nodal Administrative Email"
+                      placeholder="State Health Reg. No., License No., or Email"
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80"
                     />
                   </div>
@@ -375,7 +623,7 @@ export default function Login() {
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Administrative Password"
+                      placeholder="Hospital PIN or Admin Password"
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80"
                     />
                   </div>
@@ -418,18 +666,18 @@ export default function Login() {
                       <i className="fa-solid fa-desktop"></i> OPD Self-Check-in Terminal Setup
                     </div>
                     <p className="text-xs text-blue-700">
-                      Authorizes this screen as a dedicated OPD touch terminal for patients to register, pick departments, and receive appointment tokens.
+                      Authorizes this screen as a dedicated OPD touch terminal for your hospital. Enter your hospital registration number or nodal admin email and PIN/password to initialize.
                     </p>
                   </div>
 
                   <div className="input-icon-wrapper">
-                    <i className="fa-solid fa-terminal leading-icon"></i>
+                    <i className="fa-regular fa-building leading-icon"></i>
                     <input
                       type="text"
                       required
-                      value={kioskTerminalId}
-                      onChange={(e) => setKioskTerminalId(e.target.value)}
-                      placeholder="Terminal Identifier (e.g. KIOSK-TER-04)"
+                      value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      placeholder="Hospital Reg No. or Admin Email (e.g. RJ-MED-2014-991)"
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80"
                     />
                   </div>
@@ -439,16 +687,16 @@ export default function Login() {
                     <input
                       type="password"
                       required
-                      value={kioskPin}
-                      onChange={(e) => setKioskPin(e.target.value)}
-                      placeholder="Master Terminal PIN (Default: 1234)"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Hospital PIN or Admin Password"
                       className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all input-with-icon bg-white/80"
                     />
                   </div>
 
                   <div className="p-3 bg-gray-50 rounded-xl border border-gray-200 text-xs text-sectext flex items-center justify-between">
-                    <span>Active Station: <strong>Main Ground Reception</strong></span>
-                    <span className="text-success font-semibold">● Online</span>
+                    <span>Terminal Mode: <strong>Hospital Dedicated OPD Kiosk</strong></span>
+                    <span className="text-success font-semibold">● Ready</span>
                   </div>
 
                   <button
@@ -462,17 +710,9 @@ export default function Login() {
                       </>
                     ) : (
                       <>
-                        Launch Kiosk Terminal <i className="fa-solid fa-arrow-right"></i>
+                        Authorize & Launch Kiosk <i className="fa-solid fa-arrow-right"></i>
                       </>
                     )}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate('/kiosk')}
-                    className="w-full mt-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold py-3 rounded-xl border border-blue-200 transition-all flex justify-center items-center gap-2 text-sm"
-                  >
-                    <i className="fa-solid fa-bolt"></i> Open Kiosk Directly (Instant Mode)
                   </button>
                 </form>
               )}
@@ -487,6 +727,18 @@ export default function Login() {
               {/* 1. Patient Sign Up */}
               {role === 'patient' && (
                 <form className="space-y-4" onSubmit={handleSignupSubmit}>
+                  {/* e-KYC Info Banner */}
+                  <div className="p-3 bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl text-left text-xs text-emerald-950 space-y-1">
+                    <div className="flex items-center gap-2 font-bold text-emerald-800">
+                      <i className="fa-solid fa-bolt text-teal-600"></i>
+                      <span>Instant Aadhaar e-KYC Registration</span>
+                    </div>
+                    <p className="text-[11px] text-emerald-800/90 leading-relaxed">
+                      Just enter your <strong>Name</strong>, <strong>Aadhaar</strong>, <strong>PIN</strong>, and <strong>Email</strong>. Your DOB, Age, Gender, and Linked Mobile are auto-fetched from the Aadhaar database!
+                    </p>
+                  </div>
+
+                  {/* 1. Full Name */}
                   <div className="input-icon-wrapper">
                     <i className="fa-regular fa-user leading-icon"></i>
                     <input
@@ -494,12 +746,77 @@ export default function Login() {
                       required
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Full Name (as per Aadhaar / National ID)"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
+                      placeholder="Full Name (as per Aadhaar)"
+                      className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 2. 12-Digit Aadhaar Number */}
+                  <div className="space-y-2">
+                    <div className="relative">
+                      <div className="input-icon-wrapper">
+                        <i className="fa-regular fa-id-card leading-icon"></i>
+                        <input
+                          type="text"
+                          maxLength="12"
+                          required
+                          value={aadhaarNum}
+                          onChange={(e) => handleAadhaarChange(e.target.value)}
+                          placeholder="12-Digit Aadhaar Number (e.g. 123456789012)"
+                          className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80 font-mono tracking-wider"
+                        />
+                      </div>
+                      {fetchingAadhaar && (
+                        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-primary flex items-center gap-1.5 font-medium bg-white/90 px-2 py-1 rounded">
+                          <i className="fa-solid fa-spinner fa-spin"></i>
+                          <span>Fetching Aadhaar e-KYC...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Auto-Fetched Aadhaar Demographic Profile Card */}
+                    {aadhaarProfile && (
+                      <div className="p-3 bg-emerald-50/90 border border-emerald-300 rounded-xl text-left text-xs space-y-2 shadow-sm animate-fadeIn">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-emerald-900 flex items-center gap-1.5">
+                            <i className="fa-solid fa-circle-check text-emerald-600 text-sm"></i>
+                            Aadhaar DB Record Verified
+                          </span>
+                          <span className="font-mono text-[11px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-bold">
+                            {aadhaarProfile.maskedAadhaar || `XXXX XXXX ${aadhaarNum.slice(-4)}`}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1 border-t border-emerald-200/80">
+                          <div><span className="text-gray-500">DOB / Age:</span> <strong className="text-emerald-950 ml-1">{aadhaarProfile.dob} ({aadhaarProfile.age} yrs)</strong></div>
+                          <div><span className="text-gray-500">Gender:</span> <strong className="text-emerald-950 ml-1">{aadhaarProfile.genderLabel || aadhaarProfile.gender}</strong></div>
+                          <div><span className="text-gray-500">Linked Phone:</span> <strong className="text-emerald-950 ml-1 font-mono">{aadhaarProfile.phone}</strong></div>
+                          <div><span className="text-gray-500">Location:</span> <strong className="text-emerald-950 ml-1">{aadhaarProfile.district}, {aadhaarProfile.state}</strong></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 3. Create 4-Digit Security PIN */}
+                  <div className="space-y-1 text-left">
+                    <div className="input-icon-wrapper">
+                      <i className="fa-solid fa-key leading-icon"></i>
+                      <input
+                        type="password"
+                        maxLength="4"
+                        required
+                        value={patientPin}
+                        onChange={(e) => setPatientPin(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Create 4-Digit Security PIN (e.g. 1234)"
+                        className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80 font-mono tracking-widest text-base"
+                      />
+                    </div>
+                    <p className="text-[11px] text-sectext px-1">
+                      Use this 4-digit PIN to sign in on web or at any hospital kiosk terminal.
+                    </p>
+                  </div>
+
+                  {/* 4. Email Address */}
+                  <div className="space-y-1 text-left">
                     <div className="input-icon-wrapper">
                       <i className="fa-regular fa-envelope leading-icon"></i>
                       <input
@@ -507,49 +824,13 @@ export default function Login() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Email Address"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
+                        placeholder="Email Address (e.g. user@example.com)"
+                        className="w-full px-4 py-3.5 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
                       />
                     </div>
-                    <div className="input-icon-wrapper">
-                      <i className="fa-solid fa-phone leading-icon"></i>
-                      <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Mobile Number"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Aadhaar Verification Section */}
-                  <div className="p-3.5 rounded-xl border border-gray-200 bg-white/70 backdrop-blur-sm space-y-2.5">
-                    <label className="block text-xs font-bold text-maintext uppercase tracking-wide">
-                      <i className="fa-regular fa-id-card mr-2 text-slate-700"></i>Aadhaar Verification
-                    </label>
-                    <select className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs text-maintext focus:border-primary outline-none bg-white">
-                      <option value="digilocker">Fetch via DigiLocker (Instant)</option>
-                      <option value="otp">Verify via Aadhaar OTP</option>
-                    </select>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        maxLength="12"
-                        value={aadhaarNum}
-                        onChange={(e) => setAadhaarNum(e.target.value)}
-                        placeholder="12-Digit Aadhaar No."
-                        className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-xs text-maintext outline-none focus:border-primary bg-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => alert('OTP sent to registered Aadhaar mobile number.')}
-                        className="bg-white border border-slate-300 text-slate-800 font-semibold px-3 py-2 rounded-lg hover:bg-slate-50 transition-colors text-xs whitespace-nowrap shadow-sm"
-                      >
-                        Get OTP
-                      </button>
-                    </div>
+                    <p className="text-[11px] text-sectext px-1">
+                      You can log in using either your <strong>Email</strong> or <strong>Aadhaar Number</strong>.
+                    </p>
                   </div>
 
                   {/* Health Coverage Scheme Section with Rajasthan Government Options */}
@@ -677,18 +958,6 @@ export default function Login() {
                     )}
                   </div>
 
-                  <div className="input-icon-wrapper">
-                    <i className="fa-solid fa-lock leading-icon"></i>
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Create Password"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
-                    />
-                  </div>
-
                   <button
                     type="submit"
                     disabled={loading}
@@ -707,102 +976,10 @@ export default function Login() {
                 </form>
               )}
 
-              {/* 2. Doctor Sign Up */}
-              {role === 'doctor' && (
-                <form className="space-y-4" onSubmit={handleSignupSubmit}>
-                  <div className="input-icon-wrapper">
-                    <i className="fa-solid fa-user-doctor leading-icon"></i>
-                    <input
-                      type="text"
-                      required
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Full Name (with Title, e.g., Dr. Sarah Jenkins)"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="input-icon-wrapper">
-                      <i className="fa-regular fa-envelope leading-icon"></i>
-                      <input
-                        type="email"
-                        required
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Professional Email"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
-                      />
-                    </div>
-                    <div className="input-icon-wrapper">
-                      <i className="fa-solid fa-phone leading-icon"></i>
-                      <input
-                        type="tel"
-                        required
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="Mobile Number"
-                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="p-3.5 rounded-xl border border-amber-300 bg-amber-50/50 space-y-2">
-                    <label className="block text-xs font-bold text-maintext uppercase tracking-wide">
-                      <i className="fa-solid fa-certificate mr-2 text-amber-600"></i>NMC Verification
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        required
-                        value={nmcId}
-                        onChange={(e) => setNmcId(e.target.value)}
-                        placeholder="NMC Registration No. (e.g. NMC-2018-99412)"
-                        className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-xs text-maintext focus:border-primary outline-none bg-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => alert('NMC credential record verified successfully.')}
-                        className="bg-white border border-amber-300 text-amber-700 font-semibold px-3 py-2 rounded-lg hover:bg-amber-50 text-xs whitespace-nowrap shadow-sm"
-                      >
-                        Check Registry
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="input-icon-wrapper">
-                    <i className="fa-solid fa-lock leading-icon"></i>
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Create Secure Password"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full bg-primary hover:bg-primaryDark text-white font-semibold py-3.5 rounded-xl transition-all shadow-md shadow-primary/25 flex justify-center items-center gap-2 text-lg transform hover:-translate-y-0.5"
-                  >
-                    {loading ? (
-                      <>
-                        <i className="fa-solid fa-spinner fa-spin"></i> Submitting Application...
-                      </>
-                    ) : (
-                      <>
-                        Submit Doctor Application <i className="fa-solid fa-arrow-right"></i>
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
-
-              {/* 3. Hospital Sign Up */}
+              {/* 2. Hospital Sign Up */}
               {role === 'hospital' && (
                 <form className="space-y-4" onSubmit={handleSignupSubmit}>
+                  {/* Hospital Name */}
                   <div className="input-icon-wrapper">
                     <i className="fa-regular fa-building leading-icon"></i>
                     <input
@@ -815,6 +992,7 @@ export default function Login() {
                     />
                   </div>
 
+                  {/* Nodal Email and Contact */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="input-icon-wrapper">
                       <i className="fa-regular fa-envelope leading-icon"></i>
@@ -840,39 +1018,71 @@ export default function Login() {
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50/50 space-y-2">
+                  {/* Facility Registration & License Details */}
+                  <div className="p-3.5 rounded-xl border border-emerald-300 bg-emerald-50/50 space-y-3">
                     <label className="block text-xs font-bold text-maintext uppercase tracking-wide">
-                      <i className="fa-solid fa-file-contract mr-2 text-emerald-700"></i>Facility Authorization
+                      <i className="fa-solid fa-file-contract mr-2 text-emerald-700"></i>Facility Accreditation & Credentials
                     </label>
-                    <div className="flex gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <input
                         type="text"
                         required
                         value={hospitalRegNo}
                         onChange={(e) => setHospitalRegNo(e.target.value)}
-                        placeholder="State Health Reg. No. (e.g. RJ-MED-2014-991)"
-                        className="flex-1 px-3 py-2 rounded-lg border border-gray-200 text-xs text-maintext focus:border-primary outline-none bg-white"
+                        placeholder="State Reg. No. (e.g. RJ-MED-2014-991)"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs text-maintext focus:border-primary outline-none bg-white font-mono"
                       />
-                      <button
-                        type="button"
-                        onClick={() => alert('Facility accreditation certificate verified.')}
-                        className="bg-white border border-emerald-300 text-emerald-800 font-semibold px-3 py-2 rounded-lg hover:bg-emerald-50 text-xs whitespace-nowrap shadow-sm"
+                      <input
+                        type="text"
+                        value={licenseNumber}
+                        onChange={(e) => setLicenseNumber(e.target.value)}
+                        placeholder="License No. (e.g. LIC-RAJ-2024-8842)"
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs text-maintext focus:border-primary outline-none bg-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-semibold text-maintext mb-1">Facility Category / Type</label>
+                      <select
+                        value={facilityType}
+                        onChange={(e) => setFacilityType(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs text-maintext focus:border-primary outline-none bg-white"
                       >
-                        Verify Doc
-                      </button>
+                        <option value="Multi-Specialty Hospital">Multi-Specialty Hospital</option>
+                        <option value="District Hospital">District Hospital</option>
+                        <option value="Primary Health Centre (PHC)">Primary Health Centre (PHC)</option>
+                        <option value="Community Health Centre (CHC)">Community Health Centre (CHC)</option>
+                        <option value="Private Clinic / Nursing Home">Private Clinic / Nursing Home</option>
+                        <option value="Super-Specialty Institute">Super-Specialty Institute</option>
+                      </select>
                     </div>
                   </div>
 
-                  <div className="input-icon-wrapper">
-                    <i className="fa-solid fa-lock leading-icon"></i>
-                    <input
-                      type="password"
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Admin Password"
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
-                    />
+                  {/* Hospital PIN and Admin Password */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="input-icon-wrapper">
+                      <i className="fa-solid fa-key leading-icon"></i>
+                      <input
+                        type="password"
+                        maxLength="4"
+                        required
+                        value={hospitalPin}
+                        onChange={(e) => setHospitalPin(e.target.value.replace(/\D/g, ''))}
+                        placeholder="Set 4-Digit Hospital PIN"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80 font-mono"
+                      />
+                    </div>
+                    <div className="input-icon-wrapper">
+                      <i className="fa-solid fa-lock leading-icon"></i>
+                      <input
+                        type="password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Admin Password"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 text-maintext placeholder-sectext focus:border-primary outline-none transition-all input-with-icon bg-white/80"
+                      />
+                    </div>
                   </div>
 
                   <button

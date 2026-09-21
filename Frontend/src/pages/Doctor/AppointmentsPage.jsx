@@ -17,19 +17,19 @@ export default function AppointmentsPage() {
   const searchKeyword = globalSearch || localSearch;
 
   // Counts for summary chips
-  const todayCount = appointments.filter((a) => a.date === '2026-09-12').length;
-  const opdCount = appointments.filter((a) => a.category === 'opd').length;
-  const otCount = appointments.filter((a) => a.category === 'operation').length;
-  const completedCount = appointments.filter((a) => a.status === 'Completed').length;
+  const todayCount = appointments.filter((a) => a.date === 'Today' || a.date?.toLowerCase().includes('today') || (a.status || '').toLowerCase() === 'upcoming').length;
+  const opdCount = appointments.filter((a) => (a.category || a.type || '').toLowerCase().includes('opd') || (a.category || a.type || '').toLowerCase().includes('consultation')).length;
+  const otCount = appointments.filter((a) => (a.category || a.type || '').toLowerCase().includes('operation') || (a.category || a.type || '').toLowerCase().includes('ot')).length;
+  const completedCount = appointments.filter((a) => (a.status || '').toLowerCase() === 'completed').length;
 
   const filteredAppointments = appointments.filter((apt) => {
     // Category filter
     if (categoryTab === 'today') {
-      if (apt.date !== '2026-09-12') return false;
+      if (apt.date !== 'Today' && !apt.date?.toLowerCase().includes('today') && (apt.status || '').toLowerCase() !== 'upcoming') return false;
     } else if (categoryTab === 'opd') {
-      if (apt.category !== 'opd') return false;
+      if (!(apt.category || apt.type || '').toLowerCase().includes('opd') && !(apt.category || apt.type || '').toLowerCase().includes('consultation')) return false;
     } else if (categoryTab === 'operation') {
-      if (apt.category !== 'operation') return false;
+      if (!(apt.category || apt.type || '').toLowerCase().includes('operation') && !(apt.category || apt.type || '').toLowerCase().includes('ot')) return false;
     }
 
     // Status filter

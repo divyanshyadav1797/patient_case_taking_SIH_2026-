@@ -68,9 +68,26 @@ export const api = {
   },
 
   // ── Doctors ──
-  async getDoctors(dept) {
-    const qs = dept ? `?dept=${encodeURIComponent(dept)}` : '';
+  async getDoctors(params = {}) {
+    let qs = '';
+    if (typeof params === 'string') {
+      qs = params ? `?dept=${encodeURIComponent(params)}` : '';
+    } else if (params && typeof params === 'object') {
+      const sp = new URLSearchParams();
+      if (params.dept) sp.append('dept', params.dept);
+      if (params.hospital) sp.append('hospital', params.hospital);
+      if (params.hospitalId) sp.append('hospitalId', params.hospitalId);
+      const str = sp.toString();
+      if (str) qs = `?${str}`;
+    }
     return request(`/doctors${qs}`);
+  },
+
+  async createDoctor(doctorData) {
+    return request('/doctors', {
+      method: 'POST',
+      body: JSON.stringify(doctorData)
+    });
   },
 
   // ── Medical Records ──
@@ -97,6 +114,55 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(rxData)
     });
+  },
+
+  // ── AI Clinical Intake (Question Asking Phase) ──
+  async startAiIntake(intakeData) {
+    return request('/ai/intake/start', {
+      method: 'POST',
+      body: JSON.stringify(intakeData)
+    });
+  },
+
+  async answerAiIntake(sessionId, answerData) {
+    return request(`/ai/intake/${sessionId}/answer`, {
+      method: 'POST',
+      body: JSON.stringify(answerData)
+    });
+  },
+
+  async getAiIntakeSession(sessionId) {
+    return request(`/ai/intake/${sessionId}`);
+  },
+
+  // ── Clinical Reports (AI Synthesized & Doctor Review) ──
+  async getClinicalReports(patientId) {
+    const qs = patientId ? `?patientId=${encodeURIComponent(patientId)}` : '';
+    return request(`/clinical-reports${qs}`);
+  },
+
+  async getClinicalReportById(id) {
+    return request(`/clinical-reports/${id}`);
+  },
+
+  async updateClinicalReport(id, updateData) {
+    return request(`/clinical-reports/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updateData)
+    });
+  },
+
+  // ── Comprehensive Medical History Timeline ──
+  async getPatientHistory(patientId) {
+    const endpoint = patientId ? `/patients/${encodeURIComponent(patientId)}/history` : '/history';
+    return request(endpoint);
+  },
+
+  // ── AI Longitudinal Medical History Summary (Synthesizes previous reports) ──
+  async getAiMedicalHistorySummary(patientId, currentComplaint = '') {
+    const qs = currentComplaint ? `?currentComplaint=${encodeURIComponent(currentComplaint)}` : '';
+    const endpoint = patientId ? `/patients/${encodeURIComponent(patientId)}/ai-medical-history-summary${qs}` : `/history${qs}`;
+    return request(endpoint);
   },
 
   // ── Kiosk ──

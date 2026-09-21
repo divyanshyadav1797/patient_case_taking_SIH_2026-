@@ -11,11 +11,12 @@ const SchemeSchema = new mongoose.Schema({
 }, { _id: false });
 
 const UserSchema = new mongoose.Schema({
-  customId: { type: String, index: true },
+  customId: { type: String, index: true, unique: true, sparse: true },
   name: { type: String, required: true, trim: true },
-  email: { type: String, trim: true, lowercase: true, index: true },
-  phone: { type: String, trim: true, index: true },
+  email: { type: String, trim: true, lowercase: true, index: true, sparse: true },
+  phone: { type: String, trim: true, index: true, sparse: true },
   passwordHash: { type: String, required: true },
+  pinHash: { type: String }, // Explicit support for 4-digit/numeric PIN
   role: {
     type: String,
     enum: ['patient', 'doctor', 'hospital', 'kiosk', 'admin'],
@@ -23,8 +24,8 @@ const UserSchema = new mongoose.Schema({
     index: true
   },
   
-  // Aadhaar Identity (Privacy preserved according to TRD)
-  aadhaarReference: { type: String, index: true }, // SHA-256 hash of Aadhaar
+  // Aadhaar Identity (Privacy preserved)
+  aadhaarReference: { type: String, index: true, sparse: true }, // SHA-256 hash of raw Aadhaar
   maskedAadhaar: { type: String }, // e.g. XXXX XXXX 1234
   
   status: {
@@ -33,7 +34,7 @@ const UserSchema = new mongoose.Schema({
     default: 'ACTIVE'
   },
   
-  // Specific role metadata
+  // Role-specific metadata
   patientDetails: {
     age: { type: Number },
     gender: { type: String },
@@ -44,7 +45,7 @@ const UserSchema = new mongoose.Schema({
   },
   
   doctorDetails: {
-    nmcId: { type: String, index: true },
+    nmcId: { type: String, index: true, sparse: true },
     specialty: { type: String },
     department: { type: String },
     hospitalId: { type: String },
@@ -52,14 +53,14 @@ const UserSchema = new mongoose.Schema({
   },
   
   hospitalDetails: {
-    hospitalRegNo: { type: String, index: true },
+    hospitalRegNo: { type: String, index: true, sparse: true },
     licenseNumber: { type: String },
     facilityType: { type: String },
     address: { type: String }
   },
   
   kioskDetails: {
-    terminalId: { type: String, index: true },
+    terminalId: { type: String, index: true, sparse: true },
     hospitalId: { type: String },
     location: { type: String }
   },
@@ -73,6 +74,7 @@ const UserSchema = new mongoose.Schema({
 UserSchema.methods.toSafeObject = function () {
   const obj = this.toObject ? this.toObject() : { ...this };
   delete obj.passwordHash;
+  delete obj.pinHash;
   delete obj.aadhaarReference;
   delete obj.__v;
   return obj;

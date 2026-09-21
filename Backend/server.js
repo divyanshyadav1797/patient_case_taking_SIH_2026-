@@ -6,9 +6,6 @@ const userRepository = require('./src/repositories/userRepository');
 const clinicalRepository = require('./src/repositories/clinicalRepository');
 const authRoutes = require('./src/routes/authRoutes');
 const clinicalRoutes = require('./src/routes/clinicalRoutes');
-const doctorRoutes = require('./routes/doctorRoutes');
-const hospitalRoutes = require('./routes/hospitalRoutes');
-const patientRoutes = require('./routes/patientRoutes');
 const { errorHandler } = require('./src/middleware/errorHandler');
 
 const app = express();
@@ -45,10 +42,20 @@ app.get('/', (req, res) => {
         register: 'POST /api/v1/auth/register',
         requestOtp: 'POST /api/v1/auth/register/request-otp',
         verifyOtp: 'POST /api/v1/auth/register/verify-otp',
-        completeOtp: 'POST /api/v1/auth/register/complete',
         logout: 'POST /api/v1/auth/logout',
         me: 'GET /api/v1/auth/me'
-      }
+      },
+      aiIntake: {
+        start: 'POST /api/v1/ai/intake/start',
+        answer: 'POST /api/v1/ai/intake/:sessionId/answer',
+        session: 'GET /api/v1/ai/intake/:sessionId'
+      },
+      clinicalReports: {
+        list: 'GET /api/v1/clinical-reports',
+        detail: 'GET /api/v1/clinical-reports/:id',
+        update: 'PATCH /api/v1/clinical-reports/:id'
+      },
+      patientHistory: 'GET /api/v1/patients/:patientId/history'
     }
   });
 });
@@ -63,16 +70,28 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'medikiosk-backend', db: getStatus() });
+  res.json({ status: 'ok', service: 'quantum-care-backend', db: getStatus() });
 });
 
+// Primary API Mounts
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/v1', clinicalRoutes);
 app.use('/api', clinicalRoutes);
-app.use('/api/doctors', doctorRoutes);
-app.use('/api/hospitals', hospitalRoutes);
-app.use('/api/patients', patientRoutes);
+
+// Convenience direct routes
+app.use('/api/doctors', (req, res, next) => {
+  req.url = '/doctors' + req.url;
+  clinicalRoutes(req, res, next);
+});
+app.use('/api/patients', (req, res, next) => {
+  req.url = '/patients' + req.url;
+  clinicalRoutes(req, res, next);
+});
+app.use('/api/hospitals', (req, res, next) => {
+  req.url = '/hospital' + req.url;
+  clinicalRoutes(req, res, next);
+});
 
 app.use((req, res) => {
   res.status(404).json({
@@ -85,16 +104,27 @@ app.use(errorHandler);
 
 async function startServer() {
   await connectDB();
-  await userRepository.seedDefaultUsers();
-  await clinicalRepository.seedDefaults();
+  if (process.env.SEED_DEMO_DATA !== 'false') {
+    await userRepository.seedDefaultUsers();
+    await clinicalRepository.seedDefaults();
+    console.log('[Seed] Default verification accounts verified in MongoDB (Doctors, Hospital, Kiosk, Patient)');
+  } else {
+    console.log('[Database] Running in strict clean mode (SEED_DEMO_DATA=false)');
+  }
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Quantum Care Backend running on http://localhost:${PORT}`);
     console.log(`API Base: http://localhost:${PORT}/api/v1`);
   });
+
+  return server;
 }
 
-startServer().catch((err) => {
-  console.error('Fatal startup error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  startServer().catch((err) => {
+    console.error('Fatal startup error:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { app, startServer };

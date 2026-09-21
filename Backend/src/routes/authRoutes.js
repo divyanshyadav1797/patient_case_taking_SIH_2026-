@@ -28,6 +28,7 @@ router.post('/verify-token', (req, res, next) => authController.verifyToken(req,
 router.get('/verify-token', (req, res, next) => authController.verifyToken(req, res, next));
 
 // Aadhaar / Mobile OTP Registration Workflow (TRD Section 10 & 11)
+router.post('/register/fetch-aadhaar', (req, res, next) => authController.fetchAadhaar(req, res, next));
 router.post('/register/request-otp', validateOtpRequest, (req, res, next) => authController.requestOtp(req, res, next));
 router.post('/register/verify-otp', validateOtpVerify, (req, res, next) => authController.verifyOtp(req, res, next));
 router.post('/register/complete', (req, res, next) => authController.completeOtpRegistration(req, res, next));

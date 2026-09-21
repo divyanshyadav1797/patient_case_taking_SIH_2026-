@@ -127,7 +127,14 @@ export default function App() {
           </Route>
 
           {/* ── Kiosk Portal ── */}
-          <Route path="/kiosk" element={<KioskPage />} />
+          <Route
+            path="/kiosk"
+            element={
+              <ProtectedRoute allowedRoles={['kiosk', 'hospital']}>
+                <KioskPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/kiosk/dashboard" element={<Navigate to="/kiosk" replace />} />
 
           {/* 404 */}

@@ -1,9 +1,27 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const userRepository = require('../repositories/userRepository');
-const { hashAadhaar, maskAadhaar } = require('../utils/aadhaarUtils');
+const { hashAadhaar, maskAadhaar, generateAadhaarDemographics } = require('../utils/aadhaarUtils');
 
 class OtpService {
+  /**
+   * Fast e-KYC demographic profile lookup from Aadhaar registry
+   */
+  async fetchAadhaarProfile(aadhaar) {
+    if (!aadhaar) {
+      throw new Error('Aadhaar number is required');
+    }
+    const clean = String(aadhaar).replace(/\D/g, '');
+    if (clean.length !== 12) {
+      throw new Error('Aadhaar number must contain exactly 12 numeric digits');
+    }
+    const demographics = generateAadhaarDemographics(clean);
+    return {
+      maskedAadhaar: maskAadhaar(clean),
+      ...demographics
+    };
+  }
+
   /**
    * Request OTP for Aadhaar or Mobile verification
    */
@@ -18,7 +36,8 @@ class OtpService {
 
     const aadhaarRef = aadhaar ? hashAadhaar(aadhaar) : null;
     const masked = aadhaar ? maskAadhaar(aadhaar) : null;
-    const cleanPhone = phone ? String(phone).trim() : null;
+    const aadhaarProfile = aadhaar ? generateAadhaarDemographics(aadhaar) : null;
+    const cleanPhone = phone ? String(phone).trim() : (aadhaarProfile ? aadhaarProfile.phone : null);
 
     await userRepository.saveOtpSession({
       sessionId,
@@ -39,7 +58,8 @@ class OtpService {
       sessionId,
       expiresAt,
       maskedAadhaar: masked,
-      message: `OTP sent successfully to registered mobile number.`,
+      aadhaarProfile,
+      message: `OTP sent successfully to Aadhaar-linked mobile number.`,
       // Return devOtp when in development mode for easy evaluation
       ...(isDev ? { devOtp: rawOtp } : {})
     };
@@ -77,11 +97,14 @@ class OtpService {
       verificationToken
     });
 
+    const aadhaarProfile = session.maskedAadhaar ? generateAadhaarDemographics(session.maskedAadhaar) : null;
+
     return {
       verified: true,
       verificationToken,
       maskedAadhaar: session.maskedAadhaar,
-      phone: session.phone,
+      phone: session.phone !== 'NA' ? session.phone : (aadhaarProfile ? aadhaarProfile.phone : null),
+      aadhaarProfile,
       message: 'Aadhaar / Mobile identity verified successfully'
     };
   }

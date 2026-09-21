@@ -3,7 +3,7 @@
  */
 const http = require('http');
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 5000);
 const HOST = '127.0.0.1';
 
 function request(method, path, body = null, token = null) {

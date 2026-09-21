@@ -6,17 +6,21 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const { stats, appointments, globalSearch, setGlobalSearch, patients, setSelectedPatient } = useDoctor();
 
-  // Filter today's appointments (category !== 'operation' and date '2026-09-12' or first few)
-  const todayApts = appointments.filter((a) => a.date === '2026-09-12' || a.id <= 4);
+  // Filter today's appointments dynamically based on date and status
+  const todayApts = appointments.filter((a) => {
+    const s = (a.status || '').toLowerCase();
+    const d = String(a.date || '').toLowerCase();
+    return s === 'upcoming' || d === 'today' || d.includes('today');
+  });
 
   const filteredApts = todayApts.filter((apt) => {
     if (!globalSearch.trim()) return true;
     const q = globalSearch.toLowerCase();
     return (
-      apt.patient.toLowerCase().includes(q) ||
-      apt.type.toLowerCase().includes(q) ||
-      apt.time.toLowerCase().includes(q) ||
-      apt.status.toLowerCase().includes(q)
+      (apt.patient || '').toLowerCase().includes(q) ||
+      (apt.type || '').toLowerCase().includes(q) ||
+      (apt.time || '').toLowerCase().includes(q) ||
+      (apt.status || '').toLowerCase().includes(q)
     );
   });
 
@@ -34,7 +38,19 @@ export default function DashboardPage() {
       <div className="overview-section" aria-label="Today's at a Glance">
         <div className="stats-grid">
           {/* Card 1: Total Patients */}
-          <article className="stat-card" id="cardTotalPatients">
+          <article
+            className="stat-card"
+            id="cardTotalPatients"
+            onClick={() => navigate('/doctor/patients')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                navigate('/doctor/patients');
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="stat-header">
               <span className="stat-title">Total Patients</span>
               <div className="stat-icon-badge" aria-hidden="true">
@@ -55,7 +71,19 @@ export default function DashboardPage() {
           </article>
 
           {/* Card 2: Today's Appointments */}
-          <article className="stat-card" id="cardTodayAppointments">
+          <article
+            className="stat-card"
+            id="cardTodayAppointments"
+            onClick={() => navigate('/doctor/appointments')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                navigate('/doctor/appointments');
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="stat-header">
               <span className="stat-title">Today's Appointments</span>
               <div className="stat-icon-badge" aria-hidden="true">
@@ -76,7 +104,19 @@ export default function DashboardPage() {
           </article>
 
           {/* Card 3: Follow-ups */}
-          <article className="stat-card" id="cardFollowUps">
+          <article
+            className="stat-card"
+            id="cardFollowUps"
+            onClick={() => navigate('/doctor/appointments')}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                navigate('/doctor/appointments');
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+          >
             <div className="stat-header">
               <span className="stat-title">Follow-ups</span>
               <div className="stat-icon-badge" aria-hidden="true">
@@ -130,12 +170,20 @@ export default function DashboardPage() {
               <div className="empty-state">
                 <div className="empty-icon">
                   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <circle cx="11" cy="11" r="8" />
-                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                 </div>
-                <p className="empty-title">No matching appointments found</p>
-                <p className="empty-desc">No appointments match "{globalSearch}". Try searching by patient name, consultation type, or time.</p>
+                <p className="empty-title">
+                  {globalSearch.trim() ? 'No matching appointments found' : 'No appointments scheduled for today'}
+                </p>
+                <p className="empty-desc">
+                  {globalSearch.trim()
+                    ? `No appointments match "${globalSearch}". Try another query.`
+                    : 'New appointment bookings, walk-ins, and Kiosk check-in tokens will appear here live.'}
+                </p>
               </div>
             ) : (
               filteredApts.map((apt) => {

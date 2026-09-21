@@ -51,24 +51,9 @@ export const INITIAL_PATIENT_DOCTORS = [
   { id: 5, name: "Dr. Ananya Roy", specialty: "Pediatrics", experience: "8 yrs exp", rating: "4.9", reviews: 89, available: "Next slot: Monday", fee: "₹600", image: "https://images.unsplash.com/photo-1651008376811-b90baee60c1f?auto=format&fit=crop&q=80&w=300" }
 ];
 
-export const INITIAL_APPOINTMENTS = [
-  { id: 'APT-101', doctorName: 'Dr. Sarah Jenkins', specialty: 'Cardiology', hospital: 'SMS Hospital, Jaipur', date: 'Tomorrow, Sep 19', time: '10:30 AM', status: 'upcoming', type: 'Hospital Consultation' },
-  { id: 'APT-102', doctorName: 'Dr. Priya Patel', specialty: 'General Physician', hospital: 'Apollo Clinic', date: 'Sep 24, 2026', time: '02:00 PM', status: 'upcoming', type: 'Routine Follow-up' },
-  { id: 'APT-098', doctorName: 'Dr. Rajesh Gupta', specialty: 'Orthopedics', hospital: 'Fortis Hospital', date: 'Aug 14, 2026', time: '11:15 AM', status: 'past', type: 'Knee Joint Consultation' },
-  { id: 'APT-095', doctorName: 'Dr. Michael Chang', specialty: 'Neurology', hospital: 'Eternal Heart Care', date: 'Jul 28, 2026', time: '04:00 PM', status: 'cancelled', type: 'Migraine Review' }
-];
-
-export const INITIAL_RECORDS = [
-  { id: 'REC-01', title: 'Comprehensive Lipid & Blood Profile', doctor: 'Dr. Sarah Jenkins', hospital: 'SMS Central Lab', date: 'Sep 10, 2026', type: 'Lab Report', file: 'blood_report_sep2026.pdf', size: '1.8 MB' },
-  { id: 'REC-02', title: 'Chest X-Ray Digital Imaging', doctor: 'Dr. Rajesh Gupta', hospital: 'Radiology Wing B', date: 'Aug 14, 2026', type: 'Diagnostic Scan', file: 'chest_xray_aug2026.pdf', size: '4.2 MB' },
-  { id: 'REC-03', title: 'Hypertension Discharge Summary', doctor: 'Dr. Priya Patel', hospital: 'SMS Hospital', date: 'Jul 28, 2026', type: 'Discharge Summary', file: 'discharge_jul2026.pdf', size: '2.5 MB' }
-];
-
-export const INITIAL_MEDICINES = [
-  { id: 'MED-1', name: 'Atorvastatin (Lipitor)', dosage: '20 mg', frequency: 'Once Daily (Night)', duration: '30 Days', remaining: '18 tablets', status: 'active', doctor: 'Dr. Sarah Jenkins' },
-  { id: 'MED-2', name: 'Amlodipine (Norvasc)', dosage: '5 mg', frequency: 'Once Daily (Morning)', duration: '60 Days', remaining: '42 tablets', status: 'active', doctor: 'Dr. Priya Patel' },
-  { id: 'MED-3', name: 'Metformin HCl', dosage: '500 mg', frequency: 'Twice Daily (Post-meals)', duration: '30 Days', remaining: '8 tablets', status: 'refill_needed', doctor: 'Dr. Priya Patel' }
-];
+export const INITIAL_APPOINTMENTS = [];
+export const INITIAL_RECORDS = [];
+export const INITIAL_MEDICINES = [];
 
 export function PatientProvider({ children }) {
   const [doctors, setDoctors] = useState(INITIAL_PATIENT_DOCTORS);
@@ -84,23 +69,37 @@ export function PatientProvider({ children }) {
     let mounted = true;
     async function loadBackendData() {
       try {
-        const [apts, docs, recs] = await Promise.allSettled([
+        const [apts, docs, recs, rxs] = await Promise.allSettled([
           api.getAppointments(),
           api.getDoctors(),
-          api.getRecords()
+          api.getRecords(),
+          api.getPrescriptions()
         ]);
         if (!mounted) return;
-        if (apts.status === 'fulfilled' && Array.isArray(apts.value) && apts.value.length > 0) {
+        if (apts.status === 'fulfilled' && Array.isArray(apts.value)) {
           setAppointments(apts.value);
         }
         if (docs.status === 'fulfilled' && Array.isArray(docs.value) && docs.value.length > 0) {
           setDoctors(docs.value);
         }
-        if (recs.status === 'fulfilled' && Array.isArray(recs.value) && recs.value.length > 0) {
+        if (recs.status === 'fulfilled' && Array.isArray(recs.value)) {
           setRecords(recs.value);
         }
+        if (rxs.status === 'fulfilled' && Array.isArray(rxs.value)) {
+          const mappedMeds = rxs.value.map((rx, idx) => ({
+            id: rx.id || `MED-${idx}`,
+            name: rx.medicines || rx.diagnosis || 'Prescribed Medicine',
+            dosage: rx.dosage || 'As directed',
+            frequency: rx.frequency || rx.freq || 'Daily',
+            duration: rx.duration || 'As directed',
+            remaining: '30 doses',
+            status: rx.status?.toLowerCase() === 'active' ? 'active' : 'refill_needed',
+            doctor: rx.doctorName || 'Attending Physician'
+          }));
+          setMedicines(mappedMeds);
+        }
       } catch (err) {
-        console.warn('[PatientContext] Using offline demo state:', err.message);
+        console.warn('[PatientContext] Failed to load backend data:', err.message);
       }
     }
     loadBackendData();

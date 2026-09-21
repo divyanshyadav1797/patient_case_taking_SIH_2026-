@@ -38,6 +38,17 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const completeOtpRegistration = async (payload) => {
+    setLoading(true);
+    try {
+      const session = await authService.completeOtpRegistration(payload);
+      setUser(session.user);
+      return session.user;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -50,6 +61,8 @@ export function AuthProvider({ children }) {
     loading,
     login,
     register,
+    completeOtpRegistration,
+    fetchAadhaar: (aadhaar) => authService.fetchAadhaar(aadhaar),
     logout
   };
 

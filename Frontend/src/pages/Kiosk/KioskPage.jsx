@@ -207,48 +207,8 @@ const depts = [
   ['other', '•••']
 ];
 
-const doctorsByDept = {
-  general: [
-    ['Dr. Ramesh Sharma', 'MBBS, MD (General Medicine)', 'available'],
-    ['Dr. Priya Mehta', 'MBBS, MD (Internal Medicine)', 'available'],
-    ['Dr. Amit Verma', 'MBBS, DNB (General Medicine)', 'next15'],
-    ['Dr. Sneha Kapoor', 'MBBS, MD (Family Medicine)', 'next30']
-  ],
-  eyeCare: [
-    ['Dr. Neha Jain', 'MBBS, MS (Ophthalmology)', 'available'],
-    ['Dr. Karan Shah', 'MBBS, DNB (Ophthalmology)', 'next15']
-  ],
-  skinHair: [
-    ['Dr. Anjali Rao', 'MBBS, MD (Dermatology)', 'available'],
-    ['Dr. Vivek Patel', 'MBBS, DVD', 'next30']
-  ],
-  dental: [
-    ['Dr. Pooja Mehta', 'BDS, MDS', 'available'],
-    ['Dr. Arjun Singh', 'BDS', 'next15']
-  ],
-  ortho: [
-    ['Dr. Raj Malhotra', 'MBBS, MS (Orthopedics)', 'available'],
-    ['Dr. Nitin Gupta', 'MBBS, DNB (Ortho)', 'next30']
-  ],
-  ent: [
-    ['Dr. Sameer Khan', 'MBBS, MS (ENT)', 'available'],
-    ['Dr. Riya Bose', 'MBBS, DLO', 'next15']
-  ],
-  cardio: [
-    ['Dr. Aakash Jain', 'MBBS, MD (Cardiology)', 'next15'],
-    ['Dr. Meera Rao', 'MBBS, DM (Cardiology)', 'next30']
-  ],
-  gyn: [
-    ['Dr. Kavita Sharma', 'MBBS, MD (Gynecology)', 'available'],
-    ['Dr. Nisha Verma', 'MBBS, DGO', 'next15']
-  ],
-  other: [
-    ['Duty Doctor', 'MBBS', 'available']
-  ]
-};
-
 export default function KioskPage() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [lang, setLang] = useState('en');
   const [screen, setScreen] = useState('welcome');
@@ -258,12 +218,53 @@ export default function KioskPage() {
   const [issue, setIssue] = useState('');
   const [dept, setDept] = useState('');
   const [doctor, setDoctor] = useState('');
+  const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const [token, setToken] = useState('');
   const [sec, setSec] = useState(5);
   const [toast, setToast] = useState('');
   const [now, setNow] = useState(new Date());
 
+  // Dynamic Hospital & Doctors
+  const [hospitalDoctors, setHospitalDoctors] = useState([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(false);
+
+  const hospitalId = user?.hospitalId || user?.kioskDetails?.hospitalId || (user?.role === 'hospital' ? user?.customId || user?._id : null);
+  const hospitalName = user?.hospitalName || user?.kioskDetails?.hospitalName || user?.hospitalDetails?.hospitalName || user?.name || 'SMS Hospital Jaipur';
+
+  // AI Intake & Clinical Case-Taking State
+  const [intakeSessionId, setIntakeSessionId] = useState('');
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [clinicalReport, setClinicalReport] = useState(null);
+  const [clinicalReportId, setClinicalReportId] = useState('');
+  const [customAnswer, setCustomAnswer] = useState('');
+  const [questionNumber, setQuestionNumber] = useState(1);
+
   const L = T[lang] || T.en;
+
+  // Fetch doctors strictly for this hospital
+  useEffect(() => {
+    let isMounted = true;
+    async function loadHospitalDoctors() {
+      setLoadingDoctors(true);
+      try {
+        const docs = await api.getDoctors({
+          hospitalId: hospitalId || undefined,
+          hospital: hospitalName || undefined
+        });
+        if (isMounted) {
+          setHospitalDoctors(Array.isArray(docs) ? docs : []);
+        }
+      } catch (err) {
+        console.warn('[Kiosk] Error fetching hospital doctors:', err.message);
+        if (isMounted) setHospitalDoctors([]);
+      } finally {
+        if (isMounted) setLoadingDoctors(false);
+      }
+    }
+    loadHospitalDoctors();
+    return () => { isMounted = false; };
+  }, [hospitalId, hospitalName]);
 
   // Live clock tick
   useEffect(() => {
@@ -295,8 +296,84 @@ export default function KioskPage() {
     setIssue('');
     setDept('');
     setDoctor('');
+    setSelectedDoctorId('');
     setToken('');
+    setIntakeSessionId('');
+    setCurrentQuestion(null);
+    setClinicalReport(null);
+    setClinicalReportId('');
+    setCustomAnswer('');
+    setQuestionNumber(1);
     setScreen('aadhaar');
+  };
+
+  const startAiIntake = async (selectedConcern) => {
+    setIssue(selectedConcern);
+    setIsAiLoading(true);
+    setScreen('aiIntake');
+    setQuestionNumber(1);
+    setClinicalReport(null);
+    setClinicalReportId('');
+
+    const chiefComplaint = L[selectedConcern] || selectedConcern;
+
+    try {
+      const res = await api.startAiIntake({
+        patientId: aad ? `P-${aad.replace(/\s+/g, '').slice(-5)}` : 'P-KIOSK',
+        patientName: newP ? 'Walk-in Patient' : 'Registered Patient',
+        chiefComplaint,
+        language: lang,
+        source: 'kiosk'
+      });
+      if (res && res.sessionId) {
+        setIntakeSessionId(res.sessionId);
+        setCurrentQuestion(res.question);
+      }
+    } catch (err) {
+      console.warn('[Kiosk] Fallback AI start:', err.message);
+      setIntakeSessionId(`LOCAL-${Date.now()}`);
+      setCurrentQuestion({
+        question: 'When did your symptoms first begin, and how intense is the discomfort?',
+        options: ['Started today (Mild)', '2-3 days ago (Moderate)', 'Over a week ago (Severe)', 'Other'],
+        complete: false
+      });
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleAnswerQuestion = async (ans) => {
+    if (!ans || !ans.trim()) return;
+    setIsAiLoading(true);
+
+    try {
+      const res = await api.answerAiIntake(intakeSessionId, {
+        answer: ans.trim(),
+        answerMethod: 'choice'
+      });
+
+      if (res && res.complete) {
+        setClinicalReport(res.report);
+        setClinicalReportId(res.reportId || res.report?.id || res.report?.customId);
+        setScreen('aiReportReview');
+      } else if (res && res.question) {
+        setCurrentQuestion(res.question);
+        setQuestionNumber((n) => n + 1);
+        setCustomAnswer('');
+      }
+    } catch (err) {
+      console.warn('[Kiosk] Fallback AI answer:', err.message);
+      const fallbackRep = {
+        chiefComplaint: L[issue] || issue,
+        summaryForDoctor: `Kiosk Walk-in: Patient reported ${L[issue] || issue}. Additional symptom detail: ${ans}.`,
+        reportedSymptoms: [L[issue] || issue, ans],
+        urgentReview: false
+      };
+      setClinicalReport(fallbackRep);
+      setScreen('aiReportReview');
+    } finally {
+      setIsAiLoading(false);
+    }
   };
 
   const notify = (m) => {
@@ -324,6 +401,7 @@ export default function KioskPage() {
   const fmt = (v) => v.replace(/\D/g, '').slice(0, 12).replace(/(\d{4})(?=\d)/g, '$1 ');
 
   const handleExit = () => {
+    logout();
     navigate('/login');
   };
 
@@ -354,8 +432,8 @@ export default function KioskPage() {
           <div className="brand">
             <div className="mark">✚</div>
             <div>
-              <b>QuantumCare Kiosk</b>
-              <small>{L.tag}</small>
+              <b>{hospitalName} · OPD Kiosk</b>
+              <small>{hospitalId ? `ID: ${hospitalId} · ` : ''}{L.tag}</small>
             </div>
           </div>
 
@@ -497,10 +575,7 @@ export default function KioskPage() {
                   <button
                     key={k}
                     type="button"
-                    onClick={() => {
-                      setIssue(k);
-                      setScreen('docs');
-                    }}
+                    onClick={() => startAiIntake(k)}
                   >
                     <span>{i}</span>
                     <b>{L[k]}</b>
@@ -510,7 +585,7 @@ export default function KioskPage() {
               <button
                 className="voice"
                 type="button"
-                onClick={() => notify('Voice input initialized — listening in selected language...')}
+                onClick={() => startAiIntake('other')}
               >
                 🎙{' '}
                 <div>
@@ -519,6 +594,110 @@ export default function KioskPage() {
                 </div>
                 →
               </button>
+            </div>
+          )}
+
+          {/* AI Intake Screen */}
+          {screen === 'aiIntake' && (
+            <div className="view wide ai-intake-container">
+              <button className="back" type="button" onClick={() => setScreen('concern')}>
+                ← {L.back}
+              </button>
+              <div className="ai-header-badge">
+                <span>🤖</span> Quantum Care AI Clinical Intake
+              </div>
+              <div className="ai-step-indicator">
+                Question {questionNumber} of 4 · Step-by-Step Clinical Case-Taking
+              </div>
+
+              {isAiLoading ? (
+                <div style={{ textAlign: 'center', padding: '3rem 1rem' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✦</div>
+                  <h3 style={{ fontSize: '1.4rem', color: '#0F172A', marginBottom: '0.5rem' }}>
+                    Analyzing with Quantum Care AI...
+                  </h3>
+                  <p style={{ color: '#64748B', fontSize: '1rem' }}>
+                    Evaluating clinical symptoms and formulating tailored question.
+                  </p>
+                </div>
+              ) : currentQuestion ? (
+                <div>
+                  <h2 className="ai-question-title">{currentQuestion.question}</h2>
+
+                  <div className="ai-options-grid">
+                    {(currentQuestion.options || []).map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        className="ai-option-card"
+                        onClick={() => handleAnswerQuestion(opt)}
+                      >
+                        <span>{opt}</span>
+                        <span style={{ color: '#2563EB', fontWeight: 800 }}>→</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="ai-custom-input-row">
+                    <input
+                      type="text"
+                      className="ai-input-field"
+                      placeholder="Or enter custom answer..."
+                      value={customAnswer}
+                      onChange={(e) => setCustomAnswer(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAnswerQuestion(customAnswer);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      className="primary"
+                      style={{ padding: '0 2rem', fontSize: '1.1rem' }}
+                      onClick={() => handleAnswerQuestion(customAnswer)}
+                    >
+                      Answer →
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          )}
+
+          {/* AI Report Review Screen */}
+          {screen === 'aiReportReview' && (
+            <div className="view wide ai-intake-container">
+              <div className="ai-header-badge" style={{ background: '#F0FDF4', color: '#166534', borderColor: '#BBF7D0' }}>
+                <span>✓</span> AI Clinical Report Synthesized
+              </div>
+              <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0F172A', margin: '0.5rem 0' }}>
+                Preliminary Case Summary Ready
+              </h2>
+              <p style={{ color: '#64748B', fontSize: '1.05rem', marginBottom: '1.25rem' }}>
+                Your symptoms have been structured into a quick-readable clinical summary and saved to the hospital system for the doctor.
+              </p>
+
+              <div className="ai-summary-card">
+                <div className="ai-summary-headline">Chief Complaint: {clinicalReport?.chiefComplaint}</div>
+                <div className="ai-summary-body">{clinicalReport?.summaryForDoctor}</div>
+                {clinicalReport?.reportedSymptoms && clinicalReport.reportedSymptoms.length > 0 && (
+                  <div className="ai-chip-list">
+                    {clinicalReport.reportedSymptoms.map((sym, idx) => (
+                      <span key={idx} className="ai-symptom-tag">● {sym}</span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem', marginTop: 'auto', paddingTop: '1rem' }}>
+                <button
+                  type="button"
+                  className="primary wide"
+                  style={{ fontSize: '1.2rem', padding: '18px' }}
+                  onClick={() => setScreen('docs')}
+                >
+                  Continue to Previous Medical Documents →
+                </button>
+              </div>
             </div>
           )}
 
@@ -629,29 +808,86 @@ export default function KioskPage() {
               <div className="heading compact">
                 <div>♙</div>
                 <h2>{L.doctor}</h2>
-                <p>{L[dept] || L.general}</p>
+                <p>{L[dept] || L.general} · {hospitalName}</p>
               </div>
-              <div className="doctorList">
-                {(doctorsByDept[dept] || doctorsByDept.general).map((d) => (
-                  <button
-                    className="doctor"
-                    key={d[0]}
-                    type="button"
-                    onClick={() => {
-                      setDoctor(d[0]);
-                      setScreen('confirm');
-                    }}
-                  >
-                    <div className="avatar">👤</div>
-                    <div>
-                      <b>{d[0]}</b>
-                      <small>{d[1]}</small>
-                      <em className={d[2] === 'available' ? 'available' : ''}>● {L[d[2]]}</em>
-                    </div>
-                    <strong>{L.select}</strong>
-                  </button>
-                ))}
-              </div>
+
+              {loadingDoctors ? (
+                <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748B' }}>
+                  <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '2rem', marginBottom: '0.75rem', color: '#2563EB' }}></i>
+                  <p style={{ fontSize: '1rem', fontWeight: 600 }}>Loading available hospital doctors...</p>
+                </div>
+              ) : (
+                <div className="doctorList">
+                  {(() => {
+                    const map = {
+                      general: ['general', 'medicine', 'opd', 'physician', 'family', 'internal'],
+                      eyeCare: ['eye', 'ophthalm'],
+                      skinHair: ['skin', 'hair', 'derma'],
+                      dental: ['dent'],
+                      ortho: ['ortho'],
+                      ent: ['ent', 'ear', 'nose', 'throat'],
+                      cardio: ['cardio', 'heart'],
+                      gyn: ['gyn', 'obs', 'women']
+                    };
+                    const terms = map[dept] || (dept !== 'other' ? [dept.toLowerCase()] : []);
+                    const matched = hospitalDoctors.filter((d) => {
+                      if (!dept || dept === 'other') return true;
+                      const field = `${d.department || ''} ${d.specialty || ''}`.toLowerCase();
+                      return terms.some((t) => field.includes(t));
+                    });
+
+                    return (
+                      <>
+                        {matched.map((d) => (
+                          <button
+                            className="doctor"
+                            key={d.id || d.name}
+                            type="button"
+                            onClick={() => {
+                              setDoctor(d.name);
+                              setSelectedDoctorId(d.id);
+                              setScreen('confirm');
+                            }}
+                          >
+                            <div className="avatar">
+                              {d.image ? (
+                                <img src={d.image} alt={d.name} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                              ) : (
+                                '👤'
+                              )}
+                            </div>
+                            <div>
+                              <b>{d.name}</b>
+                              <small>{d.specialty || d.department} {d.experience ? `• ${d.experience}` : ''}</small>
+                              <em className="available">● {d.available || L.available || 'Available Now'}</em>
+                            </div>
+                            <strong>{L.select}</strong>
+                          </button>
+                        ))}
+
+                        {/* Always provide Duty Doctor option for on-call walk-in */}
+                        <button
+                          className="doctor"
+                          type="button"
+                          onClick={() => {
+                            setDoctor(`Duty Doctor (${L[dept] || dept || 'OPD'})`);
+                            setSelectedDoctorId('DUTY-DOC');
+                            setScreen('confirm');
+                          }}
+                        >
+                          <div className="avatar">🩺</div>
+                          <div>
+                            <b>Duty Doctor ({L[dept] || dept || 'OPD'})</b>
+                            <small>Hospital On-Duty Officer · Immediate OPD Consultation</small>
+                            <em className="available">● {L.available || 'Available Now'}</em>
+                          </div>
+                          <strong>{L.select}</strong>
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           )}
 
@@ -670,22 +906,28 @@ export default function KioskPage() {
                 <div>
                   <b>{doctor}</b>
                   <span>{L[dept] || L.general}</span>
-                  <small>{L[issue] || L.other}</small>
+                  <small>{hospitalName}</small>
                 </div>
               </div>
               <button
                 className="primary wide"
                 type="button"
                 onClick={async () => {
-                  const localToken = 'G-' + Math.floor(100 + Math.random() * 899);
+                  const localToken = 'TK-' + Math.floor(100 + Math.random() * 899);
                   setToken(localToken);
                   setScreen('token');
                   try {
                     const res = await api.createKioskToken({
+                      patientName: newP ? 'Walk-in Patient' : (aad ? `Patient (${aad.slice(-4)})` : 'Registered Patient'),
                       aadhaar: aad,
                       department: L[dept] || dept || 'General OPD',
                       doctor: doctor || 'Duty Doctor',
-                      concern: L[issue] || issue || 'General Consultation'
+                      doctorId: selectedDoctorId || undefined,
+                      concern: L[issue] || issue || 'General Consultation',
+                      clinicalReportId: clinicalReportId || undefined,
+                      sessionId: intakeSessionId || undefined,
+                      hospitalName,
+                      hospitalId: hospitalId || undefined
                     });
                     if (res && res.tokenNumber) {
                       setToken(res.tokenNumber);

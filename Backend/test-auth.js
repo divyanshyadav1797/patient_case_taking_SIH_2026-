@@ -1,10 +1,11 @@
 const http = require('http');
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL || `http://127.0.0.1:${process.env.PORT || 5000}`;
 
 function request(method, path, body = null, headers = {}) {
   return new Promise((resolve, reject) => {
     const url = new URL(path, BASE_URL);
+    const bodyData = body ? JSON.stringify(body) : null;
     const options = {
       method,
       hostname: url.hostname,
@@ -12,6 +13,7 @@ function request(method, path, body = null, headers = {}) {
       path: url.pathname,
       headers: {
         'Content-Type': 'application/json',
+        ...(bodyData ? { 'Content-Length': Buffer.byteLength(bodyData) } : {}),
         ...headers
       }
     };
@@ -30,8 +32,8 @@ function request(method, path, body = null, headers = {}) {
 
     req.on('error', reject);
 
-    if (body) {
-      req.write(JSON.stringify(body));
+    if (bodyData) {
+      req.write(bodyData);
     }
     req.end();
   });

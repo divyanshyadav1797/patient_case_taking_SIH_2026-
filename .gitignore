@@ -110,3 +110,5 @@ desktop.ini
 # Prototype local installs
 # ========================
 prototypes/**/node_modules/
+temp_steps_and_creation.txt
+graphify-out

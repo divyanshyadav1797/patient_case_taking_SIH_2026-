@@ -11,21 +11,16 @@ export default function PatientDashboard() {
   const userName = user?.name || 'Rahul Sharma';
   const firstName = userName.split(' ')[0] || 'Rahul';
 
-  const upcomingAppointment = appointments.find((a) => a.status === 'upcoming') || {
-    doctorName: 'Dr. Amit Sharma',
-    specialty: 'Cardiology',
-    date: '15 September 2026',
-    time: '10:30 AM',
-    hospital: 'City Hospital',
-    status: 'Confirmed'
-  };
+  const upcomingAppointment = appointments.find((a) => (a.status || '').toLowerCase() === 'upcoming') || null;
 
-  const initials = upcomingAppointment.doctorName
-    .replace('Dr. ', '')
-    .split(' ')
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('') || 'AS';
+  const initials = upcomingAppointment?.doctorName
+    ? upcomingAppointment.doctorName
+        .replace('Dr. ', '')
+        .split(' ')
+        .map((w) => w[0])
+        .slice(0, 2)
+        .join('')
+    : 'DR';
 
   const handleCallEmergency = () => {
     if (window.confirm('Do you want to dial emergency helpline 112?')) {
@@ -159,44 +154,59 @@ export default function PatientDashboard() {
           </button>
         </div>
 
-        <div className="appointment">
-          <div className="doctor-avatar">
-            {initials}
-          </div>
+        {upcomingAppointment ? (
+          <div className="appointment">
+            <div className="doctor-avatar">
+              {initials}
+            </div>
 
-          <div className="doctor-info">
-            <h3>{upcomingAppointment.doctorName}</h3>
-            <p>{upcomingAppointment.specialty}</p>
+            <div className="doctor-info">
+              <h3>{upcomingAppointment.doctorName}</h3>
+              <p>{upcomingAppointment.specialty}</p>
 
-            <div className="appointment-details">
-              <span>
-                <i className="fa-regular fa-calendar"></i>
-                {upcomingAppointment.date}
+              <div className="appointment-details">
+                <span>
+                  <i className="fa-regular fa-calendar"></i>
+                  {upcomingAppointment.date}
+                </span>
+                <span>
+                  <i className="fa-regular fa-clock"></i>
+                  {upcomingAppointment.time}
+                </span>
+                <span>
+                  <i className="fa-solid fa-location-dot"></i>
+                  {upcomingAppointment.hospital}
+                </span>
+              </div>
+            </div>
+
+            <div className="appointment-right">
+              <span className="status confirmed">
+                {upcomingAppointment.status || 'Confirmed'}
               </span>
-              <span>
-                <i className="fa-regular fa-clock"></i>
-                {upcomingAppointment.time}
-              </span>
-              <span>
-                <i className="fa-solid fa-location-dot"></i>
-                {upcomingAppointment.hospital}
-              </span>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() => navigate('/patient/appointments')}
+              >
+                View Details
+              </button>
             </div>
           </div>
-
-          <div className="appointment-right">
-            <span className="status confirmed">
-              Confirmed
-            </span>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '2rem 1rem', color: '#64748B' }}>
+            <p style={{ margin: '0 0 1rem', fontSize: '0.95rem' }}>No upcoming appointments scheduled.</p>
             <button
               type="button"
               className="primary-btn"
-              onClick={() => navigate('/patient/appointments')}
+              onClick={() => navigate('/patient/doctors')}
+              style={{ fontSize: '0.875rem', padding: '0.5rem 1.25rem' }}
             >
-              View Details
+              <i className="fa-solid fa-calendar-plus" style={{ marginRight: '6px' }}></i>
+              Book Consultation with Doctor
             </button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Emergency Help Card */}

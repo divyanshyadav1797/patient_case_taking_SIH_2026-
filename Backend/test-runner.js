@@ -1,13 +1,9 @@
+require('dotenv').config();
 const { spawn } = require('child_process');
-const fs = require('fs');
 const http = require('http');
-const os = require('os');
-const path = require('path');
 
 const testScript = process.argv[2];
-const port = Number(process.env.PORT || 3000);
-const sourceDbFile = path.join(__dirname, 'data', 'db.json');
-const testDbFile = path.join(os.tmpdir(), `quantum-care-test-${process.pid}.json`);
+const port = Number(process.env.PORT || 5000);
 
 if (!testScript) {
   console.error('Usage: node test-runner.js <test-script>');
@@ -47,11 +43,33 @@ function waitForServer(timeoutMs = 10000) {
   });
 }
 
+function killProcessOnPort(targetPort) {
+  if (process.platform === 'win32') {
+    try {
+      const { execSync } = require('child_process');
+      const out = execSync(`netstat -ano | findstr :${targetPort}`).toString();
+      const lines = out.trim().split('\n');
+      const pids = new Set();
+      for (const line of lines) {
+        const parts = line.trim().split(/\s+/);
+        if (parts.length >= 5 && line.includes('LISTENING')) {
+          const pid = parts[parts.length - 1];
+          if (pid && pid !== '0' && pid !== String(process.pid)) {
+            pids.add(pid);
+          }
+        }
+      }
+      for (const pid of pids) {
+        try { execSync(`taskkill /F /T /PID ${pid}`, { stdio: 'ignore' }); } catch (e) {}
+      }
+    } catch (e) {}
+  }
+}
+
 async function run() {
-  fs.copyFileSync(sourceDbFile, testDbFile);
-  const testEnvironment = { ...process.env, LOCAL_DB_FILE: testDbFile };
+  killProcessOnPort(port);
   const server = spawn(process.execPath, ['server.js'], {
-    env: testEnvironment,
+    env: { ...process.env, SEED_DEMO_DATA: 'true' },
     stdio: 'inherit'
   });
 
@@ -59,7 +77,7 @@ async function run() {
   try {
     await waitForServer();
     testProcess = spawn(process.execPath, [testScript], {
-      env: testEnvironment,
+      env: process.env,
       stdio: 'inherit'
     });
 
@@ -75,15 +93,27 @@ async function run() {
     console.error(`Test runner error: ${error.message}`);
     process.exitCode = 1;
   } finally {
-    if (testProcess && !testProcess.killed) {
-      testProcess.kill();
+    if (testProcess && testProcess.pid) {
+      try {
+        if (process.platform === 'win32') {
+          const { execSync } = require('child_process');
+          execSync(`taskkill /F /T /PID ${testProcess.pid}`, { stdio: 'ignore' });
+        } else {
+          testProcess.kill();
+        }
+      } catch (e) {}
     }
-    if (!server.killed) {
-      server.kill();
+    if (server && server.pid) {
+      try {
+        if (process.platform === 'win32') {
+          const { execSync } = require('child_process');
+          execSync(`taskkill /F /T /PID ${server.pid}`, { stdio: 'ignore' });
+        } else {
+          server.kill();
+        }
+      } catch (e) {}
     }
-    if (fs.existsSync(testDbFile)) {
-      fs.unlinkSync(testDbFile);
-    }
+    killProcessOnPort(port);
   }
 }
 

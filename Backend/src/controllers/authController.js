@@ -101,6 +101,20 @@ class AuthController {
   }
 
   /**
+   * POST /api/v1/auth/register/fetch-aadhaar
+   * Fetch demographic data from Aadhaar registry
+   */
+  async fetchAadhaar(req, res, next) {
+    try {
+      const { aadhaar } = req.body;
+      const result = await otpService.fetchAadhaarProfile(aadhaar);
+      return successResponse(res, result, 'Aadhaar e-KYC record fetched successfully', 200);
+    } catch (err) {
+      return errorResponse(res, err.message, 400);
+    }
+  }
+
+  /**
    * POST /api/v1/auth/register/request-otp
    * Request OTP for Aadhaar or Phone Registration
    */

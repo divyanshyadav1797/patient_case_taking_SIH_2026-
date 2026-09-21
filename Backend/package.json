@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "test": "node test-runner.js test-auth.js",
     "test:integration": "node test-runner.js test-integration.js",
-    "test:all": "npm test && npm run test:integration"
+    "test:ai": "node test-runner.js test-ai-intake.js",
+    "test:all": "npm test && npm run test:integration && npm run test:ai",
+    "db:clean": "node src/scripts/cleanDatabase.js"
   },
   "keywords": ["healthcare", "express", "sih"],
   "author": "",
