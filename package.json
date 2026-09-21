@@ -8,6 +8,7 @@
     "build": "npm --prefix Frontend run build",
     "build:render": "npm install --prefix Backend && npm install --prefix Frontend && npm run build --prefix Frontend",
     "start": "node Backend/server.js",
+    "tunnel": "node scripts/start-cloud-tunnel.js",
     "start:backend": "node Backend/server.js",
     "start:ai": "node ai-service/src/server.js",
     "dev:backend": "npm --prefix Backend run dev",
