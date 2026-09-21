@@ -101,7 +101,7 @@ async function runTests() {
     assert(docRes.status === 200 && docRes.body.data.length > 0, 'GET /api/v1/doctors returns directory of doctors');
 
     // 7. Medical Records: Get and Post
-    const recsRes = await request('GET', '/api/v1/records');
+    const recsRes = await request('GET', '/api/v1/records', null, token);
     assert(recsRes.status === 200 && Array.isArray(recsRes.body.data), 'GET /api/v1/records returns patient records');
 
     const addRecRes = await request('POST', '/api/v1/records', {
@@ -113,8 +113,17 @@ async function runTests() {
     assert(addRecRes.status === 201 && addRecRes.body.data.title === 'Blood Pressure Log Report', 'POST /api/v1/records adds medical record');
 
     // 8. Prescriptions: Get and Post
-    const rxRes = await request('GET', '/api/v1/prescriptions');
+    const rxRes = await request('GET', '/api/v1/prescriptions', null, token);
     assert(rxRes.status === 200 && Array.isArray(rxRes.body.data), 'GET /api/v1/prescriptions returns prescriptions');
+
+    // Login as Doctor to issue prescription (enforces RBAC)
+    const docLoginRes = await request('POST', '/api/v1/auth/login', {
+      role: 'doctor',
+      identifier: 'dr.sarah@medicare.org',
+      password: 'doctor123'
+    });
+    assert(docLoginRes.status === 200 && docLoginRes.body.success === true, 'Doctor login returns success with JWT');
+    const docToken = docLoginRes.body.data.token;
 
     const createRxRes = await request('POST', '/api/v1/prescriptions', {
       patient: 'Rahul Sharma',
@@ -122,7 +131,7 @@ async function runTests() {
       doctorName: 'Dr. Sarah Jenkins',
       diagnosis: 'Mild Hypertension',
       medicines: 'Telmisartan 40mg once daily (30 Days)'
-    }, token);
+    }, docToken);
     assert(createRxRes.status === 201 && createRxRes.body.data.diagnosis === 'Mild Hypertension', 'POST /api/v1/prescriptions issues prescription');
 
     // 9. Kiosk: Generate Token & Queue
@@ -138,8 +147,8 @@ async function runTests() {
     const queueRes = await request('GET', '/api/v1/kiosk/queue');
     assert(queueRes.status === 200 && queueRes.body.data.length > 0, 'GET /api/v1/kiosk/queue lists active kiosk tokens');
 
-    // 10. Hospital Stats
-    const statsRes = await request('GET', '/api/v1/hospital/stats');
+    // 10. Hospital Stats (requires doctor/hospital/admin role)
+    const statsRes = await request('GET', '/api/v1/hospital/stats', null, docToken);
     assert(statsRes.status === 200 && statsRes.body.data.departments.length > 0, 'GET /api/v1/hospital/stats returns hospital OPD metrics');
 
     console.log(`\nResults: ${passed} passed, ${failed} failed.\n`);

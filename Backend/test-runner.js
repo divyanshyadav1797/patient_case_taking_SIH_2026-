@@ -10,7 +10,7 @@ if (!testScript) {
   process.exit(1);
 }
 
-function waitForServer(timeoutMs = 10000) {
+function waitForServer(timeoutMs = 15000) {
   const startedAt = Date.now();
 
   return new Promise((resolve, reject) => {
@@ -36,7 +36,7 @@ function waitForServer(timeoutMs = 10000) {
         reject(new Error(`Server did not become ready on port ${port}`));
         return;
       }
-      setTimeout(check, 200);
+      setTimeout(check, 250);
     }
 
     check();
@@ -68,6 +68,7 @@ function killProcessOnPort(targetPort) {
 
 async function run() {
   killProcessOnPort(port);
+  await new Promise((r) => setTimeout(r, 600));
   const server = spawn(process.execPath, ['server.js'], {
     env: { ...process.env, SEED_DEMO_DATA: 'true' },
     stdio: 'inherit'

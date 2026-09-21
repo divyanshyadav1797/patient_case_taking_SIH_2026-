@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # ── MongoDB Database ──
+  mongodb:
+    image: mongo:7.0
+    container_name: quantum-care-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=quantum-care
+
+  # ── Quantum Care Unified Web Service (Frontend + Backend) ──
+  quantum-care-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: quantum-care-web
+    restart: always
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+      - quantum-care-ai
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - SERVE_FRONTEND=true
+      - MONGODB_URI=mongodb://mongodb:27017/quantum-care
+      - AI_SERVICE_URL=http://quantum-care-ai:4100
+      - AI_SERVICE_KEY=quantum_care_internal_secret_key_sih2026
+      - JWT_SECRET=quantum_care_jwt_secret_sih2026_super_secure
+      - JWT_REFRESH_SECRET=quantum_care_jwt_refresh_sih2026_super_secure
+      - CORS_ORIGIN=*
+      - SEED_DEMO_DATA=true
+      - DEV_OTP_MODE=true
+    volumes:
+      - uploads-data:/app/uploads
+
+  # ── Quantum Care AI Microservice ──
+  quantum-care-ai:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: quantum-care-ai
+    restart: always
+    ports:
+      - "4100:4100"
+    environment:
+      - NODE_ENV=production
+      - PORT=4100
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=gemini-2.5-flash
+      - MAX_QUESTIONS=6
+      - AI_SERVICE_KEY=quantum_care_internal_secret_key_sih2026
+
+volumes:
+  mongo-data:
+  uploads-data:

@@ -9,6 +9,23 @@ export default function PatientProfile() {
   const [timeline, setTimeline] = useState([]);
   const [loadingTimeline, setLoadingTimeline] = useState(false);
   const [showHealthProfileModal, setShowHealthProfileModal] = useState(false);
+  const [previewItem, setPreviewItem] = useState(null);
+
+  const resolveDocUrl = (doc) => {
+    if (!doc) return '';
+    if (doc.imageData && doc.imageData.startsWith('data:')) return doc.imageData;
+    const url = doc.fileUrl || doc.previewUrl || (doc.raw && (doc.raw.imageData || doc.raw.fileUrl || doc.raw.previewUrl));
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) return url;
+    const apiUrl = import.meta.env?.VITE_API_URL;
+    if (apiUrl && (apiUrl.startsWith('http://') || apiUrl.startsWith('https://'))) {
+      try {
+        const parsed = new URL(apiUrl);
+        return `${parsed.origin}${url.startsWith('/') ? url : `/${url}`}`;
+      } catch (_) {}
+    }
+    return url.startsWith('/') ? url : `/${url}`;
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -145,18 +162,30 @@ export default function PatientProfile() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', borderLeft: '2px solid #E2E8F0', paddingLeft: '1.5rem', marginLeft: '1rem' }}>
               {timeline.map((evt, idx) => {
+                const isReport = evt.type === 'Clinical Report' || evt.type === 'CLINICAL_REPORT';
+                const isRx = evt.type === 'Prescription' || evt.type === 'PRESCRIPTION';
+                const isRecord = evt.type === 'Medical Record' || evt.type === 'DIAGNOSTIC_RECORD';
+
                 let badgeColor = '#2563EB';
                 let iconClass = 'fa-calendar-check';
-                if (evt.type === 'Clinical Report') {
+                let typeLabel = evt.type;
+
+                if (isReport) {
                   badgeColor = '#059669';
                   iconClass = 'fa-file-medical';
-                } else if (evt.type === 'Prescription') {
+                  typeLabel = 'Clinical Report';
+                } else if (isRx) {
                   badgeColor = '#7C3AED';
                   iconClass = 'fa-pills';
-                } else if (evt.type === 'Medical Record') {
+                  typeLabel = 'Prescription';
+                } else if (isRecord) {
                   badgeColor = '#D97706';
                   iconClass = 'fa-flask';
+                  typeLabel = 'Diagnostic Record';
                 }
+
+                const docUrl = resolveDocUrl(evt);
+                const hasAttachment = Boolean(docUrl || evt.file || (evt.raw && (evt.raw.file || evt.raw.imageData)));
 
                 return (
                   <div key={idx} style={{ position: 'relative' }}>
@@ -181,7 +210,7 @@ export default function PatientProfile() {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: badgeColor, textTransform: 'uppercase' }}>
-                            {evt.type}
+                            {typeLabel}
                           </span>
                           <strong style={{ color: '#0F172A', fontSize: '0.95rem' }}>{evt.title}</strong>
                         </div>
@@ -190,8 +219,34 @@ export default function PatientProfile() {
                         </span>
                       </div>
                       <p style={{ margin: '4px 0 0', color: '#475569', fontSize: '0.875rem', lineHeight: 1.5 }}>
-                        {evt.description}
+                        {evt.description || evt.summary || 'Clinical record on file.'}
                       </p>
+
+                      {hasAttachment && (
+                        <div style={{ marginTop: '0.75rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewItem(evt)}
+                            style={{
+                              padding: '0.4rem 0.85rem',
+                              fontSize: '0.78rem',
+                              fontWeight: 600,
+                              background: '#F1F5F9',
+                              color: '#1E293B',
+                              border: '1px solid #CBD5E1',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <i className="fa-solid fa-file-waveform" style={{ color: badgeColor }}></i>
+                            View Document / Report
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
@@ -422,6 +477,117 @@ export default function PatientProfile() {
           </div>
         </div>
       )}
+      {/* =========================================================================
+          TIMELINE DOCUMENT & MEDICAL ATTACHMENT PREVIEW MODAL
+          ========================================================================= */}
+      {previewItem && (() => {
+        const docUrl = resolveDocUrl(previewItem);
+        const fileName = (previewItem.file || previewItem.raw?.file || previewItem.title || '').toLowerCase();
+        const isImg = Boolean(
+          previewItem.imageData ||
+          previewItem.raw?.imageData ||
+          previewItem.mimeType?.startsWith('image/') ||
+          previewItem.raw?.mimeType?.startsWith('image/') ||
+          /\.(png|jpg|jpeg|webp)$/i.test(fileName)
+        );
+        const isPdf = Boolean(previewItem.mimeType?.includes('pdf') || previewItem.raw?.mimeType?.includes('pdf') || fileName.endsWith('.pdf'));
+
+        return (
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 10000,
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '1.25rem'
+            }}
+            onClick={() => setPreviewItem(null)}
+          >
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '16px',
+                maxWidth: '680px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)',
+                border: '1px solid #E2E8F0'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0F172A' }}>{previewItem.title}</h3>
+                  <small style={{ color: '#64748B' }}>{previewItem.doctor || 'Healthcare Provider'} · {previewItem.date}</small>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewItem(null)}
+                  style={{ background: 'transparent', border: 'none', fontSize: '1.25rem', color: '#94A3B8', cursor: 'pointer' }}
+                >
+                  <i className="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+
+              <div style={{ padding: '1.5rem' }}>
+                {previewItem.description && (
+                  <p style={{ margin: '0 0 1rem', color: '#334155', fontSize: '0.9rem', lineHeight: 1.5 }}>
+                    {previewItem.description}
+                  </p>
+                )}
+
+                {docUrl ? (
+                  <div style={{ marginBottom: '1.25rem', borderRadius: '10px', overflow: 'hidden', border: '1px solid #E2E8F0', background: '#F8FAFC', textAlign: 'center', padding: isImg ? '0' : '2rem' }}>
+                    {isImg ? (
+                      <img src={docUrl} alt="Attached Medical Document" style={{ maxWidth: '100%', maxHeight: '420px', objectFit: 'contain', display: 'block', margin: '0 auto' }} />
+                    ) : isPdf ? (
+                      <div>
+                        <i className="fa-solid fa-file-pdf" style={{ fontSize: '3rem', color: '#DC2626', marginBottom: '10px' }}></i>
+                        <p style={{ margin: '0 0 1rem', color: '#334155', fontWeight: 600 }}>PDF Document Attached</p>
+                        <a href={docUrl} target="_blank" rel="noopener noreferrer" className="primary-btn" style={{ padding: '0.5rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
+                          <i className="fa-solid fa-arrow-up-right-from-square"></i> Open Fullscreen PDF
+                        </a>
+                      </div>
+                    ) : (
+                      <div>
+                        <i className="fa-solid fa-file-lines" style={{ fontSize: '3rem', color: '#2563EB', marginBottom: '10px' }}></i>
+                        <p style={{ margin: '0 0 1rem', color: '#334155', fontWeight: 600 }}>Document Attached</p>
+                        <a href={docUrl} target="_blank" rel="noopener noreferrer" className="primary-btn" style={{ padding: '0.5rem 1.25rem', display: 'inline-flex', alignItems: 'center', gap: '6px', textDecoration: 'none' }}>
+                          <i className="fa-solid fa-arrow-up-right-from-square"></i> Open Document
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                {previewItem.summary && (
+                  <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px', padding: '1rem', marginTop: '1rem' }}>
+                    <strong style={{ color: '#166534', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
+                      <i className="fa-solid fa-wand-magic-sparkles"></i> AI Clinical Summary
+                    </strong>
+                    <p style={{ margin: 0, color: '#14532D', fontSize: '0.85rem', lineHeight: 1.5 }}>
+                      {previewItem.summary}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn-outline" onClick={() => setPreviewItem(null)} style={{ padding: '0.5rem 1rem' }}>
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -792,10 +792,15 @@ class ClinicalRepository {
         type: 'DIAGNOSTIC_RECORD',
         date: rec.date,
         timestamp: rec.createdAt ? new Date(rec.createdAt).getTime() : Date.now() - 86400000,
-        title: rec.title,
+        title: rec.title || 'Diagnostic Document / Report',
+        description: `${rec.type || 'Medical Record'} uploaded for ${rec.hospital || 'Hospital'} · ${rec.doctor || 'Lab'} (${rec.size || 'Attached'})`,
         doctor: rec.doctor,
         hospital: rec.hospital,
         file: rec.file,
+        fileUrl: rec.fileUrl,
+        previewUrl: rec.previewUrl,
+        imageData: rec.imageData || '',
+        mimeType: rec.mimeType,
         size: rec.size,
         raw: rec
       });

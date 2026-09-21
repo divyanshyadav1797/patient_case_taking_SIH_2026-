@@ -1,0 +1,31 @@
+{
+  "name": "quantum-care-platform",
+  "version": "1.0.0",
+  "description": "Quantum Care - AI-Powered Digital Health Profile & Clinical Intake Platform",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix Backend && npm install --prefix Frontend && npm install --prefix ai-service",
+    "build": "npm --prefix Frontend run build",
+    "start": "node Backend/server.js",
+    "start:backend": "node Backend/server.js",
+    "start:ai": "node ai-service/src/server.js",
+    "dev:backend": "npm --prefix Backend run dev",
+    "dev:frontend": "npm --prefix Frontend run dev",
+    "dev:ai": "npm --prefix ai-service run dev",
+    "test": "npm --prefix Backend test",
+    "test:integration": "npm --prefix Backend run test:integration",
+    "test:ai": "npm --prefix Backend run test:ai",
+    "test:all": "npm --prefix Backend run test:all"
+  },
+  "keywords": [
+    "healthcare",
+    "digital-health",
+    "sih2026",
+    "react",
+    "express",
+    "mongodb",
+    "ai"
+  ],
+  "author": "Quantum Care Engineering Team",
+  "license": "ISC"
+}

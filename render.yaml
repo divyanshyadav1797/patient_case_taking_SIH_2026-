@@ -1,0 +1,68 @@
+services:
+  # ── Quantum Care Full-Stack Web Application (Frontend + Express API) ──
+  - type: web
+    name: quantum-care-web
+    runtime: node
+    plan: free
+    buildCommand: npm install --prefix Backend && npm install --prefix Frontend && npm run build --prefix Frontend
+    startCommand: node Backend/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVE_FRONTEND
+        value: "true"
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: DEV_OTP_MODE
+        value: "true"
+      - key: SEED_DEMO_DATA
+        value: "true"
+      - key: MONGODB_URI
+        sync: false # Set your MongoDB Atlas URI in the Render dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: JWT_ACCESS_EXPIRES_IN
+        value: 1h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: AI_SERVICE_KEY
+        generateValue: true
+      - key: AI_SERVICE_URL
+        fromService:
+          name: quantum-care-ai
+          type: web
+          property: host
+
+  # ── Quantum Care AI Microservice (Gemini AI Intake, OCR & Voice) ──
+  - type: web
+    name: quantum-care-ai
+    runtime: node
+    plan: free
+    buildCommand: npm install --prefix ai-service
+    startCommand: node ai-service/src/server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4100"
+      - key: GEMINI_API_KEY
+        sync: false # Set your Gemini API key in the Render dashboard
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: MAX_QUESTIONS
+        value: "6"
+      - key: OCR_MAX_FILE_SIZE_MB
+        value: "20"
+      - key: OCR_MAX_FILE_SIZE_BYTES
+        value: "20971520"
+      - key: AI_SERVICE_KEY
+        fromService:
+          name: quantum-care-web
+          type: web
+          envVarKey: AI_SERVICE_KEY

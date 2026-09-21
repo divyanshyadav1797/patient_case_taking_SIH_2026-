@@ -91,8 +91,25 @@ async function runTests() {
   console.log('✅ PASS: Clinical intake completed and report synthesized');
   passed++;
 
+  // Authenticate Patient & Doctor for protected endpoints
+  const patientLogin = await request('POST', '/api/v1/auth/login', {
+    role: 'patient',
+    identifier: 'rahul.sharma@example.com',
+    password: 'patient123'
+  });
+  assert.strictEqual(patientLogin.status, 200);
+  const patientToken = patientLogin.body.data.token;
+
+  const docLogin = await request('POST', '/api/v1/auth/login', {
+    role: 'doctor',
+    identifier: 'dr.sarah@medicare.org',
+    password: 'doctor123'
+  });
+  assert.strictEqual(docLogin.status, 200);
+  const docToken = docLogin.body.data.token;
+
   // 3. Query Clinical Reports from MongoDB
-  const getReportsRes = await request('GET', '/api/v1/clinical-reports?patientId=P-10249');
+  const getReportsRes = await request('GET', '/api/v1/clinical-reports?patientId=P-10249', null, patientToken);
   assert.strictEqual(getReportsRes.status, 200);
   assert.ok(Array.isArray(getReportsRes.body.data));
   assert.ok(getReportsRes.body.data.length >= 1, 'Should find patient reports in MongoDB');
@@ -104,14 +121,14 @@ async function runTests() {
     doctorNotes: 'ECG completed showing normal sinus rhythm. Advised stress test and 24h Holter.',
     diagnosticImpression: 'Atypical angina vs musculoskeletal chest pain. Cardiac clearance pending.',
     suggestedScans: ['12-Lead ECG', 'Echocardiogram']
-  });
+  }, docToken);
   assert.strictEqual(updateRes.status, 200);
   assert.strictEqual(updateRes.body.data.doctorNotes, 'ECG completed showing normal sinus rhythm. Advised stress test and 24h Holter.');
   console.log('✅ PASS: Doctor updated clinical report notes and diagnostic impression');
   passed++;
 
   // 5. Query Full Patient Medical History Timeline & AI Summary
-  const historyRes = await request('GET', '/api/v1/patients/P-10249/history');
+  const historyRes = await request('GET', '/api/v1/patients/P-10249/history', null, patientToken);
   assert.strictEqual(historyRes.status, 200);
   assert.ok(historyRes.body.data.timeline, 'Should have timeline array');
   assert.ok(historyRes.body.data.aiMedicalHistorySummary, 'Should include AI Medical History Summary in history response');
@@ -120,7 +137,7 @@ async function runTests() {
   passed++;
 
   // 6. Direct Endpoint: Dedicated AI Longitudinal Medical History Summary
-  const aiSummaryRes = await request('GET', '/api/v1/patients/P-10249/ai-medical-history-summary');
+  const aiSummaryRes = await request('GET', '/api/v1/patients/P-10249/ai-medical-history-summary', null, docToken);
   assert.strictEqual(aiSummaryRes.status, 200, 'Dedicated AI Medical History Summary returns 200');
   const aiSummary = aiSummaryRes.body.data;
   assert.ok(aiSummary.executiveSummary, 'Summary must contain executiveSummary for the doctor');

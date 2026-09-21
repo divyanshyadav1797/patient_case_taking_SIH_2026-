@@ -23,15 +23,18 @@ const PORT = process.env.PORT || 5000;
 // ── Security Headers & Hardening ──
 app.use(securityHeaders);
 
-// ── Strict CORS Policy ──
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+// ── Strict & Configurable CORS Policy ──
+const rawOrigins = process.env.CORS_ORIGIN || process.env.ALLOWED_ORIGINS || '';
+const allowedOrigins = rawOrigins
+  ? rawOrigins.split(',').map((o) => o.trim())
   : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173', 'http://127.0.0.1:3000'];
+
+const allowAllOrigins = allowedOrigins.includes('*') || rawOrigins === '*';
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow server-to-server or non-browser agents, whitelisted origins, or development mode
-    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+    // Allow non-browser agents, wildcard origins, whitelisted origins, or development mode
+    if (!origin || allowAllOrigins || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
     return callback(new Error('Blocked by CORS policy'));
@@ -84,7 +87,7 @@ if (process.env.DEBUG_HTTP === 'true') {
   });
 }
 
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
   const dbStatus = getStatus();
   res.json({
     project: 'Quantum Care Backend API',
@@ -148,6 +151,45 @@ app.use('/api/hospitals', (req, res, next) => {
   clinicalRoutes(req, res, next);
 });
 
+// ── Production Frontend SPA Serving ──
+const candidateDistPaths = [
+  path.resolve(__dirname, '../Frontend/dist'),
+  path.resolve(__dirname, 'public'),
+  path.resolve(__dirname, '../dist')
+];
+
+const resolvedFrontendDist = candidateDistPaths.find(
+  (p) => fs.existsSync(p) && fs.existsSync(path.join(p, 'index.html'))
+);
+
+if (process.env.SERVE_FRONTEND !== 'false' && resolvedFrontendDist) {
+  console.log(`[Frontend] Serving production SPA from: ${resolvedFrontendDist}`);
+  app.use(express.static(resolvedFrontendDist, {
+    maxAge: '1d',
+    index: 'index.html'
+  }));
+
+  // Non-API GET routes serve index.html for client-side routing (Express 5 compatible)
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/uploads') && !req.path.startsWith('/health')) {
+      return res.sendFile(path.join(resolvedFrontendDist, 'index.html'));
+    }
+    next();
+  });
+} else {
+  // If not serving frontend, root returns API status
+  app.get('/', (req, res) => {
+    const dbStatus = getStatus();
+    res.json({
+      project: 'Quantum Care Backend API',
+      version: '1.0.0',
+      status: 'ONLINE',
+      database: dbStatus
+    });
+  });
+}
+
+// ── Unmatched API Routes 404 Handler ──
 app.use((req, res) => {
   res.status(404).json({
     success: false,
